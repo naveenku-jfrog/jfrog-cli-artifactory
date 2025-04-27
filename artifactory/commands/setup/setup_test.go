@@ -530,7 +530,7 @@ func TestSetupCommand_Twine(t *testing.T) {
 			// Check that the pypi section is correctly set in .pypirc.
 			assert.Contains(t, pypircContent, "[pypi]")
 
-			// Since the exact URL can vary (especially with extra paths), 
+			// Since the exact URL can vary (especially with extra paths),
 			// just check that it contains the essential parts
 			assert.Contains(t, pypircContent, "repository")
 			assert.Contains(t, pypircContent, "https://acme.jfrog.io/artifactory/api")

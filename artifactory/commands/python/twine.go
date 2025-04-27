@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 
 	"github.com/jfrog/build-info-go/build"
@@ -16,9 +15,7 @@ import (
 	"github.com/jfrog/jfrog-client-go/auth"
 	"github.com/jfrog/jfrog-client-go/utils"
 	"github.com/jfrog/jfrog-client-go/utils/errorutils"
-	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
-	"gopkg.in/ini.v1"
 )
 
 const (
@@ -196,74 +193,4 @@ func (tc *TwineCommand) isRepoConfigFlagProvided() bool {
 
 func (tc *TwineCommand) getRepoConfigFlagProvidedErr() string {
 	return "twine command must not be executed with the following flags: " + coreutils.ListToText(twineRepoConfigFlags)
-}
-
-// ConfigurePypirc creates or updates the .pypirc file for Twine
-func ConfigurePypirc(repoURL, repoName, username, password string) error {
-	// Get the home directory for the user
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return fmt.Errorf("couldn't find user home directory: %w", err)
-	}
-
-	pypircPath := filepath.Join(homeDir, ".pypirc")
-	
-	// Load existing .pypirc or create a new one
-	var pypirc *ini.File
-	exists, err := fileutils.IsFileExists(pypircPath, false)
-	if err != nil {
-		return err
-	}
-
-	if exists {
-		// Load ini file with relaxed parsing to handle Windows line endings
-		pypirc, err = ini.LoadSources(ini.LoadOptions{
-			Loose:            true,
-			Insensitive:      true,
-			IgnoreInlineComment: true,
-		}, pypircPath)
-		if err != nil {
-			return fmt.Errorf("failed to load .pypirc file: %w", err)
-		}
-	} else {
-		pypirc = ini.Empty()
-		// Create parent directory if it doesn't exist (needed on Windows)
-		err = os.MkdirAll(filepath.Dir(pypircPath), 0700)
-		if err != nil {
-			return fmt.Errorf("failed to create directory for .pypirc file: %w", err)
-		}
-	}
-
-	// Configure the .pypirc file
-	distutils := pypirc.Section("distutils")
-	indexServers := distutils.Key("index-servers")
-	
-	// Get current list of servers
-	servers := []string{}
-	if indexServers.String() != "" {
-		for _, server := range strings.Split(indexServers.String(), "\n") {
-			server = strings.TrimSpace(server)
-			if server != "" && server != "pypi" {
-				servers = append(servers, server)
-			}
-		}
-	}
-
-	// Use "pypi" as the server name to make it the default repository
-	// This takes advantage of Twine's behavior where it treats [pypi] as the default
-	const defaultSectionName = "pypi"
-	servers = append([]string{defaultSectionName}, servers...)
-	indexServers.SetValue(strings.Join(servers, "\n    "))
-
-	// Configure the pypi section which will be the default for Twine
-	pypiSection := pypirc.Section(defaultSectionName)
-	pypiSection.Key("repository").SetValue(repoURL)
-	pypiSection.Key("username").SetValue(username)
-	pypiSection.Key("password").SetValue(password)
-
-	// Save the file with appropriate permissions
-	if err := pypirc.SaveTo(pypircPath); err != nil {
-		return fmt.Errorf("failed to save .pypirc file: %w", err)
-	}
-	return os.Chmod(pypircPath, 0600)
 }
