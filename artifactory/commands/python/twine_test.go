@@ -16,8 +16,10 @@ func TestConfigurePypirc(t *testing.T) {
 	// Create a temp directory for the test using t.TempDir()
 	tempDir := t.TempDir()
 
-	// Mock the home directory - t.Setenv will handle setting and restoring automatically
+	// Mock the home directory
 	t.Setenv("HOME", tempDir)
+	// Also set USERPROFILE for Windows
+	t.Setenv("USERPROFILE", tempDir)
 
 	// Test parameters
 	testRepoURL := "https://artifactory.example.com/artifactory/api/pypi/pypi-virtual/"
@@ -40,8 +42,12 @@ func TestConfigurePypirc(t *testing.T) {
 	require.NoError(t, err, "Error getting file info")
 	assert.Equal(t, os.FileMode(0600), fileInfo.Mode().Perm(), "File permissions are incorrect")
 
-	// Parse the created file
-	cfg, err := ini.Load(pypircPath)
+	// Parse the created file with more relaxed parsing
+	cfg, err := ini.LoadSources(ini.LoadOptions{
+		Loose:            true,
+		Insensitive:      true,
+		IgnoreInlineComment: true,
+	}, pypircPath)
 	require.NoError(t, err, "Error loading INI file")
 
 	// Check distutils section
@@ -73,20 +79,14 @@ func TestConfigurePypircWithExistingFile(t *testing.T) {
 	// Create a temp directory for the test using t.TempDir()
 	tempDir := t.TempDir()
 
-	// Mock the home directory - t.Setenv will handle setting and restoring automatically
+	// Mock the home directory - set both variables for cross-platform
 	t.Setenv("HOME", tempDir)
+	t.Setenv("USERPROFILE", tempDir)
 
 	// Create an existing .pypirc file with valid INI format
 	pypircPath := filepath.Join(tempDir, ".pypirc")
-	// Make sure there's no extra whitespace or formatting issues in the INI content
-	existingContent := `[distutils]
-index-servers = existing-repo
-
-[existing-repo]
-repository = https://example.com/repo
-username = user
-password = pass
-`
+	// Use Windows-compatible line endings and formatting
+	existingContent := "[distutils]\r\nindex-servers = existing-repo\r\n\r\n[existing-repo]\r\nrepository = https://example.com/repo\r\nusername = user\r\npassword = pass\r\n"
 	err := os.WriteFile(pypircPath, []byte(existingContent), 0600)
 	require.NoError(t, err, "Error creating existing .pypirc file")
 
@@ -100,8 +100,12 @@ password = pass
 	err = ConfigurePypirc(testRepoURL, testRepoName, testUsername, testPassword)
 	require.NoError(t, err, "ConfigurePypirc failed")
 
-	// Parse the updated file
-	cfg, err := ini.Load(pypircPath)
+	// Parse the updated file with relaxed parsing for Windows compatibility
+	cfg, err := ini.LoadSources(ini.LoadOptions{
+		Loose:            true,
+		Insensitive:      true,
+		IgnoreInlineComment: true,
+	}, pypircPath)
 	require.NoError(t, err, "Error loading INI file")
 
 	// Check if both repositories are in index-servers

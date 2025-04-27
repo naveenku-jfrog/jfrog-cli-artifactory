@@ -207,7 +207,7 @@ func ConfigurePypirc(repoURL, repoName, username, password string) error {
 	}
 
 	pypircPath := filepath.Join(homeDir, ".pypirc")
-
+	
 	// Load existing .pypirc or create a new one
 	var pypirc *ini.File
 	exists, err := fileutils.IsFileExists(pypircPath, false)
@@ -216,18 +216,28 @@ func ConfigurePypirc(repoURL, repoName, username, password string) error {
 	}
 
 	if exists {
-		pypirc, err = ini.Load(pypircPath)
+		// Load ini file with relaxed parsing to handle Windows line endings
+		pypirc, err = ini.LoadSources(ini.LoadOptions{
+			Loose:            true,
+			Insensitive:      true,
+			IgnoreInlineComment: true,
+		}, pypircPath)
 		if err != nil {
 			return fmt.Errorf("failed to load .pypirc file: %w", err)
 		}
 	} else {
 		pypirc = ini.Empty()
+		// Create parent directory if it doesn't exist (needed on Windows)
+		err = os.MkdirAll(filepath.Dir(pypircPath), 0700)
+		if err != nil {
+			return fmt.Errorf("failed to create directory for .pypirc file: %w", err)
+		}
 	}
 
 	// Configure the .pypirc file
 	distutils := pypirc.Section("distutils")
 	indexServers := distutils.Key("index-servers")
-
+	
 	// Get current list of servers
 	servers := []string{}
 	if indexServers.String() != "" {
