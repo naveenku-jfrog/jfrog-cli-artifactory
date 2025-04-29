@@ -49,6 +49,8 @@ func ConfigurePypirc(repoURL, repoName, username, password string) error {
 }
 
 // getPypircPath returns the path to the .pypirc file
+// Twine exclusively uses this file for configuration,
+// The .pypirc file is located in the user's home directory by convention.
 func getPypircPath() (string, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
@@ -66,11 +68,11 @@ func loadOrCreatePypirc(pypircPath string) (*ini.File, error) {
 
 	var pypirc *ini.File
 	if exists {
-		// Load ini file with relaxed parsing to handle Windows line endings
+		// Load ini file with necessary options for cross-platform compatibility
 		pypirc, err = ini.LoadSources(ini.LoadOptions{
-			Loose:               true,
-			Insensitive:         true,
-			IgnoreInlineComment: true,
+			Loose:               true, // Required for handling non-standard formatting
+			Insensitive:         true, // Required for case-insensitive keys
+			IgnoreInlineComment: true, // Required for values containing special chars
 		}, pypircPath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load .pypirc file: %w", err)
@@ -105,6 +107,12 @@ func configurePypiDistutils(pypirc *ini.File) {
 	// Use "pypi" as the server name to make it the default repository
 	const defaultSectionName = "pypi"
 	servers = append([]string{defaultSectionName}, servers...)
+
+	// Join server names with a newline followed by 4 spaces for better readability
+	// This creates a multi-line format in the .pypirc file:
+	// index-servers = pypi
+	//     existing-repo
+	//     another-repo
 	indexServers.SetValue(strings.Join(servers, "\n    "))
 }
 
