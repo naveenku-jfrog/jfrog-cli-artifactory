@@ -107,13 +107,7 @@ func configurePypiDistutils(pypirc *ini.File) {
 	// Use "pypi" as the server name to make it the default repository
 	const defaultSectionName = "pypi"
 	servers = append([]string{defaultSectionName}, servers...)
-
-	// Join server names with a newline followed by 4 spaces for better readability
-	// This creates a multi-line format in the .pypirc file:
-	// index-servers = pypi
-	//     existing-repo
-	//     another-repo
-	indexServers.SetValue(strings.Join(servers, "\n    "))
+	indexServers.SetValue(strings.Join(servers, " "))
 }
 
 // configurePypiRepository configures the pypi repository section in .pypirc
