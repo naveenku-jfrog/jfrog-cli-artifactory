@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"os"
 	"slices"
+	"strings"
 
 	bidotnet "github.com/jfrog/build-info-go/build/utils/dotnet"
 	biutils "github.com/jfrog/build-info-go/utils"
@@ -245,14 +246,18 @@ func (sc *SetupCommand) configurePoetry() error {
 // Using the name "pypi" as the repository section makes it the default for Twine,
 // allowing users to run `twine upload` without specifying a repository.
 func (sc *SetupCommand) configureTwine() error {
-	// Get the Artifactory URL
-	repoUrl, username, password, err := python.GetPypiRepoUrlWithCredentials(sc.serverDetails, sc.repoName, true)
+	// Get the Artifactory PyPI repository URL and credentials.
+	// The returned URL is intended for installs (ends with "/simple"),
+	// but Twine requires the base repository URL for uploads.
+	repoUrl, username, password, err := python.GetPypiRepoUrlWithCredentials(sc.serverDetails, sc.repoName, false)
 	if err != nil {
 		return err
 	}
+	// Strip "/simple" to get the correct upload endpoint for Twine.
+	trimmedUrl := strings.TrimSuffix(repoUrl.String(), "/simple")
 
 	// Configure Twine using the .pypirc file
-	return python.ConfigurePypirc(repoUrl.String(), sc.repoName, username, password)
+	return python.ConfigurePypirc(trimmedUrl, sc.repoName, username, password)
 }
 
 // configureNpmPnpm configures npm to use the Artifactory repository URL and sets authentication. Pnpm supports the same commands.
