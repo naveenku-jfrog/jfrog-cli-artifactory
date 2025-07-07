@@ -3,9 +3,11 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/jfrog/jfrog-cli-core/v2/artifactory/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/common/spec"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
+	"github.com/jfrog/jfrog-client-go/artifactory"
 	"github.com/jfrog/jfrog-client-go/lifecycle"
 	"github.com/jfrog/jfrog-client-go/lifecycle/services"
 	clientutils "github.com/jfrog/jfrog-client-go/utils"
@@ -90,12 +92,16 @@ func (rbd *ReleaseBundleRemoteDeleteCommand) Run() error {
 	if err != nil {
 		return err
 	}
+	artifactoryServiceManager, err := utils.CreateServiceManager(rbd.serverDetails, -1, 0, false)
+	if err != nil {
+		return err
+	}
 
-	return rbd.deleteRemote(servicesManager, rbDetails, queryParams)
+	return rbd.deleteRemote(servicesManager, rbDetails, queryParams, artifactoryServiceManager)
 }
 
 func (rbd *ReleaseBundleRemoteDeleteCommand) deleteRemote(servicesManager *lifecycle.LifecycleServicesManager,
-	rbDetails services.ReleaseBundleDetails, queryParams services.CommonOptionalQueryParams) error {
+	rbDetails services.ReleaseBundleDetails, queryParams services.CommonOptionalQueryParams, artifactoryServiceManager artifactory.ArtifactoryServicesManager) error {
 
 	confirm, err := rbd.confirmDelete()
 	if err != nil || !confirm {
@@ -109,7 +115,7 @@ func (rbd *ReleaseBundleRemoteDeleteCommand) deleteRemote(servicesManager *lifec
 		DryRun:                    rbd.dryRun,
 		MaxWaitMinutes:            rbd.maxWaitMinutes,
 		CommonOptionalQueryParams: queryParams,
-	})
+	}, artifactoryServiceManager)
 }
 
 func (rbd *ReleaseBundleRemoteDeleteCommand) distributionRulesEmpty() bool {
