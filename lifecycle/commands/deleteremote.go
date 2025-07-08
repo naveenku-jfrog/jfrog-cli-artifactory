@@ -3,6 +3,7 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/jfrog/gofrog/version"
 	"github.com/jfrog/jfrog-cli-core/v2/artifactory/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/common/spec"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
@@ -16,7 +17,10 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/log"
 )
 
-const avoidConfirmationMsg = "You can avoid this confirmation message by adding --quiet to the command."
+const (
+	avoidConfirmationMsg                           = "You can avoid this confirmation message by adding --quiet to the command."
+	minimumVersionForSupportingNewReleaseBundleApi = "7.63.2"
+)
 
 type ReleaseBundleRemoteDeleteCommand struct {
 	releaseBundleCmd
@@ -109,13 +113,14 @@ func (rbd *ReleaseBundleRemoteDeleteCommand) deleteRemote(servicesManager *lifec
 	}
 
 	aggregatedRules := rbd.getAggregatedDistRules()
+	newReleaseBundleApiSupported := rbd.NewReleaseBundleApiSupported(artifactoryServiceManager)
 
 	return servicesManager.RemoteDeleteReleaseBundle(rbDetails, services.ReleaseBundleRemoteDeleteParams{
 		DistributionRules:         aggregatedRules,
 		DryRun:                    rbd.dryRun,
 		MaxWaitMinutes:            rbd.maxWaitMinutes,
 		CommonOptionalQueryParams: queryParams,
-	}, artifactoryServiceManager)
+	}, newReleaseBundleApiSupported)
 }
 
 func (rbd *ReleaseBundleRemoteDeleteCommand) distributionRulesEmpty() bool {
@@ -162,4 +167,9 @@ func (rbd *ReleaseBundleRemoteDeleteCommand) getAggregatedDistRules() (aggregate
 		}
 	}
 	return
+}
+
+func (rbd *ReleaseBundleRemoteDeleteCommand) NewReleaseBundleApiSupported(artifactoryServiceManager artifactory.ArtifactoryServicesManager) bool {
+	artifactoryVersion, _ := artifactoryServiceManager.GetVersion()
+	return version.NewVersion(artifactoryVersion).AtLeast(minimumVersionForSupportingNewReleaseBundleApi)
 }
