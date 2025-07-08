@@ -113,7 +113,7 @@ func (rbd *ReleaseBundleRemoteDeleteCommand) deleteRemote(servicesManager *lifec
 	}
 
 	aggregatedRules := rbd.getAggregatedDistRules()
-	newReleaseBundleApiSupported := rbd.NewReleaseBundleApiSupported(artifactoryServiceManager)
+	newReleaseBundleApiSupported := rbd.IsNewReleaseBundleApiSupported(artifactoryServiceManager)
 
 	return servicesManager.RemoteDeleteReleaseBundle(rbDetails, services.ReleaseBundleRemoteDeleteParams{
 		DistributionRules:         aggregatedRules,
@@ -169,7 +169,7 @@ func (rbd *ReleaseBundleRemoteDeleteCommand) getAggregatedDistRules() (aggregate
 	return
 }
 
-func (rbd *ReleaseBundleRemoteDeleteCommand) NewReleaseBundleApiSupported(artifactoryServiceManager artifactory.ArtifactoryServicesManager) bool {
+func (rbd *ReleaseBundleRemoteDeleteCommand) IsNewReleaseBundleApiSupported(artifactoryServiceManager artifactory.ArtifactoryServicesManager) bool {
 	artifactoryVersion, _ := artifactoryServiceManager.GetVersion()
 	return version.NewVersion(artifactoryVersion).AtLeast(minimumVersionForSupportingNewReleaseBundleApi)
 }
