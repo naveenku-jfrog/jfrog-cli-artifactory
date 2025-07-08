@@ -153,6 +153,7 @@ const (
 	props                   = "props"
 	targetProps             = "target-props"
 	excludeProps            = "exclude-props"
+	repoOnly                = "repo-only"
 	failNoOp                = "fail-no-op"
 	threads                 = "threads"
 	syncDeletes             = "sync-deletes"
@@ -579,7 +580,7 @@ var commandFlags = map[string][]string{
 		url, user, password, accessToken, sshPassphrase, sshKeyPath, serverId, ClientCertPath,
 		ClientCertKeyPath, specFlag, specVars, exclusions, sortBy, sortOrder, limit, offset,
 		propsRecursive, build, includeDeps, excludeArtifacts, bundle, includeDirs, failNoOp, threads, archiveEntries, propsProps, propsExcludeProps,
-		InsecureTls, retries, retryWaitTime, Project,
+		InsecureTls, retries, retryWaitTime, Project, repoOnly,
 	},
 	BuildPublish: {
 		url, user, password, accessToken, sshPassphrase, sshKeyPath, serverId, buildUrl, bpDryRun,
@@ -901,6 +902,7 @@ var flagsMap = map[string]components.Flag{
 	propsRecursive:    components.NewBoolFlag(Recursive, "[Default: true] When false, artifacts inside sub-folders in Artifactory will not be affected.", components.WithBoolDefaultValueFalse()),
 	propsProps:        components.NewStringFlag(props, "[Optional] List of semicolon-separated(;) properties in the form of \"key1=value1;key2=value2;...\". Only artifacts with these properties are affected.", components.SetMandatoryFalse()),
 	propsExcludeProps: components.NewStringFlag(excludeProps, "[Optional] List of semicolon-separated(;) properties in the form of \"key1=value1;key2=value2;...\". Only artifacts without the specified properties are affected.", components.SetMandatoryFalse()),
+	repoOnly:          components.NewBoolFlag(repoOnly, "[Default: true] When false, artifacts inside sub-folders in Artifactory will be affected.", components.WithBoolDefaultValueFalse()),
 
 	// Build Publish and Append specific commands flags
 	buildUrl:          components.NewStringFlag(buildUrl, "[Optional] Can be used for setting the CI server build URL in the build-info.", components.SetMandatoryFalse()),
