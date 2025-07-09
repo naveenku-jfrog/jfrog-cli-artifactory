@@ -1082,7 +1082,7 @@ func setPropsCmd(c *components.Context) error {
 	if err != nil {
 		return err
 	}
-	propsCmd := generic.NewSetPropsCommand().SetPropsCommand(*cmd)
+	propsCmd := generic.NewSetPropsCommand().SetPropsCommand(*cmd).SetRepoOnly(c.GetBoolFlagValue("repo-only"))
 	propsCmd.SetRetries(retries).SetRetryWaitMilliSecs(retryWaitTime)
 	err = commands.Exec(propsCmd)
 	result := propsCmd.Result()
@@ -1102,7 +1102,7 @@ func deletePropsCmd(c *components.Context) error {
 	if err != nil {
 		return err
 	}
-	propsCmd := generic.NewDeletePropsCommand().DeletePropsCommand(*cmd)
+	propsCmd := generic.NewDeletePropsCommand().DeletePropsCommand(*cmd).SetRepoOnly(c.GetBoolFlagValue("repo-only"))
 	propsCmd.SetRetries(retries).SetRetryWaitMilliSecs(retryWaitTime)
 	err = commands.Exec(propsCmd)
 	result := propsCmd.Result()
@@ -1558,6 +1558,7 @@ func createDefaultPropertiesSpec(c *components.Context) (*spec.SpecFiles, error)
 		Exclusions(c.GetStringsArrFlagValue("exclusions")).
 		IncludeDirs(c.GetBoolFlagValue("include-dirs")).
 		ArchiveEntries(c.GetStringFlagValue("archive-entries")).
+		RepoOnly(c.GetBoolTFlagValue("repo-only")).
 		BuildSpec(), nil
 }
 
