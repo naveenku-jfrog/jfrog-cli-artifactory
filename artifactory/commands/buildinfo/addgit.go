@@ -163,7 +163,6 @@ func (config *BuildAddGitCommand) collectBuildIssues() ([]buildinfo.AffectedIssu
 	}
 
 	var foundIssues []buildinfo.AffectedIssue
-
 	logRegExp, err := createLogRegExpHandler(config.issuesConfig, &foundIssues)
 	if err != nil {
 		return nil, err
@@ -174,10 +173,6 @@ func (config *BuildAddGitCommand) collectBuildIssues() ([]buildinfo.AffectedIssu
 	err = utils.ParseGitLogFromLastBuild(config.issuesConfig.ServerDetails, config.buildConfiguration, gitDetails, logRegExp)
 	if err != nil {
 		return nil, err
-	}
-
-	if !config.issuesConfig.Aggregate && len(foundIssues) > 1 {
-		return foundIssues[:1], nil
 	}
 
 	return foundIssues, nil
