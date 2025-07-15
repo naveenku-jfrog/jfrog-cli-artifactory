@@ -174,7 +174,6 @@ func (config *BuildAddGitCommand) collectBuildIssues() ([]buildinfo.AffectedIssu
 	if err != nil {
 		return nil, err
 	}
-
 	return foundIssues, nil
 }
 
