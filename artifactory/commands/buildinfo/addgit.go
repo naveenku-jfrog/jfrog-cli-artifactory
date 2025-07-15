@@ -178,6 +178,11 @@ func (config *BuildAddGitCommand) collectBuildIssues() ([]buildinfo.AffectedIssu
 	if err != nil {
 		return nil, err
 	}
+
+	if !config.issuesConfig.Aggregate && len(foundIssues) > 1 {
+		return foundIssues[:1], nil
+	}
+
 	return foundIssues, nil
 }
 
