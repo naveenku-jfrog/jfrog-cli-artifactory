@@ -318,8 +318,10 @@ def buildPluginBinary(jdkToolName){
 
 def installAndSetJdk(String version) {
     def jdkPackage = "openjdk-${version}-jdk"
+    sh "echo installing jdk : '${jdkPackage}'"
 
     sh "apt-get update -y"
+    sh "echo Point 1"
     sh "apt-get install -y ${jdkPackage}"
 
     def versionString = version == "8" ? "1.8" : version
