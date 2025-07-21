@@ -162,13 +162,13 @@ def selectPlugins(Map reposMap) {
 }
 
 def installJava() {
-    sh 'sudo apt-get update -y'
-    sh 'sudo apt-get install -y openjdk-8-jdk'
+    sh 'apt-get update -y'
+    sh 'apt-get install -y openjdk-8-jdk'
     sh 'java -version'
 }
 
 def installMaven() {
-    sh 'sudo apt-get install -y maven'
+    sh 'apt-get install -y maven'
     sh 'mvn -v'
 }
 
