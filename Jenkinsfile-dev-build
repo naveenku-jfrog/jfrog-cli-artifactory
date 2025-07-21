@@ -15,8 +15,8 @@ node("docker-ubuntu20-xlarge") {
                 }
 
                 def reposMap = [
-                    "teamcity-artifactory-plugin": [url: "https://github.com/jfrog/teamcity-artifactory-plugin.git", type: "maven", execute: "false"],
-                    "bamboo-artifactory-plugin": [url: "https://github.com/jfrog/bamboo-artifactory-plugin.git", type: "maven", execute: "false"],
+                    "teamcity-artifactory-plugin": [url: "https://github.com/jfrog/teamcity-artifactory-plugin.git", type: "maven", jdk:8, execute: "false"],
+                    "bamboo-artifactory-plugin": [url: "https://github.com/jfrog/bamboo-artifactory-plugin.git", type: "maven", jdk:11, execute: "false"],
                     "artifactory-maven-plugin": [url: "https://github.com/jfrog/artifactory-maven-plugin.git", type: "maven", execute: "false"],
                     "jfrog-plugin": [url: "https://github.com/jenkinsci/jfrog-plugin.git", type: "maven", execute: "false"],
                     "artifactory-client-java": [url: "https://github.com/jfrog/artifactory-client-java.git", type: "gradle", execute: "false"],
@@ -285,8 +285,7 @@ def buildAndUploadByType(String repoName, Map details) {
             sh "git clone ${details.url} ."
             switch (details.type) {
                 case "maven":
-                    sh "mvn clean install -DskipTests"
-                    // Add logic to find and upload the binary
+                    buildPluginBinary(details.jdk)
                     break
                 case "gradle":
                     sh "./gradlew clean build -x test"
@@ -303,5 +302,14 @@ def buildAndUploadByType(String repoName, Map details) {
     } catch(e) {
         notifyFailure("Build and Upload ${repoName}", e)
         throw e
+    }
+}
+
+def buildPluginBinary(jdkToolName){
+    def jdk = tool name: jdkToolName
+
+    withEnv(["JAVA_HOME=${jdk}", "PATH+JAVA=${jdk}/bin"]) {
+        sh 'java -version'
+        sh 'mvn clean install -DskipTests'
     }
 }
