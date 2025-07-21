@@ -90,17 +90,21 @@ node("docker-ubuntu20-xlarge") {
                     }
                     stage('Select Plugins for execution'){
                         try  {
+                        script{
                             selectPlugins()
+                            }
                         }
                         catch (e) {
                             notifyFailure('Select Plugins for execution', e)
                             throw e
                         }
                     }
+                    script{
                     ${reposMap}.each { repoName, details ->
                         println "Processing repository: ${repoName}"
                         println "  URL: ${details.url}"
                         println "  Type: ${details.type}"
+                    }
                     }
                     buildAndScanBinary(repoUrls)
                 }
