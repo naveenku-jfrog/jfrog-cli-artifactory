@@ -186,7 +186,7 @@ def getCliVersion(exePath) {
 }
 
 def buildAndScanBinary(reposMap) {
-    configRepo21()
+    //configRepo21()
     try {
         sh "mkdir -p '${zippedBinariesDir}'"
         buildAndScanBinaries(reposMap)
