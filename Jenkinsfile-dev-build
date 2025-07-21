@@ -97,6 +97,11 @@ node("docker-ubuntu20-xlarge") {
                             throw e
                         }
                     }
+                    reposMap.each { repoName, details ->
+                        println "Processing repository: ${repoName}"
+                        println "  URL: ${details.url}"
+                        println "  Type: ${details.type}"
+                    }
                     buildAndScanBinary(repoUrls)
                 }
             }
@@ -140,12 +145,12 @@ def notifyFailure(String stageName, error) {
 
 def selectPlugins() {
     if (pluginName == "") {
-        repoMap.each { repo, details ->
+        reposMap.each { repo, details ->
             details.execute = "true"
         }
     } else {
-        if (repoMap.containsKey(pluginName)) {
-            repoMap[pluginName].execute = "true"
+        if (reposMap.containsKey(pluginName)) {
+            reposMap[pluginName].execute = "true"
         }
     }
 }
