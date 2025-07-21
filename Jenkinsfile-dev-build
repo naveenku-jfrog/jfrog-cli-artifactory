@@ -189,7 +189,7 @@ def buildAndScanBinary(reposMap) {
     //configRepo21()
     try {
         sh "mkdir -p '${zippedBinariesDir}'"
-        sh "Successfully executed mkdir"
+        sh "echo Successfully executed mkdir"
         buildAndScanBinaries(reposMap)
     } finally {
         cleanupRepo21()
@@ -208,13 +208,11 @@ def configRepo21() {
 }
 
 def cleanupRepo21() {
-    sh """#!/bin/bash
-        $builderPath c rm repo21
-    """
+    sh "${builderPath} c rm repo21 --quiet"
 }
 
 def buildAndScanBinaries(reposMap) {
-    sh "Inside buildAndScanBinaries 1"
+    sh "echo Inside buildAndScanBinaries 1"
     for (int i = 0; i < reposMap.size(); i++) {
         sh "Inside buildAndScanBinaries for loop"
         def currentRepo = reposMap[i]
@@ -232,7 +230,7 @@ def buildAndScanBinaries(reposMap) {
         }
         scanBinary()
     }
-    sh "Inside buildAndScanBinaries 2"
+    sh "echo Inside buildAndScanBinaries 2"
 }
 
 def uploadBinaryToJfrogRepo21(pkg, fileName) {
