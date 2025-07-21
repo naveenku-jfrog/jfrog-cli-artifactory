@@ -201,10 +201,8 @@ def configRepo21() {
         usernamePassword(credentialsId: 'repo21', usernameVariable: 'REPO21_USER', passwordVariable: 'REPO21_PASSWORD'),
         string(credentialsId: 'repo21-url', variable: 'REPO21_URL')
     ]) {
-        sh """#!/bin/bash
-            $builderPath c add repo21 --url=$REPO21_URL --user=$REPO21_USER --password=$REPO21_PASSWORD --overwrite
-            $builderPath c use repo21
-        """
+        sh "${builderPath} c add repo21 --url=${REPO21_URL} --user=${REPO21_USER} --password=${REPO21_PASSWORD} --overwrite"
+        sh "${builderPath} c use repo21"
     }
 }
 
