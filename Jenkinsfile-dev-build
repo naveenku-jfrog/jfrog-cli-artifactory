@@ -317,14 +317,14 @@ def buildPluginBinary(jdkToolName){
 }
 
 def installAndSetJdk(String version) {
-    def javaHome = sh(script: "update-alternatives --display java | grep 'openjdk-${version}' | head -n1 | awk '{print \$NF}' | sed 's|/bin/java||' || true", returnStdout: true).trim()
+    def javaHome = sh(script: "update-alternatives --display java | grep 'openjdk-${version}' | head -n1 | awk '{print \\$NF}' | sed 's|/bin/java||' || true", returnStdout: true).trim()
 
     if (javaHome.isEmpty()) {
         println "JDK ${version} not found. Installing..."
         def jdkPackage = "openjdk-${version}-jdk"
         sh "apt-get update -y"
         sh "apt-get install -y ${jdkPackage}"
-        javaHome = sh(script: "update-alternatives --display java | grep 'openjdk-${version}' | head -n1 | awk '{print \$NF}' | sed 's|/bin/java||'", returnStdout: true).trim()
+        javaHome = sh(script: "update-alternatives --display java | grep 'openjdk-${version}' | head -n1 | awk '{print \\$NF}' | sed 's|/bin/java||'", returnStdout: true).trim()
     } else {
         println "JDK ${version} is already installed at: ${javaHome}"
     }
