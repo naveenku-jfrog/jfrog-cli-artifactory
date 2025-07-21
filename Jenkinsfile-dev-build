@@ -102,10 +102,18 @@ node("docker-ubuntu20-xlarge") {
                     stage('Installing Tools'){
                         script {
                             installJava()
-                            installMaven()
+                            def repoTypes = [] as Set
+                            reposMap.each { repoName, details ->
+                                if (details.execute == "true") {
+                                    repoTypes.add(details.type)
+                                }
+                            }
+                            if ("maven" in repoTypes) {
+                                installMaven()
+                            }
                         }
                     }
-                    buildAndScanBinary(repoUrls)
+                    buildAndScanBinary(reposMap)
                 }
             }
         }
@@ -177,11 +185,11 @@ def getCliVersion(exePath) {
     return version
 }
 
-def buildAndScanBinary(repoUrls) {
+def buildAndScanBinary(reposMap) {
     configRepo21()
     try {
         sh "mkdir -p '${zippedBinariesDir}'"
-        buildAndScanBinaries(repoUrls)
+        buildAndScanBinaries(reposMap)
     } finally {
         cleanupRepo21()
     }
@@ -206,16 +214,19 @@ def cleanupRepo21() {
     """
 }
 
-def buildAndScanBinaries(repoUrls) {
-    for (int i = 0; i < repoUrls.size(); i++) {
-        def currentBuild = repoUrls[i]
+def buildAndScanBinaries(reposMap) {
+    for (int i = 0; i < reposMap.size(); i++) {
+        def currentRepo = reposMap[i]
+        if(currentRepo.execute=="false"){
+            continue
+        }
         try  {
-            stage("Build and upload ${currentBuild.pkg}") {
-                buildAndUpload(currentBuild.goos, currentBuild.goarch, currentBuild.pkg, currentBuild.fileExtension)
+            stage("Build and upload ${currentRepo.url}") {
+                buildAndUpload(currentRepo)
             }
         }
         catch (e) {
-            notifyFailure('Build and upload ${currentBuild.pkg}', e)
+            notifyFailure('Build and upload ${currentRepo.url}', e)
             throw e
         }
         scanBinary()
