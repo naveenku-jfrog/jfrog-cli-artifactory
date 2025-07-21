@@ -211,21 +211,23 @@ def cleanupRepo21() {
     sh "${builderPath} c rm repo21 --quiet"
 }
 
-def buildAndScanBinaries(reposMap) {
+def buildAndScanBinaries(Map reposMap) {
     sh "echo Inside buildAndScanBinaries 1"
-    for (int i = 0; i < reposMap.size(); i++) {
-        sh "echo Inside buildAndScanBinaries for loop"
-        def currentRepo = reposMap[i]
-        if(currentRepo.execute=="false"){
-            continue
+
+    reposMap.each { repoName, details ->
+        if (details.execute == "false") {
+            sh "echo Inside buildAndScanBinaries execute false condition"
+            sh "echo 'Skipping ${repoName}'"
+            return
         }
-        try  {
-            stage("Build and upload ${currentRepo.url}") {
-                buildAndUpload(currentRepo)
+
+        try {
+            stage("Build and upload ${repoName}") {
+                sh "echo Inside buildAndScanBinaries execute true condition for ${repoName}"
+                buildAndUpload(details)
             }
-        }
-        catch (e) {
-            notifyFailure('Build and upload ${currentRepo.url}', e)
+        } catch (e) {
+            notifyFailure("Build and upload ${repoName}", e)
             throw e
         }
         scanBinary()
