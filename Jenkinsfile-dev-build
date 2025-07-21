@@ -319,10 +319,9 @@ def buildPluginBinary(jdkToolName){
 def installAndSetJdk(String version) {
     def jdkPackage = "openjdk-${version}-jdk"
 
-    sh "sudo apt-get update -y"
-    sh "sudo apt-get install -y ${jdkPackage}"
+    sh "apt-get update -y"
+    sh "apt-get install -y ${jdkPackage}"
 
-    // Use a Linux-compatible command to find the JAVA_HOME path
     def javaHome = sh(script: "update-alternatives --display java | grep 'openjdk-${version}' | head -n1 | awk '{print $NF}' | sed 's|/bin/java||'", returnStdout: true).trim()
 
     if (javaHome.isEmpty()) {
