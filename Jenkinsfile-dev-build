@@ -77,6 +77,8 @@ node("docker-ubuntu20-xlarge") {
                                 def downloadUrl = "https://releases.jfrog.io/artifactory/jfrog-cli/v2/${version}/${binaryName}/jf"
                                 sh "curl -L '${downloadUrl}' -o '${executableName}'"
                                 sh "chmod +x ${executableName}"
+                                sh "pwd"
+                                sh "ls -la"
                             }
                         }
                         catch (e) {
