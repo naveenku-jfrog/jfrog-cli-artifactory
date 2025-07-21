@@ -15,8 +15,8 @@ node("docker-ubuntu20-xlarge") {
                 }
 
                 def reposMap = [
-                    "teamcity-artifactory-plugin": [url: "https://github.com/jfrog/teamcity-artifactory-plugin.git", type: "maven", jdk:8, execute: "false"],
-                    "bamboo-artifactory-plugin": [url: "https://github.com/jfrog/bamboo-artifactory-plugin.git", type: "maven", jdk:11, execute: "false"],
+                    "teamcity-artifactory-plugin": [url: "https://github.com/jfrog/teamcity-artifactory-plugin.git", type: "maven", jdk:"8", execute: "false"],
+                    "bamboo-artifactory-plugin": [url: "https://github.com/jfrog/bamboo-artifactory-plugin.git", type: "maven", jdk:"11", execute: "false"],
                     "artifactory-maven-plugin": [url: "https://github.com/jfrog/artifactory-maven-plugin.git", type: "maven", execute: "false"],
                     "jfrog-plugin": [url: "https://github.com/jenkinsci/jfrog-plugin.git", type: "maven", execute: "false"],
                     "artifactory-client-java": [url: "https://github.com/jfrog/artifactory-client-java.git", type: "gradle", execute: "false"],
