@@ -100,7 +100,11 @@ node("docker-ubuntu20-xlarge") {
                         }
                     }
                     stage('Installing Tools'){
-                        installTools(reposMap)
+                        steps {
+                            script {
+                                installTools(reposMap)
+                            }
+                        }
                     }
                     buildAndScanBinary(repoUrls)
                 }
@@ -158,21 +162,17 @@ def selectPlugins(Map reposMap) {
     }
 }
 
-def installTools(Map reposMap) {
+def installTools() {
 
     stage('Install JDK 8') {
-        steps {
-            sh 'sudo apt-get update -y'
-            sh 'sudo apt-get install -y openjdk-8-jdk'
-            sh 'java -version'
-        }
+        sh 'sudo apt-get update -y'
+        sh 'sudo apt-get install -y openjdk-8-jdk'
+        sh 'java -version'
     }
 
     stage('Install Maven') {
-        steps {
-            sh 'sudo apt-get install -y maven'
-            sh 'mvn -v'
-        }
+        sh 'sudo apt-get install -y maven'
+        sh 'mvn -v'
     }
 }
 
