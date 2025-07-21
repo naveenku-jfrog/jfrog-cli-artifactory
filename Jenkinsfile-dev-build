@@ -88,15 +88,6 @@ node("docker-ubuntu20-xlarge") {
                             throw e
                         }
                     }
-                    stage('Setting JF-Config') {
-                        try  {
-                            setJfConfigure()
-                        }
-                        catch (e) {
-                            notifyFailure('Setting JF-Config', e)
-                            throw e
-                        }
-                    }
                     stage('Select Plugins for execution'){
                         try  {
                             selectPlugins()
@@ -145,10 +136,6 @@ def notifyFailure(String stageName, error) {
         color: 'danger',
         message: message
     )
-}
-
-def setJfConfigure() {
-     sh "$builderPath go-config --repo-deploy ${rtDeployRepoName} --repo-resolve ${rtResolveRepoName} --server-id-deploy ${repoDeployServerId} --server-id-resolve ${repoResolveServerId}"
 }
 
 def selectPlugins() {
