@@ -1,0 +1,259 @@
+node("docker-ubuntu20-xlarge") {
+    properties([
+        pipelineTriggers([
+            cron('H 0 * * *')
+        ])
+    ])
+    try {
+        stage('Setup Environment and Tools') {
+            def goRoot = tool name: 'go-1.23.9', type: 'go'
+            withEnv(["GOROOT=${goRoot}", "PATH+GO=${goRoot}/bin"]) {
+                withCredentials([string(credentialsId: 'repo21-url', variable: 'REPO21_URL')]) {
+                    echo "${REPO21_URL}"
+                    def repo21Name = "${REPO21_URL}".substring(8, "${REPO21_URL}".length())
+                    env.REPO_NAME_21 = "$repo21Name"
+                }
+
+                def reposMap = [
+                    "teamcity-artifactory-plugin": [url: "https://github.com/jfrog/teamcity-artifactory-plugin.git", type: "maven", execute: "false"],
+                    "bamboo-artifactory-plugin": [url: "https://github.com/jfrog/bamboo-artifactory-plugin.git", type: "maven", execute: "false"],
+                    "artifactory-maven-plugin": [url: "https://github.com/jfrog/artifactory-maven-plugin.git", type: "maven", execute: "false"],
+                    "jfrog-plugin": [url: "https://github.com/jenkinsci/jfrog-plugin.git", type: "maven", execute: "false"],
+                    "artifactory-client-java": [url: "https://github.com/jfrog/artifactory-client-java.git", type: "gradle", execute: "false"],
+                    "bamboo-jfrog-plugin": [url: "https://github.com/jfrog/bamboo-jfrog-plugin.git", type: "gradle", execute: "false"],
+                    "artifactory-gradle-plugin": [url: "https://github.com/jfrog/artifactory-gradle-plugin.git", type: "gradle", execute: "false"],
+                    "file-specs-java": [url: "https://github.com/jfrog/file-specs-java.git", type: "gradle", execute: "false"],
+                    "jfrog-testing-infra": [url: "https://github.com/jfrog/jfrog-testing-infra.git", type: "gradle", execute: "false"],
+                    "jfrog-azure-devops-extension": [url: "https://github.com/jfrog/jfrog-azure-devops-extension.git", type: "npm", execute: "false"],
+                    "cocoapods-art": [url: "https://github.com/jfrog/cocoapods-art.git", type: "ruby", execute: "false"],
+                    "jfrog-setup-cli": [url: "https://bitbucket.org/jfrog/jfrog-setup-cli.git", type: "docker", execute: "false"]
+                ]
+
+                buildStatus = 'SUCCESS'
+                repo = 'jfrog-cli'
+                formattedDate = new Date().format('yyyy-MM-dd')
+                env.CI = true
+                env.JFROG_CLI_LOG_LEVEL = "DEBUG"
+                dir('temp') {
+                    sh "cat /etc/lsb-release"
+                    cliWorkspace = pwd()
+                    sh "echo cliWorkspace=$cliWorkspace"
+                    builderDir = "${cliExecutableName}-builder/"
+                    sh "mkdir $builderDir"
+                    builderPath = "${cliWorkspace}/${builderDir}${cliExecutableName}"
+                    jfrogCliRepoDir = "${cliWorkspace}/${repo}/"
+                    zippedBinariesDir = "${jfrogCliRepoDir}zippedBinaries/"
+                    rtDeployRepoName = params.JFROG_RT_DEPLOY_REPO_NAME
+                    rtResolveRepoName = params.JFROG_RT_RESOLVE_REPO_NAME
+                    repoDeployServerId = params.JFROG_CLI_DEPLOY_SERVER_ID
+                    repoResolveServerId = params.JFROG_CLI_RESOLVE_SERVER_ID
+                    jfrogCLITargetRepoName = params.REPO_FOR_CLI_DEV_UPLOAD
+                    pluginName = params.PLUGINS_NAME
+                    slackChannelName =
+                    watchName = "ecosystem-watch"
+                    stage('Clone Source Repo') {
+                        try  {
+                            dir("${cliWorkspace}") {
+                                sh "git clone ${devRepo}"
+                                dir("${repo}") {
+                                    sh "git checkout ${devBranch}"
+                                }
+                            }
+                        }
+                        catch (e) {
+                            notifyFailure('Clone Source Repo', e)
+                            throw e
+                        }
+                    }
+                    stage('Build JFrog CLI') {
+                        try  {
+                            sh 'go version'
+                            dir("$jfrogCliRepoDir") {
+                                sh "build/build.sh $cliExecutableName"
+                            }
+                            sh "mv $jfrogCliRepoDir/$cliExecutableName $builderDir"
+                            version = getCliVersion(builderPath)
+                            print "CLI version: $version"
+                        }
+                        catch (e) {
+                            notifyFailure('Build JFrog CLI', e)
+                            throw e
+                        }
+                    }
+                    stage('Setting JF-Config') {
+                        try  {
+                            setJfConfigure()
+                        }
+                        catch (e) {
+                            notifyFailure('Setting JF-Config', e)
+                            throw e
+                        }
+                    }
+                    stage('Select Plugins for execution'){
+                        try  {
+                            selectPlugins()
+                        }
+                        catch (e) {
+                            notifyFailure('Select Plugins for execution', e)
+                            throw e
+                        }
+                    }
+                    buildAndScanBinary(repoUrls)
+                }
+            }
+        }
+    } catch (e) {
+        echo "ERROR: Pipeline failed with exception: ${e}"
+        buildStatus = 'FAILURE'
+        throw e
+    }
+    finally {
+        stage('Send Notifications') {
+            message = ''
+            if (buildStatus == 'SUCCESS') {
+                message = "Dev Build Jenkins Pipeline for Jfrog-CLI has successfully completed.\n<${env.BUILD_URL}|View Build>"
+                slackSend(channel: "#${slackChannelName}", message: message, color: 'good')
+            } else {
+                message = """@here Dev Build Jenkins Pipeline has a problem.
+                    *Status* : *${buildStatus}*.
+                    *Build* : <${env.BUILD_URL}|${env.JOB_NAME} #${env.BUILD_NUMBER}>
+                   """
+                slackSend(channel: "#${slackChannelName}", message: message, color: 'danger')
+            }
+            echo "Final notification message would be: \n${message}"
+        }
+    }
+}
+
+def notifyFailure(String stageName, error) {
+    def message = """@here :x: *Build FAILED!*
+    *Job:* `${env.JOB_NAME}` #${env.BUILD_NUMBER}
+    *Failed Stage:* `${stageName}`
+    *Error:* `${error.message.trim()}`
+    *<${env.BUILD_URL}|Open Build Log>*"""
+    echo "Sending failure notification for stage: ${stageName}"
+    slackSend(
+        channel: "#${slackChannelName}",
+        color: 'danger',
+        message: message
+    )
+}
+
+def setJfConfigure() {
+    sh """#!/bin/bash
+        $builderPath go-config --repo-deploy ${rtDeployRepoName} --repo-resolve ${rtResolveRepoName} --server-id-deploy ${repoDeployServerId} --server-id-resolve ${repoResolveServerId}
+     """
+}
+
+def selectPlugins() {
+    if (pluginName == "") {
+        repoMap.each { repo, details ->
+            details.execute = "true"
+        }
+    } else {
+        if (repoMap.containsKey(pluginName)) {
+            repoMap[pluginName].execute = "true"
+        }
+    }
+}
+
+def getCliVersion(exePath) {
+    version = sh(script: "$exePath -v | tr -d 'jfrog version' | tr -d '\n'", returnStdout: true)
+    return version
+}
+
+def buildAndScanBinary(repoUrls) {
+    configRepo21()
+    try {
+        sh "mkdir -p '${zippedBinariesDir}'"
+        buildAndScanBinaries(repoUrls)
+    } finally {
+        cleanupRepo21()
+    }
+}
+
+def configRepo21() {
+    withCredentials([
+        // jfrog-ignore
+        usernamePassword(credentialsId: 'repo21', usernameVariable: 'REPO21_USER', passwordVariable: 'REPO21_PASSWORD'),
+        string(credentialsId: 'repo21-url', variable: 'REPO21_URL')
+    ]) {
+        sh """#!/bin/bash
+            $builderPath c add repo21 --url=$REPO21_URL --user=$REPO21_USER --password=$REPO21_PASSWORD --overwrite
+            $builderPath c use repo21
+        """
+    }
+}
+
+def cleanupRepo21() {
+    sh """#!/bin/bash
+        $builderPath c rm repo21
+    """
+}
+
+def buildAndScanBinaries(repoUrls) {
+    for (int i = 0; i < repoUrls.size(); i++) {
+        def currentBuild = repoUrls[i]
+        try  {
+            stage("Build and upload ${currentBuild.pkg}") {
+                buildAndUpload(currentBuild.goos, currentBuild.goarch, currentBuild.pkg, currentBuild.fileExtension)
+            }
+        }
+        catch (e) {
+            notifyFailure('Build and upload ${currentBuild.pkg}', e)
+            throw e
+        }
+        scanBinary()
+    }
+}
+
+def uploadBinaryToJfrogRepo21(pkg, fileName) {
+    sh """#!/bin/bash
+        set -e
+        $builderPath rt u ${jfrogCliRepoDir}/binaries/${pkg}/${fileName} ${jfrogCLITargetRepoName}/plugins/dev/${formattedDate}/$identifier/$version/$pkg/ --fail-no-op --flat
+        echo Uploaded the binary here: ${jfrogCLITargetRepoName}/plugins/dev/${formattedDate}/$identifier/$version/$pkg/
+    """
+}
+
+def scanBinary() {
+    try  {
+        stage("Scanning Binaries under watch ${watchName}"){
+            dir("${zippedBinariesDir}"){
+                sh "'${builderPath}' scan '**/*.zip' --ant=true --watches ${watchName} --format=simple-json"
+            }
+        }
+     }
+    catch (e) {
+        notifyFailure('Scanning Binaries under watch ${watchName}', e)
+        throw e
+    }
+}
+
+def build(goos, goarch, pkg, fileName) {
+    dir("${jfrogCliRepoDir}") {
+        script {
+            def zipName = "${pkg}.zip"
+            def sourceDirToZip = "./binaries/${pkg}/"
+
+            withEnv(["GOOS=${goos}", "GOARCH=${goarch}"]) {
+                echo "Building for OS: ${goos}, Arch: ${goarch}"
+                sh "./build/build.sh ./binaries/${pkg}/$fileName"
+            }
+            echo "Zipping the output..."
+            sh "ls -la binaries/${pkg}/$fileName"
+            zip(
+                zipFile: zipName,
+                dir: "binaries/${pkg}/"
+            )
+
+            sh "mv ${zipName} ${zippedBinariesDir}"
+        }
+    }
+}
+
+def buildAndUpload(goos, goarch, pkg, fileExtension) {
+    def extension = fileExtension == null ? '': fileExtension
+    def fileName = "$cliExecutableName$fileExtension"
+    build(goos, goarch, pkg, fileName)
+    uploadBinaryToJfrogRepo21(pkg, fileName)
+}
