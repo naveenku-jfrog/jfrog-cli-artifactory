@@ -100,11 +100,9 @@ node("docker-ubuntu20-xlarge") {
                         }
                     }
                     stage('Installing Tools'){
-                        steps {
-                            script {
-                                installJava()
-                                installMaven()
-                            }
+                        script {
+                            installJava()
+                            installMaven()
                         }
                     }
                     buildAndScanBinary(repoUrls)
