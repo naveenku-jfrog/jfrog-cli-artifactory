@@ -52,39 +52,32 @@ node("docker-ubuntu20-xlarge") {
                     pluginName = params.PLUGINS_NAME
                     slackChannelName = "ecosytem-plugins-dev-build-notifications"
                     watchName = "ecosystem-watch"
-                    stage('Download JFrog CLI') {
-                        try {
-                         dir("${builderDir}") {
-                            script {
-                                def os = sh(script: 'uname -s', returnStdout: true).trim().toLowerCase()
-                                if (os == "darwin") {
-                                    os = "mac"
+                    stage('Clone Source Repo') {
+                        try  {
+                            dir("${cliWorkspace}") {
+                                sh "git clone https://github.com/jfrog/jfrog-cli.git"
+                                dir("${repo}") {
+                                    sh "git checkout dev"
                                 }
-                                def arch = sh(script: 'uname -m', returnStdout: true).trim().toLowerCase()
-                                if (arch == "x86_64") {
-                                    arch = "amd64"
-                                }
-
-                                def latestTag = sh(script: 'curl -s https://api.github.com/repos/jfrog/jfrog-cli/releases/latest | jq -r .tag_name', returnStdout: true).trim()
-                                def version = latestTag.replace("v", "")
-
-                                def binaryName = "jfrog-cli-${os}-${arch}"
-                                def executableName = "jfrog"
-                                if (os == "windows") {
-                                    binaryName += ".exe"
-                                    executableName += ".exe"
-                                }
-
-                                def downloadUrl = "https://releases.jfrog.io/artifactory/jfrog-cli/v2/${version}/${binaryName}/jf"
-                                sh "curl -L '${downloadUrl}' -o '${executableName}'"
-                                sh "chmod +x ${executableName}"
-                                sh "pwd"
-                                sh "ls -la"
                             }
-                           }
                         }
                         catch (e) {
-                            notifyFailure('Download JFrog CLI', e)
+                            notifyFailure('Clone Source Repo', e)
+                            throw e
+                        }
+                    }
+                    stage('Build JFrog CLI') {
+                        try  {
+                            sh 'go version'
+                            dir("$jfrogCliRepoDir") {
+                                sh "build/build.sh $cliExecutableName"
+                            }
+                            sh "mv $jfrogCliRepoDir/$cliExecutableName $builderDir"
+                            version = getCliVersion(builderPath)
+                            print "CLI version: $version"
+                        }
+                        catch (e) {
+                            notifyFailure('Build JFrog CLI', e)
                             throw e
                         }
                     }
