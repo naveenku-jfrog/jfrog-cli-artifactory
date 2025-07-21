@@ -149,6 +149,12 @@ def notifyFailure(String stageName, error) {
 }
 
 def selectPlugins(Map reposMap) {
+    def buildCauses = currentBuild.getBuildCauses()
+
+    echo "Build was triggered by: ${buildCauses}"
+
+    def timerCause = buildCauses.find { it instanceof hudson.triggers.TimerTrigger$TimerTriggerCause }
+
     if (pluginName == "") {
         reposMap.each { repo, details ->
             details.execute = "true"
