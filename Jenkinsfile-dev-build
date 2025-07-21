@@ -50,7 +50,7 @@ node("docker-ubuntu20-xlarge") {
                     repoResolveServerId = params.JFROG_CLI_RESOLVE_SERVER_ID
                     jfrogCLITargetRepoName = params.REPO_FOR_CLI_DEV_UPLOAD
                     pluginName = params.PLUGINS_NAME
-                    slackChannelName =
+                    slackChannelName = "ecosytem-plugins-dev-build-notifications"
                     watchName = "ecosystem-watch"
                     stage('Download JFrog CLI') {
                         try {
@@ -68,7 +68,7 @@ node("docker-ubuntu20-xlarge") {
                                 def version = latestTag.replace("v", "")
 
                                 def binaryName = "jfrog-cli-${os}-${arch}"
-                                def executableName = "jf"
+                                def executableName = "jfrog"
                                 if (os == "windows") {
                                     binaryName += ".exe"
                                     executableName += ".exe"
