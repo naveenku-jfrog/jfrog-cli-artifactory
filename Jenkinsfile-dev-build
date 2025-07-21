@@ -15,7 +15,7 @@ node("docker-ubuntu20-xlarge") {
                 }
 
                 def reposMap = [
-                   /* "teamcity-artifactory-plugin": [url: "https://github.com/jfrog/teamcity-artifactory-plugin.git", type: "maven", jdk:"8", execute: "false"],*/
+                   "teamcity-artifactory-plugin": [url: "https://github.com/jfrog/teamcity-artifactory-plugin.git", type: "maven", jdk:"8", execute: "false"],
                     "bamboo-artifactory-plugin": [url: "https://github.com/jfrog/bamboo-artifactory-plugin.git", type: "maven", jdk:"11", execute: "false"]
                    /* "artifactory-maven-plugin": [url: "https://github.com/jfrog/artifactory-maven-plugin.git", type: "maven", execute: "false"],
                     "jfrog-plugin": [url: "https://github.com/jenkinsci/jfrog-plugin.git", type: "maven", execute: "false"],
@@ -330,6 +330,15 @@ def buildPluginBinary(repoName, details){
             sh 'echo "--- Using JDK 11 ---"'
             sh 'java -version'
             sh 'mvn clean install -DskipTests'
+            def zipFileName = "bamboo-artifactory-plugin.zip"
+
+            echo "Zipping contents of the 'target' directory..."
+
+            zip(zipFile: 'bamboo-artifactory-plugin.zip', dir: 'target', glob: '*.jar')
+
+            echo "Successfully created ${zipFileName}"
+            sh "ls -la ${zipFileName}"
+            sh "mv ${zipFileName} ${zippedBinariesDir}"
         }
     }
 }
