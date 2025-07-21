@@ -322,34 +322,14 @@ def buildPluginBinary(repoName, details){
         sh "ls -la ${zipFileName}"
         sh "mv ${zipFileName} ${zippedBinariesDir}"
     }else if(repoName=="bamboo-artifactory-plugin"){
-        def jdkHome = installAndSetJdk('11')
+        sh 'apt-get update -y'
+        sh 'apt-get install -y openjdk-11-jdk'
+        sh 'java -version'
+        def jdkHome = '/usr/lib/jvm/java-11-openjdk-amd64'
         withEnv(["JAVA_HOME=${jdkHome}", "PATH+JAVA=${jdkHome}/bin"]) {
             sh 'echo "--- Using JDK 11 ---"'
             sh 'java -version'
             sh 'mvn clean install -DskipTests'
         }
     }
-}
-
-def installAndSetJdk(String version) {
-    sh "echo Point 1"
-    def javaHome = sh(script: "update-alternatives --display java | grep 'openjdk-${version}' | head -n1 | awk '{print \\$NF}' | sed 's|/bin/java||' || true", returnStdout: true).trim()
-
-    if (javaHome.isEmpty()) {
-        sh "echo Point 2"
-        println "JDK ${version} not found. Installing..."
-        def jdkPackage = "openjdk-${version}-jdk"
-        sh "apt-get update -y"
-        sh "apt-get install -y ${jdkPackage}"
-        javaHome = sh(script: "update-alternatives --display java | grep 'openjdk-${version}' | head -n1 | awk '{print \\$NF}' | sed 's|/bin/java||'", returnStdout: true).trim()
-    } else {
-        println "JDK ${version} is already installed at: ${javaHome}"
-    }
-    sh "echo Point 3"
-    if (javaHome.isEmpty()) {
-        error "Could not determine JAVA_HOME for JDK ${version} even after attempting installation."
-    }
-    sh "echo Point 4"
-
-    return javaHome
 }
