@@ -154,12 +154,13 @@ def selectPlugins(Map reposMap) {
     echo "Build was triggered by: ${buildCauses}"
 
     def timerCause = buildCauses.find { it instanceof hudson.triggers.TimerTrigger$TimerTriggerCause }
-
-    if (pluginName == "") {
+    if (timerCause) {
+        echo "timerCause section"
         reposMap.each { repo, details ->
             details.execute = "true"
         }
     } else {
+        echo "Manual section"
         if (reposMap.containsKey(pluginName)) {
             reposMap[pluginName].execute = "true"
         }
