@@ -214,7 +214,7 @@ def cleanupRepo21() {
 def buildAndScanBinaries(reposMap) {
     sh "echo Inside buildAndScanBinaries 1"
     for (int i = 0; i < reposMap.size(); i++) {
-        sh "Inside buildAndScanBinaries for loop"
+        sh "echo Inside buildAndScanBinaries for loop"
         def currentRepo = reposMap[i]
         if(currentRepo.execute=="false"){
             continue
