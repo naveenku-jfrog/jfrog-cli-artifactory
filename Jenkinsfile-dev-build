@@ -104,6 +104,7 @@ node("docker-ubuntu20-xlarge") {
                         println "Processing repository: ${repoName}"
                         println "  URL: ${details.url}"
                         println "  Type: ${details.type}"
+                        println "  Type: ${details.execute}"
                     }
                     }
                     buildAndScanBinary(repoUrls)
