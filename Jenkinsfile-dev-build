@@ -307,7 +307,7 @@ def buildAndUploadByType(String repoName, Map details) {
 
 def buildPluginBinary(jdkToolName){
     sh "echo Inside buildPluginBinary '${jdkToolName}'"
-    def jdk = tool name: JDK1.8
+    def jdk = tool name: JDK_8
     sh "echo Successfully found jdk"
 
     withEnv(["JAVA_HOME=${jdk}", "PATH+JAVA=${jdk}/bin"]) {
