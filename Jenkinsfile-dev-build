@@ -91,7 +91,7 @@ node("docker-ubuntu20-xlarge") {
                     stage('Select Plugins for execution'){
                         try  {
                         script{
-                            selectPlugins()
+                            selectPlugins(reposMap)
                             }
                         }
                         catch (e) {
@@ -147,7 +147,7 @@ def notifyFailure(String stageName, error) {
     )
 }
 
-def selectPlugins() {
+def selectPlugins(Map reposMap) {
     if (pluginName == "") {
         reposMap.each { repo, details ->
             details.execute = "true"
