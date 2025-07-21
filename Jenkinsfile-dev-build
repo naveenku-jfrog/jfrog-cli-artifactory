@@ -322,6 +322,7 @@ def buildPluginBinary(repoName, details){
 
         echo "Successfully created ${zipFileName}"
         sh "ls -la ${zipFileName}"
+        sh "mv ${zipFileName} ${zippedBinariesDir}"
     }else if(repoName=="bamboo-artifactory-plugin"){
         def jdkHome = installAndSetJdk('11')
         withEnv(["JAVA_HOME=${jdkHome}", "PATH+JAVA=${jdkHome}/bin"]) {
