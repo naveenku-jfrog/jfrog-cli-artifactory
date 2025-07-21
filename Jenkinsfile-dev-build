@@ -54,31 +54,29 @@ node("docker-ubuntu20-xlarge") {
                     watchName = "ecosystem-watch"
                     stage('Download JFrog CLI') {
                         try {
-                            steps {
-                                script {
-                                    def os = sh(script: 'uname -s', returnStdout: true).trim().toLowerCase()
-                                    if (os == "darwin") {
-                                        os = "mac"
-                                    }
-                                    def arch = sh(script: 'uname -m', returnStdout: true).trim().toLowerCase()
-                                    if (arch == "x86_64") {
-                                        arch = "amd64"
-                                    }
-
-                                    def latestTag = sh(script: 'curl -s https://api.github.com/repos/jfrog/jfrog-cli/releases/latest | jq -r .tag_name', returnStdout: true).trim()
-                                    def version = latestTag.replace("v", "")
-
-                                    def binaryName = "jfrog-cli-${os}-${arch}"
-                                    def executableName = "jf"
-                                    if (os == "windows") {
-                                        binaryName += ".exe"
-                                        executableName += ".exe"
-                                    }
-
-                                    def downloadUrl = "https://releases.jfrog.io/artifactory/jfrog-cli/v2/${version}/${binaryName}/jf"
-                                    sh "curl -L '${downloadUrl}' -o '${executableName}'"
-                                    sh "chmod +x ${executableName}"
+                            script {
+                                def os = sh(script: 'uname -s', returnStdout: true).trim().toLowerCase()
+                                if (os == "darwin") {
+                                    os = "mac"
                                 }
+                                def arch = sh(script: 'uname -m', returnStdout: true).trim().toLowerCase()
+                                if (arch == "x86_64") {
+                                    arch = "amd64"
+                                }
+
+                                def latestTag = sh(script: 'curl -s https://api.github.com/repos/jfrog/jfrog-cli/releases/latest | jq -r .tag_name', returnStdout: true).trim()
+                                def version = latestTag.replace("v", "")
+
+                                def binaryName = "jfrog-cli-${os}-${arch}"
+                                def executableName = "jf"
+                                if (os == "windows") {
+                                    binaryName += ".exe"
+                                    executableName += ".exe"
+                                }
+
+                                def downloadUrl = "https://releases.jfrog.io/artifactory/jfrog-cli/v2/${version}/${binaryName}/jf"
+                                sh "curl -L '${downloadUrl}' -o '${executableName}'"
+                                sh "chmod +x ${executableName}"
                             }
                         }
                         catch (e) {
