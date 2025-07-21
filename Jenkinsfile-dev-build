@@ -313,6 +313,15 @@ def buildPluginBinary(repoName, details){
         sh 'mvn clean install -DskipTests'
         sh 'pwd'
         sh 'ls -la'
+        def zipFileName = "teamcity-plugin-build.zip"
+
+        echo "Zipping contents of the 'target' directory..."
+
+        // Use the zip step to create the archive
+        zip(zipFile: zipFileName, dir: 'target')
+
+        echo "Successfully created ${zipFileName}"
+        sh "ls -la ${zipFileName}"
     }else if(repoName=="bamboo-artifactory-plugin"){
         def jdkHome = installAndSetJdk('11')
         withEnv(["JAVA_HOME=${jdkHome}", "PATH+JAVA=${jdkHome}/bin"]) {
