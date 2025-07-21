@@ -159,15 +159,21 @@ def selectPlugins(Map reposMap) {
 }
 
 def installTools(Map reposMap) {
-    def projectTypes = [] as Set
 
-    reposMap.each { repoName, details ->
-        if (details.execute == "true") {
-            projectTypes.add(details.type)
+    stage('Install JDK 8') {
+        steps {
+            sh 'sudo apt-get update -y'
+            sh 'sudo apt-get install -y openjdk-8-jdk'
+            sh 'java -version'
         }
     }
 
-    println "Unique types for repositories marked for execution: ${projectTypes}"
+    stage('Install Maven') {
+        steps {
+            sh 'sudo apt-get install -y maven'
+            sh 'mvn -v'
+        }
+    }
 }
 
 def getCliVersion(exePath) {
