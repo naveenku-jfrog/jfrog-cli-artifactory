@@ -100,7 +100,7 @@ node("docker-ubuntu20-xlarge") {
                         }
                     }
                     script{
-                    ${reposMap}.each { repoName, details ->
+                    reposMap.each { repoName, details ->
                         println "Processing repository: ${repoName}"
                         println "  URL: ${details.url}"
                         println "  Type: ${details.type}"
