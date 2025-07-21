@@ -249,6 +249,7 @@ def scanBinary() {
             dir("${zippedBinariesDir}"){
                 sh "ls -la"
                 sh "ls -l '${builderPath}'"
+                sh "'${builderPath} --version"
                 sh "${builderPath} scan '**/*.zip' --ant=true --watches ${watchName} --format=simple-json"
             }
         }
