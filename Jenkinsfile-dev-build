@@ -224,7 +224,7 @@ def buildAndScanBinaries(Map reposMap) {
         try {
             stage("Build and upload ${repoName}") {
                 sh "echo Inside buildAndScanBinaries execute true condition for ${repoName}"
-                buildAndUpload(details)
+                buildAndUploadByType(repoName, details)
             }
         } catch (e) {
             notifyFailure("Build and upload ${repoName}", e)
@@ -279,9 +279,29 @@ def build(goos, goarch, pkg, fileName) {
     }
 }
 
-def buildAndUpload(goos, goarch, pkg, fileExtension) {
-    def extension = fileExtension == null ? '': fileExtension
-    def fileName = "$cliExecutableName$fileExtension"
-    build(goos, goarch, pkg, fileName)
-    uploadBinaryToJfrogRepo21(pkg, fileName)
+def buildAndUploadByType(String repoName, Map details) {
+    try {
+        dir(repoName) {
+            sh "git clone ${details.url} ."
+            switch (details.type) {
+                case "maven":
+                    sh "mvn clean install -DskipTests"
+                    // Add logic to find and upload the binary
+                    break
+                case "gradle":
+                    sh "./gradlew clean build -x test"
+                    // Add logic to find and upload the binary
+                    break
+                case "npm":
+                    sh "npm install"
+                    sh "npm run create" // Or 'npm run build' - check package.json
+                    // Add logic to find and upload the binary
+                    break
+                // Add other cases for ruby, docker, go, etc.
+            }
+        }
+    } catch(e) {
+        notifyFailure("Build and Upload ${repoName}", e)
+        throw e
+    }
 }
