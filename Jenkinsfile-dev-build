@@ -16,8 +16,8 @@ node("docker-ubuntu20-xlarge") {
 
                 def reposMap = [
                     "teamcity-artifactory-plugin": [url: "https://github.com/jfrog/teamcity-artifactory-plugin.git", type: "maven", jdk:"8", execute: "false"],
-                    "bamboo-artifactory-plugin": [url: "https://github.com/jfrog/bamboo-artifactory-plugin.git", type: "maven", jdk:"11", execute: "false"],
-                    "artifactory-maven-plugin": [url: "https://github.com/jfrog/artifactory-maven-plugin.git", type: "maven", execute: "false"],
+                    "bamboo-artifactory-plugin": [url: "https://github.com/jfrog/bamboo-artifactory-plugin.git", type: "maven", jdk:"11", execute: "false"]
+                   /* "artifactory-maven-plugin": [url: "https://github.com/jfrog/artifactory-maven-plugin.git", type: "maven", execute: "false"],
                     "jfrog-plugin": [url: "https://github.com/jenkinsci/jfrog-plugin.git", type: "maven", execute: "false"],
                     "artifactory-client-java": [url: "https://github.com/jfrog/artifactory-client-java.git", type: "gradle", execute: "false"],
                     "bamboo-jfrog-plugin": [url: "https://github.com/jfrog/bamboo-jfrog-plugin.git", type: "gradle", execute: "false"],
@@ -26,7 +26,7 @@ node("docker-ubuntu20-xlarge") {
                     "jfrog-testing-infra": [url: "https://github.com/jfrog/jfrog-testing-infra.git", type: "gradle", execute: "false"],
                     "jfrog-azure-devops-extension": [url: "https://github.com/jfrog/jfrog-azure-devops-extension.git", type: "npm", execute: "false"],
                     "cocoapods-art": [url: "https://github.com/jfrog/cocoapods-art.git", type: "ruby", execute: "false"],
-                    "jfrog-setup-cli": [url: "https://bitbucket.org/jfrog/jfrog-setup-cli.git", type: "docker", execute: "false"]
+                    "jfrog-setup-cli": [url: "https://bitbucket.org/jfrog/jfrog-setup-cli.git", type: "docker", execute: "false"]*/
                 ]
 
                 buildStatus = 'SUCCESS'
@@ -285,7 +285,7 @@ def buildAndUploadByType(String repoName, Map details) {
             sh "git clone ${details.url} ."
             switch (details.type) {
                 case "maven":
-                    buildPluginBinary(details.jdk)
+                    buildPluginBinary(repoName, details)
                     break
                 case "gradle":
                     sh "./gradlew clean build -x test"
@@ -305,21 +305,28 @@ def buildAndUploadByType(String repoName, Map details) {
     }
 }
 
-def buildPluginBinary(jdkToolName){
-    sh "echo Inside buildPluginBinary '${jdkToolName}'"
-    jdk = installAndSetJdk(jdkToolName)
-    sh "echo successfully installed"
+def buildPluginBinary(repoName, details){
+    sh "echo Inside buildPluginBinary '${repoName}'"
 
-    withEnv(["JAVA_HOME=${jdk}", "PATH+JAVA=${jdk}/bin"]) {
+    if(repoName=="teamcity-artifactory-plugin"){
         sh 'java -version'
         sh 'mvn clean install -DskipTests'
+    }else if(repoName=="bamboo-artifactory-plugin"){
+        def jdkHome = installAndSetJdk('11')
+        withEnv(["JAVA_HOME=${jdkHome}", "PATH+JAVA=${jdkHome}/bin"]) {
+            sh 'echo "--- Using JDK 11 ---"'
+            sh 'java -version'
+            sh 'mvn clean install -DskipTests'
+        }
     }
 }
 
 def installAndSetJdk(String version) {
+    sh "echo Point 1"
     def javaHome = sh(script: "update-alternatives --display java | grep 'openjdk-${version}' | head -n1 | awk '{print \\$NF}' | sed 's|/bin/java||' || true", returnStdout: true).trim()
 
     if (javaHome.isEmpty()) {
+        sh "echo Point 2"
         println "JDK ${version} not found. Installing..."
         def jdkPackage = "openjdk-${version}-jdk"
         sh "apt-get update -y"
@@ -328,10 +335,11 @@ def installAndSetJdk(String version) {
     } else {
         println "JDK ${version} is already installed at: ${javaHome}"
     }
-
+    sh "echo Point 3"
     if (javaHome.isEmpty()) {
         error "Could not determine JAVA_HOME for JDK ${version} even after attempting installation."
     }
+    sh "echo Point 4"
 
     return javaHome
 }
