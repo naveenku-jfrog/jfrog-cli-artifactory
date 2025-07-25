@@ -99,7 +99,7 @@ node("docker-ubuntu20-xlarge") {
                             withEnv(["JAVA_HOME=${jdk}", "PATH+JAVA=${jdk}/bin"]) {
                                 sh 'java -version'
                             }
-                            jdk = tool name: 'jdk-8u111-linux-x64-jce-unlimited-policy'
+                            jdk = installJava("8")
                             withEnv(["JAVA_HOME=${jdk}", "PATH+JAVA=${jdk}/bin"]) {
                                 sh 'java -version'
                             }
@@ -143,6 +143,33 @@ def notifyFailure(String stageName, error) {
         color: 'danger',
         message: message
     )
+}
+
+def installJava(String version) {
+    println "Checking for JDK ${version}..."
+    def javaHome = sh(script: "update-alternatives --display java | grep 'openjdk-${version}' | head -n1 | awk '{print \\$NF}' | sed 's|/bin/java||' || true", returnStdout: true).trim()
+
+    if (javaHome.isEmpty()) {
+        println "JDK ${version} not found. Installing..."
+        def jdkPackage = "openjdk-${version}-jdk"
+
+        // Run the installation commands
+        sh "apt-get update -y"
+        sh "apt-get install -y ${jdkPackage}"
+
+        // Try to find the path again after installation.
+        javaHome = sh(script: "update-alternatives --display java | grep 'openjdk-${version}' | head -n1 | awk '{print \\$NF}' | sed 's|/bin/java||'", returnStdout: true).trim()
+    } else {
+        println "JDK ${version} is already installed at: ${javaHome}"
+    }
+
+    // Fail the build if the path is still not found after the attempt.
+    if (javaHome.isEmpty()) {
+        error "Could not determine JAVA_HOME for JDK ${version} even after attempting installation."
+    }
+
+    // Return the found path
+    return javaHome
 }
 
 def selectPlugins(Map reposMap) {
