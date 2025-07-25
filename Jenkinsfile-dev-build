@@ -145,9 +145,10 @@ def notifyFailure(String stageName, error) {
     )
 }
 
-def installJava(String version) {
-    // Note the escaped '\$NF' for Groovy in the awk command
-    def javaHome = sh(script: "update-alternatives --display java | grep 'openjdk-${version}' | head -n1 | awk '{print \$NF}' | sed 's|/bin/java||' || true", returnStdout: true).trim()
+def installAndSetJdk(String version) {
+    println "Checking for JDK ${version}..."
+    // This more robust command specifically finds the path, ignoring other words on the line.
+    def javaHome = sh(script: "update-alternatives --display java | grep '/usr/lib/jvm/java-${version}-openjdk' | head -n1 | awk '{print \$1}' | sed 's|/bin/java||' || true", returnStdout: true).trim()
 
     if (javaHome.isEmpty()) {
         println "JDK ${version} not found. Installing..."
@@ -155,8 +156,8 @@ def installJava(String version) {
         sh "apt-get update -y"
         sh "apt-get install -y ${jdkPackage}"
 
-        // Escape the dollar sign here as well
-        javaHome = sh(script: "update-alternatives --display java | grep 'openjdk-${version}' | head -n1 | awk '{print \$NF}' | sed 's|/bin/java||'", returnStdout: true).trim()
+        // Use the robust command again after installation.
+        javaHome = sh(script: "update-alternatives --display java | grep '/usr/lib/jvm/java-${version}-openjdk' | head -n1 | awk '{print \$1}' | sed 's|/bin/java||'", returnStdout: true).trim()
     } else {
         println "JDK ${version} is already installed at: ${javaHome}"
     }
@@ -164,6 +165,7 @@ def installJava(String version) {
     if (javaHome.isEmpty()) {
         error "Could not determine JAVA_HOME for JDK ${version}."
     }
+
     return javaHome
 }
 
