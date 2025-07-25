@@ -24,8 +24,8 @@ node("docker-ubuntu20-xlarge") {
                     "file-specs-java": [url: "https://github.com/jfrog/file-specs-java.git", type: "gradle", jdk:"8"],
                     "jfrog-testing-infra": [url: "https://github.com/jfrog/jfrog-testing-infra.git", type: "gradle", jdk:"8"],
                     "bamboo-artifactory-plugin": [url: "https://github.com/jfrog/bamboo-artifactory-plugin.git", type: "maven", jdk:"11"],
-                    "jfrog-plugin": [url: "https://github.com/jenkinsci/jfrog-plugin.git", type: "maven", jdk: "11"],
-                    "bamboo-jfrog-plugin": [url: "https://github.com/jfrog/bamboo-jfrog-plugin.git", type: "gradle", jdk: "11"],
+                    "jfrog-plugin": [url: "https://github.com/jenkinsci/jfrog-plugin.git", type: "maven", jdk:"11"],
+                    "bamboo-jfrog-plugin": [url: "https://github.com/jfrog/bamboo-jfrog-plugin.git", type: "gradle", jdk:"11"],
                     "jfrog-azure-devops-extension": [url: "https://github.com/jfrog/jfrog-azure-devops-extension.git", type: "npm"],
                     "cocoapods-art": [url: "https://github.com/jfrog/cocoapods-art.git", type: "ruby"],
                     "jfrog-setup-cli": [url: "https://bitbucket.org/jfrog/jfrog-setup-cli.git", type: "docker"]
@@ -92,6 +92,16 @@ node("docker-ubuntu20-xlarge") {
                     }
                     stage('Installing Tools'){
                         script {
+                            def mavenVersion = "3.9.6"
+                            sh "curl -O https://archive.apache.org/dist/maven/maven-3/${mavenVersion}/binaries/apache-maven-${mavenVersion}-bin.tar.gz"
+                            sh "tar -xzf apache-maven-${mavenVersion}-bin.tar.gz"
+                            def mvnHome = "${pwd()}/apache-maven-${mavenVersion}"
+
+                            def gradleVersion = "8.5"
+                            sh "curl -O https://services.gradle.org/distributions/gradle-${gradleVersion}-bin.zip"
+                            sh "unzip gradle-${gradleVersion}-bin.zip"
+                            def gradleHome = "${pwd()}/gradle-${gradleVersion}"
+
                             if(pluginSelectedForOnDemandScanning=="all"){
                                 repoDetails=reposMap[pluginSelectedForOnDemandScanning]
                             }else{
@@ -159,6 +169,8 @@ def notifyFailure(String stageName, error) {
 def buildBinary(repoName, reposMap){
     sh 'java -version'
     sh "echo --- Starting build for ${repoName} ---"
+    sh 'mvn -v'
+    sh 'gradle -v'
 }
 
 def installJava(String version) {
