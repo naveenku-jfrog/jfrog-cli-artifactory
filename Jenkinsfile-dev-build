@@ -46,7 +46,6 @@ node("docker-ubuntu20-xlarge") {
                     builderPath = "${cliWorkspace}/${builderDir}${cliExecutableName}"
                     jfrogCliRepoDir = "${cliWorkspace}/${repo}/"
                     zippedBinariesDir = "${jfrogCliRepoDir}zippedBinaries/"
-                    sh "mkdir -p ${zippedBinariesDir}"
                     pluginName = params.PLUGINS_NAME
                     formattedDate = new Date().format('yyyy-MM-dd')
                     slackChannelName = "ecosytem-plugins-dev-build-notifications"
@@ -92,6 +91,7 @@ node("docker-ubuntu20-xlarge") {
                     }
                     stage('Installing Tools'){
                         script {
+                            sh "mkdir -p ${zippedBinariesDir}"
                             sh 'apt-get update -y && apt-get install -y unzip'
                             def mavenVersion = "3.9.6"
                             sh "curl -O https://archive.apache.org/dist/maven/maven-3/${mavenVersion}/binaries/apache-maven-${mavenVersion}-bin.tar.gz"
