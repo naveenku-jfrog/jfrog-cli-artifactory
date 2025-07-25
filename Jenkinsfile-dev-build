@@ -97,8 +97,6 @@ node("docker-ubuntu20-xlarge") {
                             sh "curl -O https://archive.apache.org/dist/maven/maven-3/${mavenVersion}/binaries/apache-maven-${mavenVersion}-bin.tar.gz"
                             sh "tar -xzf apache-maven-${mavenVersion}-bin.tar.gz"
 
-                            def gradleVersion = tool name: 'gradle'
-
                             if(pluginSelectedForOnDemandScanning=="all"){
                                 repoDetails=reposMap[pluginSelectedForOnDemandScanning]
                             }else{
@@ -167,7 +165,6 @@ def buildBinary(repoName, reposMap){
     sh 'java -version'
     sh "echo --- Starting build for ${repoName} ---"
     sh 'mvn -v'
-    sh 'gradle -v'
 }
 
 def installJava(String version) {
