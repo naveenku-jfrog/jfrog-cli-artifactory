@@ -46,7 +46,7 @@ node("docker-ubuntu20-xlarge") {
                     builderPath = "${cliWorkspace}/${builderDir}${cliExecutableName}"
                     jfrogCliRepoDir = "${cliWorkspace}/${repo}/"
                     zippedBinariesDir = "${jfrogCliRepoDir}zippedBinaries/"
-                    sh "mkdir $zippedBinaries"
+                    sh "mkdir $zippedBinariesDir"
                     pluginName = params.PLUGINS_NAME
                     formattedDate = new Date().format('yyyy-MM-dd')
                     slackChannelName = "ecosytem-plugins-dev-build-notifications"
