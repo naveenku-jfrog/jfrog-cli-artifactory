@@ -46,7 +46,9 @@ node("docker-ubuntu20-xlarge") {
                     builderPath = "${cliWorkspace}/${builderDir}${cliExecutableName}"
                     jfrogCliRepoDir = "${cliWorkspace}/${repo}/"
                     zippedBinariesDir = "${jfrogCliRepoDir}zippedBinaries/"
+                    sh "mkdir $zippedBinaries"
                     pluginName = params.PLUGINS_NAME
+                    formattedDate = new Date().format('yyyy-MM-dd')
                     slackChannelName = "ecosytem-plugins-dev-build-notifications"
                     watchName = "ecosystem-watch"
                     pluginSelectedForOnDemandScanning=""
@@ -71,8 +73,6 @@ node("docker-ubuntu20-xlarge") {
                                 sh "build/build.sh $cliExecutableName"
                             }
                             sh "mv $jfrogCliRepoDir/$cliExecutableName $builderDir"
-                            version = getCliVersion(builderPath)
-                            print "CLI version: $version"
                         }
                         catch (e) {
                             notifyFailure('Build JFrog CLI', e)
@@ -122,6 +122,21 @@ node("docker-ubuntu20-xlarge") {
                                             }
                                         }
                                     }
+                                }
+                            }
+                        }
+                    }
+                    stage('Upload Binaries') {
+                        steps {
+                            script {
+                                // Find all files inside the directory
+                                def filesToUpload = findFiles(glob: "${zippedBinariesDir}/**")
+
+                                // Iterate over the list of found files
+                                filesToUpload.each { file ->
+                                    echo "Uploading ${file.path}..."
+
+                                    sh "${builderPath} rt u '${file.path}' 'ecosys-dev-build-artifactory/plugins/dev/${formattedDate}/' --flat"
                                 }
                             }
                         }
@@ -235,27 +250,6 @@ def selectPlugins(Map reposMap) {
     }
 }
 
-def installMaven() {
-    sh 'apt-get install -y maven'
-    sh 'mvn -v'
-}
-
-def getCliVersion(exePath) {
-    version = sh(script: "$exePath -v | tr -d 'jfrog version' | tr -d '\n'", returnStdout: true)
-    return version
-}
-
-def buildAndScanBinary(reposMap) {
-    configRepo21()
-    try {
-        sh "mkdir -p '${zippedBinariesDir}'"
-        sh "echo Successfully executed mkdir"
-        buildAndScanBinaries(reposMap)
-    } finally {
-        cleanupRepo21()
-    }
-}
-
 def configRepo21() {
     withCredentials([
         // jfrog-ignore
@@ -319,93 +313,5 @@ def scanBinary() {
     catch (e) {
         notifyFailure('Scanning Binaries under watch ${watchName}', e)
         throw e
-    }
-}
-
-def build(goos, goarch, pkg, fileName) {
-    dir("${jfrogCliRepoDir}") {
-        script {
-            def zipName = "${pkg}.zip"
-            def sourceDirToZip = "./binaries/${pkg}/"
-
-            withEnv(["GOOS=${goos}", "GOARCH=${goarch}"]) {
-                echo "Building for OS: ${goos}, Arch: ${goarch}"
-                sh "./build/build.sh ./binaries/${pkg}/$fileName"
-            }
-            echo "Zipping the output..."
-            sh "ls -la binaries/${pkg}/$fileName"
-            zip(
-                zipFile: zipName,
-                dir: "binaries/${pkg}/"
-            )
-
-            sh "mv ${zipName} ${zippedBinariesDir}"
-        }
-    }
-}
-
-def buildAndUploadByType(String repoName, Map details) {
-    try {
-        dir(repoName) {
-            sh "git clone ${details.url} ."
-            switch (details.type) {
-                case "maven":
-                    buildPluginBinary(repoName, details)
-                    break
-                case "gradle":
-                    sh "./gradlew clean build -x test"
-                    // Add logic to find and upload the binary
-                    break
-                case "npm":
-                    sh "npm install"
-                    sh "npm run create" // Or 'npm run build' - check package.json
-                    // Add logic to find and upload the binary
-                    break
-                // Add other cases for ruby, docker, go, etc.
-            }
-        }
-    } catch(e) {
-        notifyFailure("Build and Upload ${repoName}", e)
-        throw e
-    }
-}
-
-def buildPluginBinary(repoName, details){
-    sh "echo Inside buildPluginBinary '${repoName}'"
-
-    if(repoName=="teamcity-artifactory-plugin"){
-        sh 'java -version'
-        sh 'mvn clean install -DskipTests'
-        sh 'pwd'
-        sh 'ls -la'
-        def zipFileName = "teamcity-plugin-build.zip"
-
-        echo "Zipping contents of the 'target' directory..."
-
-        // Use the zip step to create the archive
-        zip(zipFile: zipFileName, dir: 'target')
-
-        echo "Successfully created ${zipFileName}"
-        sh "ls -la ${zipFileName}"
-        sh "mv ${zipFileName} ${zippedBinariesDir}"
-    }else if(repoName=="bamboo-artifactory-plugin"){
-        sh 'apt-get update -y'
-        sh 'apt-get install -y openjdk-11-jdk'
-        sh 'java -version'
-        def jdkHome = '/usr/lib/jvm/java-11-openjdk-amd64'
-        withEnv(["JAVA_HOME=${jdkHome}", "PATH+JAVA=${jdkHome}/bin"]) {
-            sh 'echo "--- Using JDK 11 ---"'
-            sh 'java -version'
-            sh 'mvn clean install -DskipTests'
-            def zipFileName = "bamboo-artifactory-plugin.zip"
-
-            echo "Zipping contents of the 'target' directory..."
-
-            zip(zipFile: 'bamboo-artifactory-plugin.zip', dir: 'target', glob: '*.jar')
-
-            echo "Successfully created ${zipFileName}"
-            sh "ls -la ${zipFileName}"
-            sh "mv ${zipFileName} ${zippedBinariesDir}"
-        }
     }
 }
