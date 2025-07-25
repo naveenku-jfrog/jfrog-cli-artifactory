@@ -44,14 +44,10 @@ node("docker-ubuntu20-xlarge") {
                     builderPath = "${cliWorkspace}/${builderDir}${cliExecutableName}"
                     jfrogCliRepoDir = "${cliWorkspace}/${repo}/"
                     zippedBinariesDir = "${jfrogCliRepoDir}zippedBinaries/"
-                    rtDeployRepoName = params.JFROG_RT_DEPLOY_REPO_NAME
-                    rtResolveRepoName = params.JFROG_RT_RESOLVE_REPO_NAME
-                    repoDeployServerId = params.JFROG_CLI_DEPLOY_SERVER_ID
-                    repoResolveServerId = params.JFROG_CLI_RESOLVE_SERVER_ID
-                    jfrogCLITargetRepoName = params.REPO_FOR_CLI_DEV_UPLOAD
                     pluginName = params.PLUGINS_NAME
                     slackChannelName = "ecosytem-plugins-dev-build-notifications"
                     watchName = "ecosystem-watch"
+                    pluginSelectedForOnDemandScanning=""
                     stage('Clone Source Repo') {
                         try  {
                             dir("${cliWorkspace}") {
@@ -92,7 +88,7 @@ node("docker-ubuntu20-xlarge") {
                             throw e
                         }
                     }
-                    stage('Installing Tools'){
+                    /*stage('Installing Tools'){
                         script {
                             installJava()
                             def repoTypes = [] as Set
@@ -106,7 +102,7 @@ node("docker-ubuntu20-xlarge") {
                             }
                         }
                     }
-                    buildAndScanBinary(reposMap)
+                    buildAndScanBinary(reposMap)*/
                 }
             }
         }
@@ -151,14 +147,8 @@ def selectPlugins(Map reposMap) {
     def buildCauses = currentBuild.getBuildCauses()
 
     def timerCause = buildCauses.find { it instanceof hudson.triggers.TimerTrigger$TimerTriggerCause }
-    if (timerCause) {
-        reposMap.each { repo, details ->
-            details.execute = "true"
-        }
-    } else {
-        if (reposMap.containsKey(pluginName)) {
-            reposMap[pluginName].execute = "true"
-        }
+    if (!timerCause) {
+        pluginSelectedForOnDemandScanning=$pluginName
     }
 }
 
