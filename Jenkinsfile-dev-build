@@ -138,6 +138,14 @@ node("docker-ubuntu20-xlarge") {
                             }
                         }
                     }
+                    stage('Scan Binaries') {
+                        dir("${zippedBinariesDir}") {
+                            sh """#!/bin/bash
+                                ${builderPath} --version
+                                ${builderPath} scan '**/*.zip' --ant=true --watches ${watchName} --format=simple-json
+                            """
+                        }
+                    }
                 }
             }
         }
@@ -194,13 +202,12 @@ def cloneAndBuild(String repoName, Map details) {
 
         echo "Archiving .jar files from the 'target' directory..."
 
-        // 1. Zip only the .jar files from the 'target' directory
         zip(zipFile: zipFileName, dir: 'target', glob: '**/*.jar')
 
         echo "Successfully created ${zipFileName}"
 
-        // 2. Move the new zip file to the destination
         sh "mv ${zipFileName} ${zippedBinariesDir}"
+        sh "mv target/*.zip ${zippedBinariesDir}"
 
         echo "Moved archive to ${zippedBinariesDir}"
     }
