@@ -98,9 +98,7 @@ node("docker-ubuntu20-xlarge") {
                                 urlPlugin=repoDetails.url
                                 projectType=repoDetails.type
 
-                                echo "JDK Required: ${jdkRequired}"
-                                echo "Plugin URL:   ${urlPlugin}"
-                                echo "Project Type: ${projectType}"
+                                installJava(jdkRequired)
 
                             }
                             reposMap.each { repoName, details ->
@@ -163,10 +161,14 @@ def selectPlugins(Map reposMap) {
     }
 }
 
-def installJava() {
-    sh 'apt-get update -y'
-    sh 'apt-get install -y openjdk-8-jdk'
-    sh 'java -version'
+def installJava(String version) {
+    sh "sudo apt-get purge -y 'openjdk-*-jdk'"
+
+    def jdkPackage = "openjdk-${version}-jdk"
+    sh "sudo apt-get update -y"
+    sh "sudo apt-get install -y ${jdkPackage}"
+
+    sh "java -version"
 }
 
 def installMaven() {
