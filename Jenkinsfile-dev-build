@@ -94,19 +94,18 @@ node("docker-ubuntu20-xlarge") {
                         script {
                             if(pluginSelectedForOnDemandScanning!="all"){
                                 repoDetails=reposMap[pluginSelectedForOnDemandScanning]
-                                jdkRequired=repoDetails.jdk
-                                urlPlugin=repoDetails.url
-                                projectType=repoDetails.type
-
-                                installJava(jdkRequired)
-
                             }
-                            reposMap.each { repoName, details ->
-                                if (details.jdk) {
-                                    println "${repoName}: JDK ${details.jdk}"
-                                } else {
-                                    println "${repoName}: No JDK specified"
-                                }
+                            def jdk = tool name: 'jdk-8u131'
+                            withEnv(["JAVA_HOME=${jdk}", "PATH+JAVA=${jdk}/bin"]) {
+                                sh 'java -version'
+                                sh 'mvn --version'
+                                sh 'mvn clean install'
+                            }
+                            jdk = tool name: 'jdk-11'
+                            withEnv(["JAVA_HOME=${jdk}", "PATH+JAVA=${jdk}/bin"]) {
+                                sh 'java -version'
+                                sh 'mvn --version'
+                                sh 'mvn clean install'
                             }
                         }
                     }
@@ -159,17 +158,6 @@ def selectPlugins(Map reposMap) {
     } else {
         pluginSelectedForOnDemandScanning="all"
     }
-}
-
-def installJava(String version) {
-    sh "java -version"
-    sh "apt-get purge -y 'openjdk-*-jdk'"
-
-    def jdkPackage = "openjdk-${version}-jdk"
-    sh "apt-get update -y"
-    sh "apt-get install -y ${jdkPackage}"
-
-    sh "java -version"
 }
 
 def installMaven() {
