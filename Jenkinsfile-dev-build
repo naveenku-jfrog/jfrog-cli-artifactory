@@ -15,16 +15,16 @@ node("docker-ubuntu20-xlarge") {
                 }
 
                 def reposMap = [
-                    //"artifactory-jenkins-plugin": [url: "https://github.com/jfrog/jenkins-artifactory-plugin", branch:"master", type: "maven", jdk:"8"],
-                    //"build-info-extractor": [url: "https://github.com/jfrog/build-info", branch: "master", type: "gradle", jdk:"8"],
+                    "artifactory-jenkins-plugin": [url: "https://github.com/jfrog/jenkins-artifactory-plugin", branch:"master", type: "maven", jdk:"8"],
+                    "build-info-extractor": [url: "https://github.com/jfrog/build-info", branch: "master", type: "gradle", jdk:"8"],
                     "teamcity-artifactory-plugin": [url: "https://github.com/jfrog/teamcity-artifactory-plugin.git", branch: "master",  type: "maven", jdk:"8"],
-                    //"artifactory-maven-plugin": [url: "https://github.com/jfrog/artifactory-maven-plugin.git", branch: "master", type: "maven", jdk:"8"],
-                    //"artifactory-client-java": [url: "https://github.com/jfrog/artifactory-client-java.git", branch: "master", type: "gradle", jdk:"8"],
-                    //"artifactory-gradle-plugin": [url: "https://github.com/jfrog/artifactory-gradle-plugin.git", branch: "master", type: "gradle", jdk:"8"],
-                    //"file-specs-java": [url: "https://github.com/jfrog/file-specs-java.git", branch: "master", type: "gradle", jdk:"8"],
-                    //"jfrog-testing-infra": [url: "https://github.com/jfrog/jfrog-testing-infra.git", branch: "master", type: "gradle", jdk:"8"],
-                    //"bamboo-artifactory-plugin": [url: "https://github.com/jfrog/bamboo-artifactory-plugin.git", branch: "master", type: "maven", jdk:"11"],
-                    //"jfrog-plugin": [url: "https://github.com/jenkinsci/jfrog-plugin.git", branch:"main", type: "maven", jdk:"11"],
+                    "artifactory-maven-plugin": [url: "https://github.com/jfrog/artifactory-maven-plugin.git", branch: "master", type: "maven", jdk:"8"],
+                    "artifactory-client-java": [url: "https://github.com/jfrog/artifactory-client-java.git", branch: "master", type: "gradle", jdk:"8"],
+                    "artifactory-gradle-plugin": [url: "https://github.com/jfrog/artifactory-gradle-plugin.git", branch: "master", type: "gradle", jdk:"8"],
+                    "file-specs-java": [url: "https://github.com/jfrog/file-specs-java.git", branch: "master", type: "gradle", jdk:"8"],
+                    "jfrog-testing-infra": [url: "https://github.com/jfrog/jfrog-testing-infra.git", branch: "master", type: "gradle", jdk:"8"],
+                    "bamboo-artifactory-plugin": [url: "https://github.com/jfrog/bamboo-artifactory-plugin.git", branch: "master", type: "maven", jdk:"11"],
+                    "jfrog-plugin": [url: "https://github.com/jenkinsci/jfrog-plugin.git", branch:"main", type: "maven", jdk:"11"],
                     "bamboo-jfrog-plugin": [url: "https://github.com/jfrog/bamboo-jfrog-plugin.git", branch: "master", type: "gradle", jdk:"11"],
                     "jfrog-azure-devops-extension": [url: "https://github.com/jfrog/jfrog-azure-devops-extension.git",branch: "master", type: "npm"],
                     "cocoapods-art": [url: "https://github.com/jfrog/cocoapods-art.git", branch: "master", type: "ruby"],
@@ -270,55 +270,4 @@ def configRepo21() {
 
 def cleanupRepo21() {
     sh "${builderPath} c rm repo21 --quiet"
-}
-
-def buildAndScanBinaries(Map reposMap) {
-    sh "echo Inside buildAndScanBinaries 1"
-
-    reposMap.each { repoName, details ->
-        if (details.execute == "false") {
-            sh "echo Inside buildAndScanBinaries execute false condition"
-            sh "echo 'Skipping ${repoName}'"
-            return
-        }
-
-        try {
-            stage("Build and upload ${repoName}") {
-                sh "echo Inside buildAndScanBinaries execute true condition for ${repoName}"
-                buildAndUploadByType(repoName, details)
-            }
-        } catch (e) {
-            notifyFailure("Build and upload ${repoName}", e)
-            throw e
-        }
-        scanBinary()
-    }
-    sh "echo Inside buildAndScanBinaries 2"
-}
-
-def uploadBinaryToJfrogRepo21(pkg, fileName) {
-    sh """#!/bin/bash
-        set -e
-        $builderPath rt u ${jfrogCliRepoDir}/binaries/${pkg}/${fileName} ${jfrogCLITargetRepoName}/plugins/dev/${formattedDate}/$identifier/$version/$pkg/ --fail-no-op --flat
-        echo Uploaded the binary here: ${jfrogCLITargetRepoName}/plugins/dev/${formattedDate}/$identifier/$version/$pkg/
-    """
-}
-
-def scanBinary() {
-    try  {
-        stage("Scanning Binaries under watch ${watchName}"){
-            dir("${zippedBinariesDir}"){
-                sh "ls -la"
-                sh "ls -l '${builderPath}'"
-                sh """#!/bin/bash
-                    ${builderPath} --version
-                    ${builderPath} scan '**/*.zip' --ant=true --watches ${watchName} --format=simple-json
-                """
-            }
-        }
-     }
-    catch (e) {
-        notifyFailure('Scanning Binaries under watch ${watchName}', e)
-        throw e
-    }
 }
