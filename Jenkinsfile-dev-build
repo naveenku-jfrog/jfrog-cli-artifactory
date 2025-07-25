@@ -106,7 +106,7 @@ node("docker-ubuntu20-xlarge") {
                                     sh 'java -version'
                                     reposMap.each { repoName, details ->
                                         if (details.jdk == "11") {
-                                            if(details.type=="maven){
+                                            if(details.type=="maven"){
                                                 buildBinary(repoName, reposMap, mvnHome)
                                             }
                                         }
@@ -117,7 +117,7 @@ node("docker-ubuntu20-xlarge") {
                                     sh 'java -version'
                                     reposMap.each { repoName, details ->
                                         if (details.jdk == "8") {
-                                            if(details.type=="maven){
+                                            if(details.type=="maven"){
                                                 buildBinary(repoName, reposMap, mvnHome)
                                             }
                                         }
