@@ -92,7 +92,7 @@ node("docker-ubuntu20-xlarge") {
                     }
                     stage('Installing Tools'){
                         script {
-                            if(pluginSelectedForOnDemandScanning!="all"){
+                            if(pluginSelectedForOnDemandScanning=="all"){
                                 repoDetails=reposMap[pluginSelectedForOnDemandScanning]
                             }else{
                                 def jdk = tool name: 'jdk-11'
