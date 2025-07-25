@@ -198,7 +198,7 @@ def cloneAndBuild(String repoName, Map details) {
 
         sh 'ls -R target'
         def jarFiles = findFiles(glob: 'target/**/*.jar')
-        if (!jarFiles.isEmpty()) {
+        if (jarFiles.size() > 0) {
             def zipFileName = "${repoName}-binaries.zip"
 
             echo "Archiving .jar files from the 'target' directory..."
