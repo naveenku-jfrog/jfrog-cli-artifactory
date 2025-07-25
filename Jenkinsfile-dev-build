@@ -188,12 +188,14 @@ def cloneAndBuild(String repoName, Map details) {
         echo "Starting Maven build for ${repoName}..."
         sh 'mvn clean install -DskipTests'
 
+        sh 'ls -R target'
+
         def zipFileName = "${repoName}-binaries.zip"
 
         echo "Archiving .jar files from the 'target' directory..."
 
         // 1. Zip only the .jar files from the 'target' directory
-        zip(zipFile: zipFileName, dir: 'target', glob: '*.jar')
+        zip(zipFile: zipFileName, dir: 'target', glob: '**/*.jar')
 
         echo "Successfully created ${zipFileName}"
 
