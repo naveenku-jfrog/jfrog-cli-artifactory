@@ -90,25 +90,20 @@ node("docker-ubuntu20-xlarge") {
                             throw e
                         }
                     }
-                    sh "pluginSelectedForOnDemandScanning is $pluginSelectedForOnDemandScanning"
-                    reposMap.each { key, value ->
-                        println value
-                    }
-                    /*stage('Installing Tools'){
+                    stage('Installing Tools'){
                         script {
-                            installJava()
-                            def repoTypes = [] as Set
-                            reposMap.each { repoName, details ->
-                                if (details.execute == "true") {
-                                    repoTypes.add(details.type)
-                                }
-                            }
-                            if ("maven" in repoTypes) {
-                                installMaven()
+                            if(pluginSelectedForOnDemandScanning!="all"){
+                                repoDetails=reposMap[pluginSelectedForOnDemandScanning]
+                                jdkRequired=repoDetails.jdk
+                                urlPlugin=repoDetails.url
+                                projectType=repoDetails.type
+
+                                echo "JDK Required: ${jdkRequired}"
+                                echo "Plugin URL:   ${urlPlugin}"
+                                echo "Project Type: ${projectType}"
                             }
                         }
                     }
-                    buildAndScanBinary(reposMap)*/
                 }
             }
         }
