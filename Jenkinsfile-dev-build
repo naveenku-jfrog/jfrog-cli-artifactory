@@ -109,7 +109,6 @@ node("docker-ubuntu20-xlarge") {
                             // --- END DEBUGGING STEPS ---
 
                             sh "unzip gradle-8.5-bin.zip"
-                            sh "unzip gradle-8.5-bin.zip"
 
                             if(pluginSelectedForOnDemandScanning=="all"){
                                 repoDetails=reposMap[pluginSelectedForOnDemandScanning]
