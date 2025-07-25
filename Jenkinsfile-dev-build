@@ -95,13 +95,7 @@ node("docker-ubuntu20-xlarge") {
                             if(pluginSelectedForOnDemandScanning!="all"){
                                 repoDetails=reposMap[pluginSelectedForOnDemandScanning]
                             }
-                            def jdk = tool name: 'jdk-8u131'
-                            withEnv(["JAVA_HOME=${jdk}", "PATH+JAVA=${jdk}/bin"]) {
-                                sh 'java -version'
-                                sh 'mvn --version'
-                                sh 'mvn clean install'
-                            }
-                            jdk = tool name: 'jdk-11'
+                            def jdk = tool name: 'jdk-11'
                             withEnv(["JAVA_HOME=${jdk}", "PATH+JAVA=${jdk}/bin"]) {
                                 sh 'java -version'
                                 sh 'mvn --version'
