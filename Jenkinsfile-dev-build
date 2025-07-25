@@ -147,7 +147,7 @@ def notifyFailure(String stageName, error) {
 
 def installJava(String version) {
     // Note the escaped '\$NF' for Groovy in the awk command
-    def javaHome = sh(script: "update-alternatives --display java | grep 'openjdk-${version}' | head -n1 | awk '{print \\$NF}' | sed 's|/bin/java||' || true", returnStdout: true).trim()
+    def javaHome = sh(script: "update-alternatives --display java | grep 'openjdk-${version}' | head -n1 | awk '{print \$NF}' | sed 's|/bin/java||' || true", returnStdout: true).trim()
 
     if (javaHome.isEmpty()) {
         println "JDK ${version} not found. Installing..."
@@ -156,7 +156,7 @@ def installJava(String version) {
         sh "apt-get install -y ${jdkPackage}"
 
         // Escape the dollar sign here as well
-        javaHome = sh(script: "update-alternatives --display java | grep 'openjdk-${version}' | head -n1 | awk '{print \\$NF}' | sed 's|/bin/java||'", returnStdout: true).trim()
+        javaHome = sh(script: "update-alternatives --display java | grep 'openjdk-${version}' | head -n1 | awk '{print \$NF}' | sed 's|/bin/java||'", returnStdout: true).trim()
     } else {
         println "JDK ${version} is already installed at: ${javaHome}"
     }
