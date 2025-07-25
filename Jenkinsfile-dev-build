@@ -208,7 +208,7 @@ def cloneAndBuild(String repoName, Map details) {
             echo "Successfully created ${zipFileName}"
         }
 
-        sh "mv target/*.zip ${zippedBinariesDir}"
+        sh "mv *.zip ${zippedBinariesDir}"
 
         echo "Moved archive to ${zippedBinariesDir}"
     }
