@@ -158,7 +158,7 @@ def notifyFailure(String stageName, error) {
 
 def buildBinary(repoName, reposMap){
     sh 'java -version'
-    sh "repoName"
+    sh "echo --- Starting build for ${repoName} ---"
 }
 
 def installJava(String version) {
