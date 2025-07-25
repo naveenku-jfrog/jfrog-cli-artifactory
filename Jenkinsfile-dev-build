@@ -15,18 +15,20 @@ node("docker-ubuntu20-xlarge") {
                 }
 
                 def reposMap = [
-                   "teamcity-artifactory-plugin": [url: "https://github.com/jfrog/teamcity-artifactory-plugin.git", type: "maven", jdk:"8", execute: "false"],
-                    "bamboo-artifactory-plugin": [url: "https://github.com/jfrog/bamboo-artifactory-plugin.git", type: "maven", jdk:"11", execute: "false"]
-                   /* "artifactory-maven-plugin": [url: "https://github.com/jfrog/artifactory-maven-plugin.git", type: "maven", execute: "false"],
-                    "jfrog-plugin": [url: "https://github.com/jenkinsci/jfrog-plugin.git", type: "maven", execute: "false"],
-                    "artifactory-client-java": [url: "https://github.com/jfrog/artifactory-client-java.git", type: "gradle", execute: "false"],
-                    "bamboo-jfrog-plugin": [url: "https://github.com/jfrog/bamboo-jfrog-plugin.git", type: "gradle", execute: "false"],
-                    "artifactory-gradle-plugin": [url: "https://github.com/jfrog/artifactory-gradle-plugin.git", type: "gradle", execute: "false"],
-                    "file-specs-java": [url: "https://github.com/jfrog/file-specs-java.git", type: "gradle", execute: "false"],
-                    "jfrog-testing-infra": [url: "https://github.com/jfrog/jfrog-testing-infra.git", type: "gradle", execute: "false"],
-                    "jfrog-azure-devops-extension": [url: "https://github.com/jfrog/jfrog-azure-devops-extension.git", type: "npm", execute: "false"],
-                    "cocoapods-art": [url: "https://github.com/jfrog/cocoapods-art.git", type: "ruby", execute: "false"],
-                    "jfrog-setup-cli": [url: "https://bitbucket.org/jfrog/jfrog-setup-cli.git", type: "docker", execute: "false"]*/
+                    "artifactory-jenkins-plugin": [url: "https://github.com/jfrog/jenkins-artifactory-plugin", type: "maven", jdk:"8"],
+                    "build-info-extractor": [url: "https://github.com/jfrog/build-info", type: "gradle", jdk:"8"],
+                    "teamcity-artifactory-plugin": [url: "https://github.com/jfrog/teamcity-artifactory-plugin.git", type: "maven", jdk:"8"],
+                    "bamboo-artifactory-plugin": [url: "https://github.com/jfrog/bamboo-artifactory-plugin.git", type: "maven", jdk:"11"]
+                    "artifactory-maven-plugin": [url: "https://github.com/jfrog/artifactory-maven-plugin.git", type: "maven"],
+                    "jfrog-plugin": [url: "https://github.com/jenkinsci/jfrog-plugin.git", type: "maven"],
+                    "artifactory-client-java": [url: "https://github.com/jfrog/artifactory-client-java.git", type: "gradle"],
+                    "bamboo-jfrog-plugin": [url: "https://github.com/jfrog/bamboo-jfrog-plugin.git", type: "gradle"],
+                    "artifactory-gradle-plugin": [url: "https://github.com/jfrog/artifactory-gradle-plugin.git", type: "gradle"],
+                    "file-specs-java": [url: "https://github.com/jfrog/file-specs-java.git", type: "gradle"],
+                    "jfrog-testing-infra": [url: "https://github.com/jfrog/jfrog-testing-infra.git", type: "gradle"],
+                    "jfrog-azure-devops-extension": [url: "https://github.com/jfrog/jfrog-azure-devops-extension.git", type: "npm"],
+                    "cocoapods-art": [url: "https://github.com/jfrog/cocoapods-art.git", type: "ruby"],
+                    "jfrog-setup-cli": [url: "https://bitbucket.org/jfrog/jfrog-setup-cli.git", type: "docker"]
                 ]
 
                 buildStatus = 'SUCCESS'
@@ -89,6 +91,9 @@ node("docker-ubuntu20-xlarge") {
                         }
                     }
                     sh "pluginSelectedForOnDemandScanning is $pluginSelectedForOnDemandScanning"
+                    reposMap.each { key, value ->
+                        println value
+                    }
                     /*stage('Installing Tools'){
                         script {
                             installJava()
@@ -150,6 +155,8 @@ def selectPlugins(Map reposMap) {
     def timerCause = buildCauses.find { it instanceof hudson.triggers.TimerTrigger$TimerTriggerCause }
     if (!timerCause) {
         pluginSelectedForOnDemandScanning=pluginName
+    } else {
+        pluginSelectedForOnDemandScanning="all"
     }
 }
 
