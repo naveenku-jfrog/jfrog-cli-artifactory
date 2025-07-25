@@ -162,6 +162,7 @@ def selectPlugins(Map reposMap) {
 }
 
 def installJava(String version) {
+    sh "java -version"
     sh "apt-get purge -y 'openjdk-*-jdk'"
 
     def jdkPackage = "openjdk-${version}-jdk"
