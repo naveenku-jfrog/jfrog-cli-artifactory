@@ -97,18 +97,7 @@ node("docker-ubuntu20-xlarge") {
                             sh "curl -O https://archive.apache.org/dist/maven/maven-3/${mavenVersion}/binaries/apache-maven-${mavenVersion}-bin.tar.gz"
                             sh "tar -xzf apache-maven-${mavenVersion}-bin.tar.gz"
 
-                            def gradleVersion = "8.5"
-                            sh "curl --fail -O https://services.gradle.org/distributions/gradle-8.5-bin.zip"
-                            // --- ADD THESE DEBUGGING STEPS ---
-                            echo "--- Debugging downloaded Gradle file ---"
-                            // 1. Check the file size
-                            sh "ls -l gradle-8.5-bin.zip"
-
-                            // 2. Check the file type
-                            sh "file gradle-8.5-bin.zip"
-                            // --- END DEBUGGING STEPS ---
-
-                            sh "unzip gradle-8.5-bin.zip"
+                            def gradleVersion = tool name: 'gradle'
 
                             if(pluginSelectedForOnDemandScanning=="all"){
                                 repoDetails=reposMap[pluginSelectedForOnDemandScanning]
