@@ -107,7 +107,7 @@ node("docker-ubuntu20-xlarge") {
                                     reposMap.each { repoName, details ->
                                         if (details.jdk == "11") {
                                             if(details.type=="maven"){
-                                                buildBinary(repoName, reposMap, mvnHome)
+                                                buildBinary(repoName, details, mvnHome)
                                             }
                                         }
                                     }
@@ -118,7 +118,7 @@ node("docker-ubuntu20-xlarge") {
                                     reposMap.each { repoName, details ->
                                         if (details.jdk == "8") {
                                             if(details.type=="maven"){
-                                                buildBinary(repoName, reposMap, mvnHome)
+                                                buildBinary(repoName, details, mvnHome)
                                             }
                                         }
                                     }
@@ -166,11 +166,40 @@ def notifyFailure(String stageName, error) {
     )
 }
 
-def buildBinary(repoName, reposMap, mvnHome){
+def cloneAndBuild(String repoName, Map details) {
+    echo "--- Starting process for ${repoName} ---"
+
+    dir(repoName) {
+        echo "Cloning from ${details.url}..."
+        git url: details.url, branch: 'master'
+
+        echo "Starting Maven build for ${repoName}..."
+        sh 'mvn clean install -DskipTests'
+
+        def zipFileName = "${repoName}-binaries.zip"
+
+        echo "Archiving .jar files from the 'target' directory..."
+
+        // 1. Zip only the .jar files from the 'target' directory
+        zip(zipFile: zipFileName, dir: 'target', glob: '*.jar')
+
+        echo "Successfully created ${zipFileName}"
+
+        // 2. Move the new zip file to the destination
+        sh "mv ${zipFileName} ${zippedBinariesDir}"
+
+        echo "Moved archive to ${zippedBinariesDir}"
+    }
+
+    echo "--- Successfully finished build for ${repoName} ---"
+}
+
+def buildBinary(repoName, details, mvnHome){
     withEnv(["PATH+MAVEN=${mvnHome}/bin"]) {
         sh "echo --- Starting build for ${repoName} ---"
         sh 'java -version'
         sh 'mvn -v'
+        cloneAndBuild(repoName, details)
     }
 }
 
