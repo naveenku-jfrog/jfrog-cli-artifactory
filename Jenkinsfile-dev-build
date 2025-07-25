@@ -88,6 +88,7 @@ node("docker-ubuntu20-xlarge") {
                             throw e
                         }
                     }
+                    sh "$pluginSelectedForOnDemandScanning"
                     /*stage('Installing Tools'){
                         script {
                             installJava()
