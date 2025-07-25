@@ -96,12 +96,10 @@ node("docker-ubuntu20-xlarge") {
                             def mavenVersion = "3.9.6"
                             sh "curl -O https://archive.apache.org/dist/maven/maven-3/${mavenVersion}/binaries/apache-maven-${mavenVersion}-bin.tar.gz"
                             sh "tar -xzf apache-maven-${mavenVersion}-bin.tar.gz"
-                            def mvnHome = "${pwd()}/apache-maven-${mavenVersion}"
 
                             def gradleVersion = "8.5"
-                            sh "curl -O https://services.gradle.org/distributions/gradle-${gradleVersion}-bin.zip"
-                            sh "unzip gradle-${gradleVersion}-bin.zip"
-                            def gradleHome = "${pwd()}/gradle-${gradleVersion}"
+                            sh "curl --fail -O https://services.gradle.org/distributions/gradle-8.5-bin.zip"
+                            sh "unzip gradle-8.5-bin.zip"
 
                             if(pluginSelectedForOnDemandScanning=="all"){
                                 repoDetails=reposMap[pluginSelectedForOnDemandScanning]
