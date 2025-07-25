@@ -127,12 +127,14 @@ node("docker-ubuntu20-xlarge") {
                         }
                     }
                     stage('Upload Binaries') {
-                        def filesToUpload = findFiles(glob: "${zippedBinariesDir}/**")
+                        dir("${zippedBinariesDir}") {
+                            def filesToUpload = findFiles(glob: "**/*")
 
-                        filesToUpload.each { file ->
-                            echo "Uploading ${file.path}..."
-
-                            sh "${builderPath} rt u '${file.path}' 'ecosys-dev-build-artifactory/plugins/dev/${formattedDate}/' --flat"
+                            filesToUpload.each { file ->
+                                echo "Uploading ${file.path}..."
+                                def fullPath = "${zippedBinariesDir}/${file.path}"
+                                sh "${builderPath} rt u '${fullPath}' 'ecosys-dev-build-artifactory/plugins/dev/${formattedDate}/' --flat"
+                            }
                         }
                     }
                 }
