@@ -197,16 +197,17 @@ def cloneAndBuild(String repoName, Map details) {
         sh 'mvn clean install -DskipTests'
 
         sh 'ls -R target'
+        def jarFiles = findFiles(glob: 'target/**/*.jar')
+        if (!jarFiles.isEmpty()) {
+            def zipFileName = "${repoName}-binaries.zip"
 
-        def zipFileName = "${repoName}-binaries.zip"
+            echo "Archiving .jar files from the 'target' directory..."
 
-        echo "Archiving .jar files from the 'target' directory..."
+            zip(zipFile: zipFileName, dir: 'target', glob: '**/*.jar')
 
-        zip(zipFile: zipFileName, dir: 'target', glob: '**/*.jar')
+            echo "Successfully created ${zipFileName}"
+        }
 
-        echo "Successfully created ${zipFileName}"
-
-        sh "mv ${zipFileName} ${zippedBinariesDir}"
         sh "mv target/*.zip ${zippedBinariesDir}"
 
         echo "Moved archive to ${zippedBinariesDir}"
