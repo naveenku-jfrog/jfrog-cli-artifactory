@@ -96,6 +96,7 @@ node("docker-ubuntu20-xlarge") {
                             def mavenVersion = "3.9.6"
                             sh "curl -O https://archive.apache.org/dist/maven/maven-3/${mavenVersion}/binaries/apache-maven-${mavenVersion}-bin.tar.gz"
                             sh "tar -xzf apache-maven-${mavenVersion}-bin.tar.gz"
+                            def mvnHome = "${pwd()}/apache-maven-${mavenVersion}"
 
                             if(pluginSelectedForOnDemandScanning=="all"){
                                 repoDetails=reposMap[pluginSelectedForOnDemandScanning]
@@ -105,7 +106,9 @@ node("docker-ubuntu20-xlarge") {
                                     sh 'java -version'
                                     reposMap.each { repoName, details ->
                                         if (details.jdk == "11") {
-                                            buildBinary(repoName, reposMap)
+                                            if(details.type=="maven){
+                                                buildBinary(repoName, reposMap, mvnHome)
+                                            }
                                         }
                                     }
                                 }
@@ -114,7 +117,9 @@ node("docker-ubuntu20-xlarge") {
                                     sh 'java -version'
                                     reposMap.each { repoName, details ->
                                         if (details.jdk == "8") {
-                                            buildBinary(repoName, reposMap)
+                                            if(details.type=="maven){
+                                                buildBinary(repoName, reposMap, mvnHome)
+                                            }
                                         }
                                     }
                                 }
@@ -161,10 +166,12 @@ def notifyFailure(String stageName, error) {
     )
 }
 
-def buildBinary(repoName, reposMap){
-    sh 'java -version'
-    sh "echo --- Starting build for ${repoName} ---"
-    sh 'mvn -v'
+def buildBinary(repoName, reposMap, mvnHome){
+    withEnv(["PATH+MAVEN=${mvnHome}/bin"]) {
+        sh "echo --- Starting build for ${repoName} ---"
+        sh 'java -version'
+        sh 'mvn -v'
+    }
 }
 
 def installJava(String version) {
