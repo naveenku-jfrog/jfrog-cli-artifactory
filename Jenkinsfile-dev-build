@@ -98,8 +98,10 @@ node("docker-ubuntu20-xlarge") {
                             def jdk = tool name: 'jdk-11'
                             withEnv(["JAVA_HOME=${jdk}", "PATH+JAVA=${jdk}/bin"]) {
                                 sh 'java -version'
-                                sh 'mvn --version'
-                                sh 'mvn clean install'
+                            }
+                            def jdk = tool name: 'jdk-8u111-linux-x64-jce-unlimited-policy'
+                            withEnv(["JAVA_HOME=${jdk}", "PATH+JAVA=${jdk}/bin"]) {
+                                sh 'java -version'
                             }
                         }
                     }
