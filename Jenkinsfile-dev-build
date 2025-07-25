@@ -149,7 +149,7 @@ def selectPlugins(Map reposMap) {
 
     def timerCause = buildCauses.find { it instanceof hudson.triggers.TimerTrigger$TimerTriggerCause }
     if (!timerCause) {
-        pluginSelectedForOnDemandScanning=$pluginName
+        pluginSelectedForOnDemandScanning=pluginName
     }
 }
 
