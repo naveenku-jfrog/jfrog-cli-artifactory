@@ -99,6 +99,16 @@ node("docker-ubuntu20-xlarge") {
 
                             def gradleVersion = "8.5"
                             sh "curl --fail -O https://services.gradle.org/distributions/gradle-8.5-bin.zip"
+                            // --- ADD THESE DEBUGGING STEPS ---
+                            echo "--- Debugging downloaded Gradle file ---"
+                            // 1. Check the file size
+                            sh "ls -l gradle-8.5-bin.zip"
+
+                            // 2. Check the file type
+                            sh "file gradle-8.5-bin.zip"
+                            // --- END DEBUGGING STEPS ---
+
+                            sh "unzip gradle-8.5-bin.zip"
                             sh "unzip gradle-8.5-bin.zip"
 
                             if(pluginSelectedForOnDemandScanning=="all"){
