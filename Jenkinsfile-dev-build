@@ -18,7 +18,7 @@ node("docker-ubuntu20-xlarge") {
                     "artifactory-jenkins-plugin": [url: "https://github.com/jfrog/jenkins-artifactory-plugin", type: "maven", jdk:"8"],
                     "build-info-extractor": [url: "https://github.com/jfrog/build-info", type: "gradle", jdk:"8"],
                     "teamcity-artifactory-plugin": [url: "https://github.com/jfrog/teamcity-artifactory-plugin.git", type: "maven", jdk:"8"],
-                    "bamboo-artifactory-plugin": [url: "https://github.com/jfrog/bamboo-artifactory-plugin.git", type: "maven", jdk:"11"]
+                    "bamboo-artifactory-plugin": [url: "https://github.com/jfrog/bamboo-artifactory-plugin.git", type: "maven", jdk:"11"],
                     "artifactory-maven-plugin": [url: "https://github.com/jfrog/artifactory-maven-plugin.git", type: "maven"],
                     "jfrog-plugin": [url: "https://github.com/jenkinsci/jfrog-plugin.git", type: "maven"],
                     "artifactory-client-java": [url: "https://github.com/jfrog/artifactory-client-java.git", type: "gradle"],
