@@ -213,8 +213,8 @@ def cloneAndBuild(repoName, details, mvnHome, gradleHomePath) {
         dir(repoName) {
             stage("Build & Upload & Scan Binaries for ${repoName}") {
                 switch (details.type) {
-                    case "maven":
-                        executeMaven(repoName, details)
+                    //case "maven":
+                    //    executeMaven(repoName, details)
                     case "gradle":
                         executeGradle(repoName, details)
                     default:
@@ -226,7 +226,6 @@ def cloneAndBuild(repoName, details, mvnHome, gradleHomePath) {
 }
 
 def executeMaven(repoName, details){
-    /*
     echo "Cloning from ${details.url}..."
     git url: details.url, branch: details.branch
 
@@ -246,7 +245,6 @@ def executeMaven(repoName, details){
         sh "jf rt u 'target/*.zip' 'ecosys-dev-build-artifactory/plugins/dev/${formattedDate}/' --flat"
         sh "${builderPath} scan '**/*.zip' --ant=true --watches ${watchName} --format=simple-json"
     }
-    */
 }
 
 def executeGradle(repoName, details){
