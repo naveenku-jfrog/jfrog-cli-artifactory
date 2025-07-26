@@ -226,6 +226,7 @@ def cloneAndBuild(repoName, details, mvnHome, gradleHomePath) {
 }
 
 def executeMaven(repoName, details){
+    /*
     echo "Cloning from ${details.url}..."
     git url: details.url, branch: details.branch
 
@@ -245,6 +246,7 @@ def executeMaven(repoName, details){
         sh "jf rt u 'target/*.zip' 'ecosys-dev-build-artifactory/plugins/dev/${formattedDate}/' --flat"
         sh "${builderPath} scan '**/*.zip' --ant=true --watches ${watchName} --format=simple-json"
     }
+    */
 }
 
 def executeGradle(repoName, details){
