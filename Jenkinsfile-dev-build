@@ -91,13 +91,13 @@ node("docker-ubuntu20-xlarge") {
                     }*/
                     stage('Installing Tools'){
                         script {
-                            /*sh "mkdir -p ${zippedBinariesDir}"
+                            sh "mkdir -p ${zippedBinariesDir}"
                             sh 'apt-get update -y && apt-get install -y unzip'
                             def mavenVersion = "3.9.6"
                             sh "curl -O https://archive.apache.org/dist/maven/maven-3/${mavenVersion}/binaries/apache-maven-${mavenVersion}-bin.tar.gz"
                             sh "tar -xzf apache-maven-${mavenVersion}-bin.tar.gz"
                             def mvnHome = "${pwd()}/apache-maven-${mavenVersion}"
-                            configRepo21()*/
+                            configRepo21()
                             sh "java -version"
 
                             def jdk8Path = installJdkFromArchive('8')
