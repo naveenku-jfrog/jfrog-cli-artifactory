@@ -212,23 +212,13 @@ def cloneAndBuild(repoName, details, mvnHome, gradleHomePath) {
         sh 'gradle -v'
         dir(repoName) {
             stage("Build & Upload & Scan Binaries for ${repoName}") {
-                def buildLogic = {
-                    switch (details.type) {
-                        //case "maven":
-                        //    executeMaven(repoName, details)
-                        case "gradle":
-                            executeGradle(repoName, details)
-                        default:
-                            echo "--- Unsupported project type  ---"
-                    }
-                }
-                if (details.dir) {
-                    echo "Build directory specified. Changing to: ${details.dir}"
-                    dir(details.dir) {
-                        buildLogic()
-                    }
-                } else {
-                    buildLogic()
+                switch (details.type) {
+                    //case "maven":
+                    //    executeMaven(repoName, details)
+                    case "gradle":
+                        executeGradle(repoName, details)
+                    default:
+                        echo "--- Unsupported project type  ---"
                 }
             }
         }
@@ -260,7 +250,7 @@ def executeMaven(repoName, details){
 def executeGradle(repoName, details){
     echo "Cloning from ${details.url}...Inside executeGradle"
     git url: details.url, branch: details.branch
-    echo "Contents Inside..java"
+    echo "Contents Inside.."
     sh "pwd"
     sh "ls -la"
 
