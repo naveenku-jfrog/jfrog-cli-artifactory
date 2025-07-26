@@ -323,6 +323,7 @@ def installNodeJs() {
 def installRuby() {
     sh 'apt-get update -y'
     sh 'apt-get install -y ruby-full'
+    sh 'gem install bundler'
 
     sh 'ruby -v'
     sh 'gem -v'
@@ -368,15 +369,16 @@ def buildAndProcessRubyGem(repoName, details){
     dir(repoName){
         git url: details.url, branch: details.branch
 
-        sh "gem build ${repoName}.gemspec"
+        sh 'bundle install'
+        sh 'bundle exec rake build'
 
-        def gemspecFile = sh(script: "find . -name '*.gemspec'", returnStdout: true).trim()
-        if (gemspecFile.isEmpty()) {
+        def gemFile = sh(script: "find . -name '*.gem'", returnStdout: true).trim()
+        if (gemFile.isEmpty()) {
             error "Build failed: Could not find generated .gem file."
         }
 
         def zipFileName = "${repoName}.zip"
-        zip(zipFile: zipFileName, archive: false, glob: gemspecFile)
+        zip(zipFile: zipFileName, archive: false, glob: gemFile)
         echo "Successfully created zip archive: ${zipFileName}"
 
         sh "${builderPath} rt u '${zipFileName}' 'ecosys-dev-build-artifactory/plugins/dev/${formattedDate}/' --flat"
