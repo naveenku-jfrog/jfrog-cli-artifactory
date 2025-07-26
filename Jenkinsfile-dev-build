@@ -99,6 +99,8 @@ node("docker-ubuntu20-xlarge") {
                             def mvnHome = "${pwd()}/apache-maven-${mavenVersion}"
                             configRepo21()
                             sh "java -version"
+                            jdk8Home=installAndGetJdkPath("8")
+                            sh "${jdk8Home}"
 
                             def tasks = [:]
                             reposMap.each { repoName, details ->
@@ -106,7 +108,6 @@ node("docker-ubuntu20-xlarge") {
                                     buildBinary(repoName, details, mvnHome)
                                 }
                             }
-
                             parallel(tasks)
                         }
                     }
@@ -178,24 +179,19 @@ def buildBinary(repoName, details, mvnHome){
     }*/
 }
 
-def installJava(String version) {
-    println "Checking for JDK ${version}..."
-    def javaHome = sh(script: "update-alternatives --display java | grep '/usr/lib/jvm/java-${version}-openjdk' | head -n1 | awk '{print \$1}' | sed 's|/bin/java||' || true", returnStdout: true).trim()
+def installAndGetJdkPath(String version) {
+    def jdkPackage = "openjdk-${version}-jdk"
+
+    // 1. Install the specific version
+    sh "sudo apt-get update -y && sudo apt-get install -y ${jdkPackage}"
+
+    // 2. Find and return the installation path
+    def javaHome = sh(script: "update-alternatives --display java | grep 'openjdk-${version}' | head -n1 | awk '{print \$1}' | sed 's|/bin/java||'", returnStdout: true).trim()
 
     if (javaHome.isEmpty()) {
-        println "JDK ${version} not found. Installing..."
-        def jdkPackage = "openjdk-${version}-jdk"
-        sh "apt-get update -y"
-        sh "apt-get install -y ${jdkPackage}"
-
-        javaHome = sh(script: "update-alternatives --display java | grep '/usr/lib/jvm/java-${version}-openjdk' | head -n1 | awk '{print \$1}' | sed 's|/bin/java||'", returnStdout: true).trim()
-    } else {
-        println "JDK ${version} is already installed at: ${javaHome}"
+        error "Could not determine JAVA_HOME for JDK ${version} after installation."
     }
 
-    if (javaHome.isEmpty()) {
-        error "Could not determine JAVA_HOME for JDK ${version}."
-    }
     return javaHome
 }
 
