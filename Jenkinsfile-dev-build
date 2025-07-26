@@ -104,6 +104,8 @@ node("docker-ubuntu20-xlarge") {
 
                             installNodeJs()
 
+                            installRuby()
+
                             def tasks = [:]
                             reposMap.each { repoName, details ->
                                 tasks[repoName] = {
@@ -318,6 +320,14 @@ def installNodeJs() {
     sh 'npm -v'
 }
 
+def installRuby() {
+    sh 'apt-get update -y'
+    sh 'apt-get install -y ruby-full'
+
+    sh 'ruby -v'
+    sh 'gem -v'
+}
+
 def buildBinary(repoName, details, mvnHome, jdk8Path, gradleHomePath){
     switch (details.type) {
         //case ["maven", "gradle"]:
@@ -334,22 +344,24 @@ def buildBinary(repoName, details, mvnHome, jdk8Path, gradleHomePath){
 }
 
 def executeNPMProject(repoName, details){
-    git url: details.url, branch: details.branch
-    sh 'npm install'
+    dir(repoName){
+        git url: details.url, branch: details.branch
+        sh 'npm install'
 
-    sh 'npm run create'
+        sh 'npm run create'
 
-    def vsixFile = sh(script: "find . -name '*.vsix'", returnStdout: true).trim()
-    if (vsixFile.isEmpty()) {
-        error "Build failed: Could not find generated .vsix file."
+        def vsixFile = sh(script: "find . -name '*.vsix'", returnStdout: true).trim()
+        if (vsixFile.isEmpty()) {
+            error "Build failed: Could not find generated .vsix file."
+        }
+
+        def zipFileName = "${vsixFile}.zip"
+        zip(zipFile: zipFileName, archive: false, glob: vsixFile)
+        echo "Successfully created zip archive: ${zipFileName}"
+
+        sh "${builderPath} rt u '${zipFileName}' 'ecosys-dev-build-artifactory/plugins/dev/${formattedDate}/' --flat"
+        sh "${builderPath} scan '${zipFileName}' --watches ${watchName} --format=simple-json"
     }
-
-    def zipFileName = "${vsixFile}.zip"
-    zip(zipFile: zipFileName, archive: false, glob: vsixFile)
-    echo "Successfully created zip archive: ${zipFileName}"
-
-    sh "${builderPath} rt u '${zipFileName}' 'ecosys-dev-build-artifactory/plugins/dev/${formattedDate}/' --flat"
-    sh "${builderPath} scan '${zipFileName}' --watches ${watchName} --format=simple-json"
 }
 def selectPlugins(Map reposMap) {
     def buildCauses = currentBuild.getBuildCauses()
