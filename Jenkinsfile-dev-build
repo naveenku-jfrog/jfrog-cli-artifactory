@@ -51,7 +51,7 @@ node("docker-ubuntu20-xlarge") {
                     slackChannelName = "ecosytem-plugins-dev-build-notifications"
                     watchName = "ecosystem-watch"
                     pluginSelectedForOnDemandScanning=""
-                    stage('Clone Source Repo') {
+                    /*stage('Clone Source Repo') {
                         try  {
                             dir("${cliWorkspace}") {
                                 sh "git clone https://github.com/jfrog/jfrog-cli.git"
@@ -88,7 +88,7 @@ node("docker-ubuntu20-xlarge") {
                             notifyFailure('Select Plugins for execution', e)
                             throw e
                         }
-                    }
+                    }*/
                     stage('Installing Tools'){
                         script {
                             sh "mkdir -p ${zippedBinariesDir}"
@@ -99,7 +99,7 @@ node("docker-ubuntu20-xlarge") {
                             def mvnHome = "${pwd()}/apache-maven-${mavenVersion}"
                             configRepo21()
                             sh "java -version"
-                            jdk8Home=installAndGetJdkPath("8")
+                            jdk8Home=installAndGetJdk8Path("8")
                             sh "${jdk8Home}"
 
                             def tasks = [:]
