@@ -323,10 +323,11 @@ def installNodeJs() {
 def installRuby() {
     sh 'apt-get update -y'
     sh 'apt-get install -y ruby-full'
-    sh 'gem install bundler'
+    sh 'gem install bundler -v 2.4.22'
 
     sh 'ruby -v'
     sh 'gem -v'
+    sh 'bundle -v'
 }
 
 def buildBinary(repoName, details, mvnHome, jdk8Path, gradleHomePath){
