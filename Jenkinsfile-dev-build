@@ -358,10 +358,10 @@ def buildAndScanPipeImage(repoName, details) {
     dir(repoName){
         git url: details.url, branch: details.branch
 
-        def dockerImage = docker.build(imageName)
+        def dockerImage = docker.build("jfrog-setup-cli-pipe:${formattedDate}")
 
-        sh "${builderPath} rt u '${zipFileName}' 'ecosys-dev-build-artifactory/plugins/dev/${formattedDate}/' --flat"
-        sh "${builderPath} scan '${zipFileName}' --watches ${watchName} --format=simple-json"
+        sh "${builderPath} rt u '${dockerImage}' 'ecosys-dev-build-artifactory/plugins/dev/${formattedDate}/' --flat"
+        sh "${builderPath} scan '${dockerImage}' --watches ${watchName} --format=simple-json"
     }
 }
 
