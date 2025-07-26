@@ -260,6 +260,9 @@ def executeMaven(repoName, details){
 def executeGradle(repoName, details){
     echo "Cloning from ${details.url}...Inside executeGradle"
     git url: details.url, branch: details.branch
+    echo "Contents Inside..java"
+    sh "pwd"
+    sh "ls -la"
 
     echo "Starting Gradle build for ${repoName}..."
     sh './gradlew clean build -x test'
