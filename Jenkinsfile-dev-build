@@ -269,7 +269,7 @@ def executeGradle(repoName, details){
             sh './gradlew clean build -x test'
         }
 
-        def buildOutputDir = 'artifactory-java-client-services/build/libs'
+        def buildOutputDir = 'services/build/libs'
         sh "ls -la ${buildOutputDir}"
 
         // Check for and zip any .jar files
