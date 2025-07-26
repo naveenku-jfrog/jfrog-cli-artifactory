@@ -99,10 +99,7 @@ node("docker-ubuntu20-xlarge") {
                             def mvnHome = "${pwd()}/apache-maven-${mavenVersion}"
                             configRepo21()
                             sh "java -version"
-
                             def jdk8Path = installJdkFromArchive('8')
-
-
                             def tasks = [:]
                             reposMap.each { repoName, details ->
                                 tasks[repoName] = {
@@ -110,7 +107,6 @@ node("docker-ubuntu20-xlarge") {
                                 }
                             }
                             parallel(tasks)
-
                         }
                     }
                 }
