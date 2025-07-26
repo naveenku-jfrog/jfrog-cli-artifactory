@@ -369,21 +369,7 @@ def executeNPMProject(repoName, details){
 def buildAndProcessRubyGem(repoName, details){
     dir(repoName){
         git url: details.url, branch: details.branch
-        bundle config set --local without ''
-        sh 'bundle install'
-        sh 'bundle exec rake build'
-
-        def gemFile = sh(script: "find . -name '*.gem'", returnStdout: true).trim()
-        if (gemFile.isEmpty()) {
-            error "Build failed: Could not find generated .gem file."
-        }
-
-        def zipFileName = "${repoName}.zip"
-        zip(zipFile: zipFileName, archive: false, glob: gemFile)
-        echo "Successfully created zip archive: ${zipFileName}"
-
-        sh "${builderPath} rt u '${zipFileName}' 'ecosys-dev-build-artifactory/plugins/dev/${formattedDate}/' --flat"
-        sh "${builderPath} scan '${zipFileName}' --watches ${watchName} --format=simple-json"
+        sh "${builderPath} audit --watches ${watchName} --format=simple-json"
     }
 }
 
