@@ -101,6 +101,7 @@ node("docker-ubuntu20-xlarge") {
                             sh "java -version"
 
                             def jdk8Path = installJdkFromArchive('8')
+                            /*
 
                             def tasks = [:]
                             reposMap.each { repoName, details ->
@@ -109,6 +110,7 @@ node("docker-ubuntu20-xlarge") {
                                 }
                             }
                             parallel(tasks)
+                            */
                         }
                     }
                 }
