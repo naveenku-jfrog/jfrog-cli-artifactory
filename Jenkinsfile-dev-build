@@ -263,6 +263,7 @@ def executeGradle(repoName, details){
 
         // Gradle's output directory is 'build/libs'
         def buildOutputDir = 'build/libs'
+        sh "ls -la ${buildOutputDir}"
 
         // Check for and zip any .jar files
         def jarFiles = findFiles(glob: '${buildOutputDir}/**/*.jar')
