@@ -101,6 +101,7 @@ node("docker-ubuntu20-xlarge") {
                             configRepo21()
 
                             def jdk8Path = installJdkFromArchive('8')
+
                             def tasks = [:]
                             reposMap.each { repoName, details ->
                                 tasks[repoName] = {
