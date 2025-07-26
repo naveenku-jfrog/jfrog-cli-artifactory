@@ -370,7 +370,7 @@ def buildAndProcessRubyGem(repoName, details){
     dir(repoName){
         git url: details.url, branch: details.branch
         sh 'gem install cocoapods-art'
-        def gemPath = sh(script: "gem environment executable_dir", returnStdout: true).trim()
+        def gemPath = sh(script: "gem environment | grep 'EXECUTABLE DIRECTORY' | awk '{print \$NF}'", returnStdout: true).trim()
         echo "The Gem executable directory is: ${gemPath}"
     }
 }
