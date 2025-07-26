@@ -97,53 +97,16 @@ node("docker-ubuntu20-xlarge") {
                             sh "curl -O https://archive.apache.org/dist/maven/maven-3/${mavenVersion}/binaries/apache-maven-${mavenVersion}-bin.tar.gz"
                             sh "tar -xzf apache-maven-${mavenVersion}-bin.tar.gz"
                             def mvnHome = "${pwd()}/apache-maven-${mavenVersion}"
-
-                            if(pluginSelectedForOnDemandScanning=="all"){
-                                repoDetails=reposMap[pluginSelectedForOnDemandScanning]
-                            }else{
-                                def jdk = tool name: 'jdk-11'
-                                withEnv(["JAVA_HOME=${jdk}", "PATH+JAVA=${jdk}/bin"]) {
-                                    sh 'java -version'
-                                    reposMap.each { repoName, details ->
-                                        if (details.jdk == "11") {
-                                            if(details.type=="maven"){
-                                                buildBinary(repoName, details, mvnHome)
-                                            }
-                                        }
-                                    }
-                                }
-                                jdk = installJava("8")
-                                withEnv(["JAVA_HOME=${jdk}", "PATH+JAVA=${jdk}/bin"]) {
-                                    sh 'java -version'
-                                    reposMap.each { repoName, details ->
-                                        if (details.jdk == "8") {
-                                            if(details.type=="maven"){
-                                                buildBinary(repoName, details, mvnHome)
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    stage('Upload Binaries') {
-                        dir("${zippedBinariesDir}") {
-                            def filesToUpload = findFiles(glob: "**/*")
                             configRepo21()
 
-                            filesToUpload.each { file ->
-                                echo "Uploading ${file.path}..."
-                                def fullPath = "${zippedBinariesDir}/${file.path}"
-                                sh "${builderPath} rt u '${fullPath}' 'ecosys-dev-build-artifactory/plugins/dev/${formattedDate}/' --flat"
+                            def tasks = [:]
+                            reposMap.each { repoName, details ->
+                                tasks[repoName] = {
+                                    buildBinary(repoName, details, mvnHome)
+                                }
                             }
-                        }
-                    }
-                    stage('Scan Binaries') {
-                        dir("${zippedBinariesDir}") {
-                            sh """#!/bin/bash
-                                ${builderPath} --version
-                                ${builderPath} scan '**/*.zip' --ant=true --watches ${watchName} --format=simple-json
-                            """
+
+                            parallel(tasks)
                         }
                     }
                 }
@@ -190,42 +153,28 @@ def cloneAndBuild(String repoName, Map details) {
     echo "--- Starting process for ${repoName} ---"
 
     dir(repoName) {
-        echo "Cloning from ${details.url}..."
-        git url: details.url, branch: details.branch
-
-        echo "Starting Maven build for ${repoName}..."
-        sh 'mvn clean install -DskipTests'
-
-        sh 'ls -R target'
-        def jarFiles = findFiles(glob: 'target/**/*.jar')
-        if (jarFiles.size() > 0) {
-            def zipFileName = "${repoName}-binaries.zip"
-            echo "Archiving .jar files from the 'target' directory..."
-            zip(zipFile: zipFileName, dir: 'target', glob: '**/*.jar')
-            echo "Successfully created ${zipFileName}"
-            sh "mv ${zipFileName} ${zippedBinariesDir}"
+        stage('Upload Binaries') {
         }
 
-        def zipFiles = findFiles(glob: 'target/*.zip')
-        if (zipFiles.size() > 0) {
-            echo "Found ${zipFiles.size()} zip file(s). Moving them..."
-            sh "mv target/*.zip ${zippedBinariesDir}"
-            echo "Successfully moved files to ${zippedBinariesDir}"
+        stage('Upload Binaries') {
+
+        }
+        stage('Scan Binaries') {
         }
 
-        echo "Moved archive to ${zippedBinariesDir}"
     }
 
     echo "--- Successfully finished build for ${repoName} ---"
 }
 
 def buildBinary(repoName, details, mvnHome){
-    withEnv(["PATH+MAVEN=${mvnHome}/bin"]) {
+    echo "--- Starting process for ${repoName} ---"
+    /*withEnv(["PATH+MAVEN=${mvnHome}/bin"]) {
         sh "echo --- Starting build for ${repoName} ---"
         sh 'java -version'
         sh 'mvn -v'
         cloneAndBuild(repoName, details)
-    }
+    }*/
 }
 
 def installJava(String version) {
