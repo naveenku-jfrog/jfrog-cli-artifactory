@@ -81,7 +81,7 @@ node("docker-ubuntu20-xlarge") {
                     stage('Select Plugins for execution'){
                         try  {
                         script{
-                            selectPlugins(reposMap)
+                             selectPlugins(reposMap)
                             }
                         }
                         catch (e) {
@@ -97,6 +97,9 @@ node("docker-ubuntu20-xlarge") {
                             sh "curl -O https://archive.apache.org/dist/maven/maven-3/${mavenVersion}/binaries/apache-maven-${mavenVersion}-bin.tar.gz"
                             sh "tar -xzf apache-maven-${mavenVersion}-bin.tar.gz"
                             def mvnHome = "${pwd()}/apache-maven-${mavenVersion}"
+
+                            def gradleHomePath = installGradle('8.5')
+                            sh "${gradleHomePath}"
                             configRepo21()
                             sh "java -version"
                             def jdk8Path = installJdkFromArchive('8')
@@ -171,6 +174,31 @@ def installJdkFromArchive(String version) {
 
     // Return the absolute path
     return "${pwd()}/${jdkDirName}"
+}
+
+def installGradle(String version) {
+    echo "--- Installing Gradle v${version} ---"
+
+    // 1. Install unzip utility if not present
+    sh 'sudo apt-get update -y && sudo apt-get install -y unzip'
+
+    // 2. Download the Gradle binary zip
+    def downloadUrl = "https://services.gradle.org/distributions/gradle-${version}-bin.zip"
+    sh "curl --fail -L -o gradle.zip '${downloadUrl}'"
+
+    // 3. Unzip the archive
+    sh "unzip gradle.zip"
+
+    // 4. Find the name of the extracted directory
+    def gradleDirName = sh(script: "find . -maxdepth 1 -type d -name 'gradle-*'", returnStdout: true).trim()
+    if (gradleDirName.isEmpty()) {
+        error "Could not find extracted Gradle directory."
+    }
+
+    // 5. Return the absolute path to the Gradle home directory
+    def gradleHome = "${pwd()}/${gradleDirName}"
+    echo "Gradle v${version} installed at: ${gradleHome}"
+    return gradleHome
 }
 
 def cloneAndBuild(repoName, details, mvnHome) {
