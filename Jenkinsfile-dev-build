@@ -93,22 +93,18 @@ node("docker-ubuntu20-xlarge") {
                         script {
                             sh "mkdir -p ${zippedBinariesDir}"
                             sh 'apt-get update -y && apt-get install -y unzip'
-                            def mavenVersion = "3.9.6"
-                            sh "curl -O https://archive.apache.org/dist/maven/maven-3/${mavenVersion}/binaries/apache-maven-${mavenVersion}-bin.tar.gz"
-                            sh "tar -xzf apache-maven-${mavenVersion}-bin.tar.gz"
-                            def mvnHome = "${pwd()}/apache-maven-${mavenVersion}"
+
+                            def mvnHome = installMaven("3.9.6")
 
                             def gradleHomePath = installGradle('8.5')
-                            withEnv(["PATH+GRADLE=${gradleHomePath}/bin"]) {
-                                sh 'gradle -v'
-                            }
+
                             configRepo21()
-                            sh "java -version"
+
                             def jdk8Path = installJdkFromArchive('8')
                             def tasks = [:]
                             reposMap.each { repoName, details ->
                                 tasks[repoName] = {
-                                    buildBinaryWithSpecificJDK(repoName, details, mvnHome, jdk8Path)
+                                    buildBinaryWithSpecificJDK(repoName, details, mvnHome, jdk8Path, gradleHomePath)
                                 }
                             }
                             parallel(tasks)
@@ -200,11 +196,20 @@ def installGradle(String version) {
     return gradleHome
 }
 
-def cloneAndBuild(repoName, details, mvnHome) {
-    withEnv(["PATH+MAVEN=${mvnHome}/bin"]) {
+def installMaven(String mavenVersion){
+    sh "curl -O https://archive.apache.org/dist/maven/maven-3/${mavenVersion}/binaries/apache-maven-${mavenVersion}-bin.tar.gz"
+    sh "tar -xzf apache-maven-${mavenVersion}-bin.tar.gz"
+    def mvnHome = "${pwd()}/apache-maven-${mavenVersion}"
+    return mvnHome
+}
+
+def cloneAndBuild(repoName, details, mvnHome, gradleHomePath) {
+    withEnv(["PATH+MAVEN=${mvnHome}/bin"],
+            "PATH+GRADLE=${gradleHomePath}/bin") {
         echo "--- Starting process for ${repoName} ---"
         sh "java -version"
         sh "mvn -v"
+        sh 'gradle -v'
         dir(repoName) {
             stage("Build & Upload & Scan Binaries for ${repoName}") {
                 echo "Cloning from ${details.url}..."
@@ -231,13 +236,13 @@ def cloneAndBuild(repoName, details, mvnHome) {
     }
 }
 
-def buildBinaryWithSpecificJDK(repoName, details, mvnHome, jdk8Path){
+def buildBinaryWithSpecificJDK(repoName, details, mvnHome, jdk8Path, gradleHomePath){
     if(details.jdk=="8" && details.type=="maven"){
         withEnv(["JAVA_HOME=${jdk8Path}", "PATH+JAVA=${jdk8Path}/bin"]) {
-            cloneAndBuild(repoName, details, mvnHome)
+            cloneAndBuild(repoName, details, mvnHome, gradleHomePath)
         }
     } else if(details.jdk=="11" && details.type=="maven"){
-        cloneAndBuild(repoName, details, mvnHome)
+        cloneAndBuild(repoName, details, mvnHome, gradleHomePath)
     }
 }
 
