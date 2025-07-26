@@ -252,11 +252,11 @@ def executeGradle(repoName, details, gradleHomePath){
 }
 
 def buildBinaryWithSpecificJDK(repoName, details, mvnHome, jdk8Path, gradleHomePath){
-    if(details.jdk=="8" && details.type=="maven"){
+    if(details.jdk=="8"){
         withEnv(["JAVA_HOME=${jdk8Path}", "PATH+JAVA=${jdk8Path}/bin"]) {
             cloneAndBuild(repoName, details, mvnHome, gradleHomePath)
         }
-    } else if(details.jdk=="11" && details.type=="maven"){
+    } else if(details.jdk=="11"){
         cloneAndBuild(repoName, details, mvnHome, gradleHomePath)
     }
 }
