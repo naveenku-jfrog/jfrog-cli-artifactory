@@ -104,7 +104,7 @@ node("docker-ubuntu20-xlarge") {
                             def tasks = [:]
                             reposMap.each { repoName, details ->
                                 tasks[repoName] = {
-                                    buildBinaryWithSpecificJDK(repoName, details, mvnHome, jdk8Path, gradleHomePath)
+                                    buildBinary(repoName, details, mvnHome, jdk8Path, gradleHomePath)
                                 }
                             }
                             parallel(tasks)
@@ -214,9 +214,9 @@ def cloneAndBuild(repoName, details, mvnHome, gradleHomePath) {
             stage("Build & Upload & Scan Binaries for ${repoName}") {
                 switch (details.type) {
                     case "maven":
-                        executeMaven(repoName, details, mvnHome)
+                        executeMaven(repoName, details)
                     case "gradle":
-                        executeGradle(repoName, details, gradleHomePath)
+                        executeGradle(repoName, details)
                     default:
                         echo "--- Unsupported project type  ---"
                 }
@@ -225,7 +225,7 @@ def cloneAndBuild(repoName, details, mvnHome, gradleHomePath) {
     }
 }
 
-def executeMaven(repoName, details, mvnHome){
+def executeMaven(repoName, details){
     echo "Cloning from ${details.url}..."
     git url: details.url, branch: details.branch
 
@@ -247,8 +247,33 @@ def executeMaven(repoName, details, mvnHome){
     }
 }
 
-def executeGradle(repoName, details, gradleHomePath){
+def executeGradle(repoName, details){
     echo "Cloning from ${details.url}...Inside executeGradle"
+    git url: details.url, branch: details.branch
+
+    echo "Starting Gradle build for ${repoName}..."
+    // Use the Gradle Wrapper to build the project
+    sh './gradlew clean build -x test'
+
+    // Gradle's output directory is 'build/libs'
+    def buildOutputDir = 'build/libs'
+
+    // Check for and zip any .jar files
+    def jarFiles = findFiles(glob: "${buildOutputDir}/**/*.jar")
+    if (jarFiles.size() > 0) {
+        def zipFileName = "${repoName}-binaries.zip"
+        zip(zipFile: zipFileName, dir: buildOutputDir, glob: '**/*.jar')
+        echo "Successfully created ${zipFileName}"
+        sh "${builderPath} rt u '${zipFileName}' 'ecosys-dev-build-artifactory/plugins/dev/${formattedDate}/' --flat"
+        sh "${builderPath} scan '${zipFileName}' --watches ${watchName} --format=simple-json"
+    }
+
+    // Check for and upload any pre-existing .zip files
+    def zipFiles = findFiles(glob: "${buildOutputDir}/*.zip")
+    if (zipFiles.size() > 0) {
+        sh "${builderPath} rt u '${buildOutputDir}/*.zip' 'ecosys-dev-build-artifactory/plugins/dev/${formattedDate}/' --flat"
+        sh "${builderPath} scan '${buildOutputDir}/*.zip' --watches ${watchName} --format=simple-json"
+    }
 }
 
 def executeJDKProject(repoName, details, mvnHome, jdk8Path, gradleHomePath){
@@ -261,7 +286,7 @@ def executeJDKProject(repoName, details, mvnHome, jdk8Path, gradleHomePath){
     }
 }
 
-def buildBinaryWithSpecificJDK(repoName, details, mvnHome, jdk8Path, gradleHomePath){
+def buildBinary(repoName, details, mvnHome, jdk8Path, gradleHomePath){
     switch (details.type) {
         case ["maven", "gradle"]:
             executeJDKProject(repoName, details, mvnHome, jdk8Path, gradleHomePath)
