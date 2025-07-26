@@ -353,22 +353,21 @@ def buildAndProcessRubyGem(repoName, details){
         sh "${builderPath} audit --watches ${watchName} --format=simple-json"
     }
 }
-def buildAndScanPipeImage(repoName, details){
+
+def buildAndScanPipeImage(repoName, details) {
     dir(repoName) {
         git url: details.url, branch: details.branch
-        def dockerImage = docker.build("jfrog-setup-cli-pipe:${formattedDate}")
+        String imageName = "jfrog-setup-cli-pipe:${formattedDate}"
+        def dockerImage = docker.build(imageName)
 
-        String dockerImageString = dockerImage.toString()
-        String tarFileName = "${dockerImageString.replace(':', '_')}.tar"
+        String tarFileName = "jfrog-setup-cli-pipe_${formattedDate}.tar"
+        String zipFileName = "jfrog-setup-cli-pipe_${formattedDate}.zip"
 
-        sh "docker save -o ${tarFileName} ${dockerImageString}"
-
-        String zipFileName = "${dockerImageString.replace(':', '_')}.zip"
+        sh "docker save -o ${tarFileName} ${imageName}"
 
         zip(zipFile: zipFileName, archive: false, glob: tarFileName)
 
         sh "${builderPath} rt u '${zipFileName}' 'ecosys-dev-build-artifactory/plugins/dev/${formattedDate}/' --flat"
-
         sh "${builderPath} scan '${zipFileName}' --watches ${watchName} --format=simple-json"
     }
 }
