@@ -26,7 +26,7 @@ node("docker-ubuntu20-xlarge") {
                     "bamboo-artifactory-plugin": [url: "https://github.com/jfrog/bamboo-artifactory-plugin.git", branch: "master", type: "maven", jdk:"11"],
                     "jfrog-plugin": [url: "https://github.com/jenkinsci/jfrog-plugin.git", branch:"main", type: "maven", j∂çdk:"11"],
                     "bamboo-jfrog-plugin": [url: "https://github.com/jfrog/bamboo-jfrog-plugin.git", branch: "main", type: "maven", jdk:"11"],
-                    "jfrog-azure-devops-extension": [url: "https://github.com/jfrog/jfrog-azure-devops-extension.git",branch: "master", type: "npm"],
+                    "jfrog-azure-devops-extension": [url: "https://github.com/jfrog/jfrog-azure-devops-extension.git",branch: "dev", type: "npm"],
                     "cocoapods-art": [url: "https://github.com/jfrog/cocoapods-art.git", branch: "master", type: "ruby"],
                     "jfrog-setup-cli": [url: "https://bitbucket.org/jfrog/jfrog-setup-cli.git", branch: "master", type: "docker"]
                 ]
@@ -310,19 +310,42 @@ def executeJDKProject(repoName, details, mvnHome, jdk8Path, gradleHomePath){
 
 def buildBinary(repoName, details, mvnHome, jdk8Path, gradleHomePath){
     switch (details.type) {
-        case ["maven", "gradle"]:
-            executeJDKProject(repoName, details, mvnHome, jdk8Path, gradleHomePath)
-        case "ruby":
-            echo "--- ruby project type  ---"
+        //case ["maven", "gradle"]:
+          //  executeJDKProject(repoName, details, mvnHome, jdk8Path, gradleHomePath)
+        //case "ruby":
+          //  echo "--- ruby project type  ---"
         case "npm":
-            echo "--- npm project type  ---"
-        case "docker":
-            echo "--- docker project type  ---"
+            executeNPMProject(repoName, details)
+        //case "docker":
+           // echo "--- docker project type  ---"
         default:
             echo "--- Unsupported project type  ---"
     }
 }
 
+def executeNPMProject(repoName, details){
+    git url: details.url, branch: details.branch
+    sh 'npm install'
+
+    sh 'npm run create'
+
+    def vsixFile = sh(script: "find . -name '*.vsix'", returnStdout: true).trim()
+    if (vsixFile.isEmpty()) {
+        error "Build failed: Could not find generated .vsix file."
+    }
+
+    def zipFileName = "${vsixFile}.zip"
+    zip(zipFile: zipFileName, archive: false, glob: vsixFile)
+    echo "Successfully created zip archive: ${zipFileName}"
+
+    stage("Upload Binaries for ${repoName}") {
+        sh "${builderPath} rt u '${zipFileName}' 'ecosys-dev-build-artifactory/plugins/dev/${formattedDate}/' --flat"
+    }
+
+    stage("Scan Binaries for ${repoName}") {
+        sh "${builderPath} scan '${zipFileName}' --watches ${watchName} --format=simple-json"
+    }
+}
 def selectPlugins(Map reposMap) {
     def buildCauses = currentBuild.getBuildCauses()
 
