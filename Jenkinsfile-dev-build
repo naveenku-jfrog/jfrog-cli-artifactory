@@ -254,27 +254,39 @@ def executeGradle(repoName, details){
     sh "pwd"
     sh "ls -la"
 
-    echo "Starting Gradle build for ${repoName}..."
-    sh './gradlew clean build -x test'
+    def buildLogic={
+        echo "Contents Inside.."
+        sh "pwd"
+        sh "ls -la"
+        echo "Starting Gradle build for ${repoName}..."
+        sh './gradlew clean build -x test'
 
-    // Gradle's output directory is 'build/libs'
-    def buildOutputDir = 'build/libs'
+        // Gradle's output directory is 'build/libs'
+        def buildOutputDir = 'build/libs'
 
-    // Check for and zip any .jar files
-    def jarFiles = findFiles(glob: '${buildOutputDir}/**/*.jar')
-    if (jarFiles.size() > 0) {
-        def zipFileName = "${repoName}-binaries.zip"
-        zip(zipFile: zipFileName, dir: buildOutputDir, glob: '**/*.jar')
-        echo "Successfully created ${zipFileName}"
-        sh "${builderPath} rt u '${zipFileName}' 'ecosys-dev-build-artifactory/plugins/dev/${formattedDate}/' --flat"
-        sh "${builderPath} scan '${zipFileName}' --watches ${watchName} --format=simple-json"
+        // Check for and zip any .jar files
+        def jarFiles = findFiles(glob: '${buildOutputDir}/**/*.jar')
+        if (jarFiles.size() > 0) {
+            def zipFileName = "${repoName}-binaries.zip"
+            zip(zipFile: zipFileName, dir: buildOutputDir, glob: '**/*.jar')
+            echo "Successfully created ${zipFileName}"
+            sh "${builderPath} rt u '${zipFileName}' 'ecosys-dev-build-artifactory/plugins/dev/${formattedDate}/' --flat"
+            sh "${builderPath} scan '${zipFileName}' --watches ${watchName} --format=simple-json"
+        }
+
+        // Check for and upload any pre-existing .zip files
+        def zipFiles = findFiles(glob: "${buildOutputDir}/*.zip")
+        if (zipFiles.size() > 0) {
+            sh "${builderPath} rt u '${buildOutputDir}/*.zip' 'ecosys-dev-build-artifactory/plugins/dev/${formattedDate}/' --flat"
+            sh "${builderPath} scan '${buildOutputDir}/*.zip' --watches ${watchName} --format=simple-json"
+        }
     }
-
-    // Check for and upload any pre-existing .zip files
-    def zipFiles = findFiles(glob: "${buildOutputDir}/*.zip")
-    if (zipFiles.size() > 0) {
-        sh "${builderPath} rt u '${buildOutputDir}/*.zip' 'ecosys-dev-build-artifactory/plugins/dev/${formattedDate}/' --flat"
-        sh "${builderPath} scan '${buildOutputDir}/*.zip' --watches ${watchName} --format=simple-json"
+    if(details.dir){
+        dir(details.dir){
+            buildLogic()
+        }
+    }else{
+        buildLogic()
     }
 }
 
