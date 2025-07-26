@@ -161,31 +161,26 @@ def notifyFailure(String stageName, error) {
  * @return The absolute path to the JAVA_HOME directory.
  */
 def installJdkFromArchive(String version) {
-    // A map of direct download URLs for different JDK versions from Adoptium
     def jdkUrlMap = [
         "8": "https://api.adoptium.net/v3/binary/latest/8/ga/linux/x64/jdk/hotspot/normal/eclipse",
         "11": "https://api.adoptium.net/v3/binary/latest/11/ga/linux/x64/jdk/hotspot/normal/eclipse"
     ]
-
     def downloadUrl = jdkUrlMap[version]
     if (!downloadUrl) {
         error "No download URL defined for JDK version ${version}"
     }
 
-    echo "Downloading JDK ${version} from ${downloadUrl}..."
-    // Use -L to follow redirects
     sh "curl -L -o jdk.tar.gz '${downloadUrl}'"
-
-    echo "Extracting JDK..."
     sh "tar -xzf jdk.tar.gz"
 
-    // Find the name of the extracted directory
+    // Correctly capture the output of the find command
     def jdkDirName = sh(script: "find . -maxdepth 1 -type d -name '*jdk*'", returnStdout: true).trim()
+
     if (jdkDirName.isEmpty()) {
         error "Could not find extracted JDK directory."
     }
 
-    // Return the absolute path to the JDK home
+    // Return the absolute path
     return "${pwd()}/${jdkDirName}"
 }
 
