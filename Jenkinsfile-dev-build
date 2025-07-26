@@ -214,8 +214,8 @@ def cloneAndBuild(repoName, details, mvnHome, gradleHomePath) {
         dir(repoName) {
             stage("Build & Upload & Scan Binaries for ${repoName}") {
                 switch (details.type) {
-                    //case "maven":
-                    //    executeMaven(repoName, details)
+                    case "maven":
+                        executeMaven(repoName, details)
                     case "gradle":
                         executeGradle(repoName, details)
                     default:
