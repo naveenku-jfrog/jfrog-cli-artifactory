@@ -179,9 +179,6 @@ def installJdkFromArchive(String version) {
 def installGradle(String version) {
     echo "--- Installing Gradle v${version} ---"
 
-    // 1. Install unzip utility if not present
-    sh 'sudo apt-get update -y && sudo apt-get install -y unzip'
-
     // 2. Download the Gradle binary zip
     def downloadUrl = "https://services.gradle.org/distributions/gradle-${version}-bin.zip"
     sh "curl --fail -L -o gradle.zip '${downloadUrl}'"
