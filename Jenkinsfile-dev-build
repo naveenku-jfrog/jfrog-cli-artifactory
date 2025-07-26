@@ -98,6 +98,7 @@ node("docker-ubuntu20-xlarge") {
                             sh "tar -xzf apache-maven-${mavenVersion}-bin.tar.gz"
                             def mvnHome = "${pwd()}/apache-maven-${mavenVersion}"
                             configRepo21()
+                            sh "java -version"
 
                             def tasks = [:]
                             reposMap.each { repoName, details ->
