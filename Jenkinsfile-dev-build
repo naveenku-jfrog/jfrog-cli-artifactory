@@ -179,43 +179,39 @@ def cloneAndBuild(repoName, details, mvnHome) {
         sh "java -version"
         sh "mvn -v"
         dir(repoName) {
-            stage("Build Binaries for ${repoName}") {
+            stage("Build & Upload & Scan Binaries for ${repoName}") {
+                echo "Cloning from ${details.url}..."
+                git url: details.url, branch: details.branch
+
+                echo "Starting Maven build for ${repoName}..."
+                sh 'mvn clean install -DskipTests'
+
+                def jarFiles = findFiles(glob: 'target/**/*.jar')
+                if (jarFiles.size() > 0) {
+                    def zipFileName = "${repoName}-binaries.zip"
+                    zip(zipFile: zipFileName, dir: 'target', glob: '**/*.jar')
+                    echo "Successfully created ${zipFileName}"
+                    sh "${builderPath} rt u '${zipFileName}' 'ecosys-dev-build-artifactory/plugins/dev/${formattedDate}/' --flat"
+                    sh "${builderPath} scan '**/*.zip' --ant=true --watches ${watchName} --format=simple-json"
+                }
+                def zipFiles = findFiles(glob: 'target/*.zip')
+                if (zipFiles.size() > 0) {
+                    sh "jf rt u 'target/*.zip' 'ecosys-dev-build-artifactory/plugins/dev/${formattedDate}/' --flat"
+                    sh "${builderPath} scan '**/*.zip' --ant=true --watches ${watchName} --format=simple-json"
+                }
             }
-
-            stage("Upload Binaries for ${repoName}") {
-
-            }
-            stage("Scan Binaries for ${repoName}") {
-
-            }
-
         }
     }
 }
 
 def buildBinaryWithSpecificJDK(repoName, details, mvnHome, jdk8Path){
-    if(details.jdk=="8"){
+    if(details.jdk=="8" && details.type=="maven"){
         withEnv(["JAVA_HOME=${jdk8Path}", "PATH+JAVA=${jdk8Path}/bin"]) {
             cloneAndBuild(repoName, details, mvnHome)
         }
-    } else if(details.jdk=="11"){
+    } else if(details.jdk=="11" && details.type=="maven"){
         cloneAndBuild(repoName, details, mvnHome)
     }
-}
-
-def installAndGetJdk8Path() {
-    // 1. Install OpenJDK 8
-    sh "apt-get update -y && apt-get install -y openjdk-8-jdk"
-
-    // 2. Find and return the installation path
-    // The '\$1' is crucial to escape the dollar sign for the shell.
-    def javaHome = sh(script: "update-alternatives --display java | grep 'openjdk-8' | head -n1 | awk '{print \$1}' | sed 's|/bin/java||'", returnStdout: true).trim()
-
-    if (javaHome.isEmpty()) {
-        error "Could not determine JAVA_HOME for JDK 8 after installation."
-    }
-
-    return javaHome
 }
 
 def selectPlugins(Map reposMap) {
