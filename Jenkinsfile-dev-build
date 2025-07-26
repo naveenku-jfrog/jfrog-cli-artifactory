@@ -22,7 +22,7 @@ node("docker-ubuntu20-xlarge") {
                     //"artifactory-client-java": [url: "https://github.com/jfrog/artifactory-client-java.git", branch: "master", type: "gradle", jdk:"8"],
                     //"artifactory-gradle-plugin": [url: "https://github.com/jfrog/artifactory-gradle-plugin.git", branch: "main", type: "gradle", jdk:"8"],
                     //"file-specs-java": [url: "https://github.com/jfrog/file-specs-java.git", branch: "main", type: "gradle", jdk:"8"],
-                    "jfrog-testing-infra": [url: "https://github.com/jfrog/jfrog-testing-infra.git", branch: "main", type: "gradle", jdk:"8"]
+                    "jfrog-testing-infra": [url: "https://github.com/jfrog/jfrog-testing-infra.git", branch: "main", dir:"java", type: "gradle", jdk:"8"]
                     //"bamboo-artifactory-plugin": [url: "https://github.com/jfrog/bamboo-artifactory-plugin.git", branch: "master", type: "maven", jdk:"11"],
                     //"jfrog-plugin": [url: "https://github.com/jenkinsci/jfrog-plugin.git", branch:"main", type: "maven", jdk:"11"],
                     //"bamboo-jfrog-plugin": [url: "https://github.com/jfrog/bamboo-jfrog-plugin.git", branch: "main", type: "maven", jdk:"11"],
@@ -212,13 +212,23 @@ def cloneAndBuild(repoName, details, mvnHome, gradleHomePath) {
         sh 'gradle -v'
         dir(repoName) {
             stage("Build & Upload & Scan Binaries for ${repoName}") {
-                switch (details.type) {
-                    //case "maven":
-                    //    executeMaven(repoName, details)
-                    case "gradle":
-                        executeGradle(repoName, details)
-                    default:
-                        echo "--- Unsupported project type  ---"
+                def buildLogic = {
+                    switch (details.type) {
+                        //case "maven":
+                        //    executeMaven(repoName, details)
+                        case "gradle":
+                            executeGradle(repoName, details)
+                        default:
+                            echo "--- Unsupported project type  ---"
+                    }
+                }
+                if (details.dir) {
+                    echo "Build directory specified. Changing to: ${details.dir}"
+                    dir(details.dir) {
+                        buildLogic()
+                    }
+                } else {
+                    buildLogic()
                 }
             }
         }
