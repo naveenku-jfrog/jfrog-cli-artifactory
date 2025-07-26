@@ -314,8 +314,8 @@ def installNodeJs() {
     echo "--- Installing Node.js and npm ---"
 
     // 1. Update package lists and install nodejs and npm
-    sh 'sudo apt-get update -y'
-    sh 'sudo apt-get install -y nodejs npm'
+    sh 'apt-get update -y'
+    sh 'apt-get install -y nodejs npm'
 
     // 2. Verify the installations
     echo "--- Verifying installations ---"
