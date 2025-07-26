@@ -251,13 +251,28 @@ def executeGradle(repoName, details, gradleHomePath){
     echo "Cloning from ${details.url}...Inside executeGradle"
 }
 
-def buildBinaryWithSpecificJDK(repoName, details, mvnHome, jdk8Path, gradleHomePath){
+def executeJDKProject(repoName, details, mvnHome, jdk8Path, gradleHomePath){
     if(details.jdk=="8"){
         withEnv(["JAVA_HOME=${jdk8Path}", "PATH+JAVA=${jdk8Path}/bin"]) {
             cloneAndBuild(repoName, details, mvnHome, gradleHomePath)
         }
     } else if(details.jdk=="11"){
         cloneAndBuild(repoName, details, mvnHome, gradleHomePath)
+    }
+}
+
+def buildBinaryWithSpecificJDK(repoName, details, mvnHome, jdk8Path, gradleHomePath){
+    switch (details.type) {
+        case ["maven", "gradle"]:
+            executeJDKProject(repoName, details, mvnHome, jdk8Path, gradleHomePath)
+        case "ruby":
+            echo "--- ruby project type  ---"
+        case "npm":
+            echo "--- npm project type  ---"
+        case "docker":
+            echo "--- docker project type  ---"
+        default:
+            echo "--- Unsupported project type  ---"
     }
 }
 
