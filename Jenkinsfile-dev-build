@@ -103,7 +103,7 @@ node("docker-ubuntu20-xlarge") {
                             def tasks = [:]
                             reposMap.each { repoName, details ->
                                 tasks[repoName] = {
-                                    buildBinary(repoName, details, mvnHome, jdk8Path)
+                                    buildBinaryWithSpecificJDK(repoName, details, mvnHome, jdk8Path)
                                 }
                             }
                             parallel(tasks)
@@ -173,39 +173,37 @@ def installJdkFromArchive(String version) {
     return "${pwd()}/${jdkDirName}"
 }
 
-def cloneAndBuild(String repoName, Map details) {
-    echo "--- Starting process for ${repoName} ---"
+def cloneAndBuild(repoName, details, mvnHome) {
+    withEnv(["PATH+MAVEN=${mvnHome}/bin"]) {
+        echo "--- Starting process for ${repoName} ---"
+        /*
+        dir(repoName) {
+            stage('Upload Binaries') {
+            }
 
-    dir(repoName) {
-        stage('Upload Binaries') {
+            stage('Upload Binaries') {
+
+            }
+            stage('Scan Binaries') {
+            }
+
         }
-
-        stage('Upload Binaries') {
-
-        }
-        stage('Scan Binaries') {
-        }
-
+        */
+        echo "--- Starting process for ${repoName} ---"
+        sh "java -version"
+        sh "mvn -v"
+        echo "--- Successfully finished build for ${repoName} ---"
     }
-
-    echo "--- Successfully finished build for ${repoName} ---"
 }
 
-def buildBinary(repoName, details, mvnHome, jdk8Path){
-    echo "--- Starting process for ${repoName} ---"
+def buildBinaryWithSpecificJDK(repoName, details, mvnHome, jdk8Path){
     if(details.jdk=="8"){
         withEnv(["JAVA_HOME=${jdk8Path}", "PATH+JAVA=${jdk8Path}/bin"]) {
-            sh 'java -version'
+            cloneAndBuild(repoName, details, mvnHome)
         }
-    } else {
-        sh 'java -version'
+    } else if(details.jdk=="11"){
+        cloneAndBuild(repoName, details, mvnHome)
     }
-    /*withEnv(["PATH+MAVEN=${mvnHome}/bin"]) {
-        sh "echo --- Starting build for ${repoName} ---"
-        sh 'java -version'
-        sh 'mvn -v'
-        cloneAndBuild(repoName, details)
-    }*/
 }
 
 def installAndGetJdk8Path() {
