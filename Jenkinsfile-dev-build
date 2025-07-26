@@ -369,7 +369,7 @@ def executeNPMProject(repoName, details){
 def buildAndProcessRubyGem(repoName, details){
     dir(repoName){
         git url: details.url, branch: details.branch
-
+        bundle config set --local without ''
         sh 'bundle install'
         sh 'bundle exec rake build'
 
