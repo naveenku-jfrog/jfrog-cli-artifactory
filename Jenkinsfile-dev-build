@@ -212,28 +212,43 @@ def cloneAndBuild(repoName, details, mvnHome, gradleHomePath) {
         sh 'gradle -v'
         dir(repoName) {
             stage("Build & Upload & Scan Binaries for ${repoName}") {
-                echo "Cloning from ${details.url}..."
-                git url: details.url, branch: details.branch
-
-                echo "Starting Maven build for ${repoName}..."
-                sh 'mvn clean install -DskipTests'
-
-                def jarFiles = findFiles(glob: 'target/**/*.jar')
-                if (jarFiles.size() > 0) {
-                    def zipFileName = "${repoName}-binaries.zip"
-                    zip(zipFile: zipFileName, dir: 'target', glob: '**/*.jar')
-                    echo "Successfully created ${zipFileName}"
-                    sh "${builderPath} rt u '${zipFileName}' 'ecosys-dev-build-artifactory/plugins/dev/${formattedDate}/' --flat"
-                    sh "${builderPath} scan '**/*.zip' --ant=true --watches ${watchName} --format=simple-json"
-                }
-                def zipFiles = findFiles(glob: 'target/*.zip')
-                if (zipFiles.size() > 0) {
-                    sh "jf rt u 'target/*.zip' 'ecosys-dev-build-artifactory/plugins/dev/${formattedDate}/' --flat"
-                    sh "${builderPath} scan '**/*.zip' --ant=true --watches ${watchName} --format=simple-json"
+                switch (details.type) {
+                    case "maven":
+                        executeMaven(repoName, details, mvnHome)
+                    case "gradle":
+                        executeGradle(repoName, details, gradleHomePath)
+                    default:
+                        echo "--- Unsupported project type  ---"
                 }
             }
         }
     }
+}
+
+def executeMaven(repoName, details, mvnHome){
+    echo "Cloning from ${details.url}..."
+    git url: details.url, branch: details.branch
+
+    echo "Starting Maven build for ${repoName}..."
+    sh 'mvn clean install -DskipTests'
+
+    def jarFiles = findFiles(glob: 'target/**/*.jar')
+    if (jarFiles.size() > 0) {
+        def zipFileName = "${repoName}-binaries.zip"
+        zip(zipFile: zipFileName, dir: 'target', glob: '**/*.jar')
+        echo "Successfully created ${zipFileName}"
+        sh "${builderPath} rt u '${zipFileName}' 'ecosys-dev-build-artifactory/plugins/dev/${formattedDate}/' --flat"
+        sh "${builderPath} scan '**/*.zip' --ant=true --watches ${watchName} --format=simple-json"
+    }
+    def zipFiles = findFiles(glob: 'target/*.zip')
+    if (zipFiles.size() > 0) {
+        sh "jf rt u 'target/*.zip' 'ecosys-dev-build-artifactory/plugins/dev/${formattedDate}/' --flat"
+        sh "${builderPath} scan '**/*.zip' --ant=true --watches ${watchName} --format=simple-json"
+    }
+}
+
+def executeGradle(repoName, details, gradleHomePath){
+    echo "Cloning from ${details.url}...Inside executeGradle"
 }
 
 def buildBinaryWithSpecificJDK(repoName, details, mvnHome, jdk8Path, gradleHomePath){
