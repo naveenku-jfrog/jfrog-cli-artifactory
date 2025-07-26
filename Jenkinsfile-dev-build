@@ -357,9 +357,7 @@ def buildAndProcessRubyGem(repoName, details){
 def buildAndScanPipeImage(repoName, details) {
     dir(repoName){
         git url: details.url, branch: details.branch
-
         def dockerImage = docker.build("jfrog-setup-cli-pipe:${formattedDate}")
-
         sh "${builderPath} rt u '${dockerImage}' 'ecosys-dev-build-artifactory/plugins/dev/${formattedDate}/' --flat"
         sh "${builderPath} scan '${dockerImage}' --watches ${watchName} --format=simple-json"
     }
