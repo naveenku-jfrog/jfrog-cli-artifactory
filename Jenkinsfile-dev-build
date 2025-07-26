@@ -277,7 +277,6 @@ def executeGradle(repoName, details){
             sh "${builderPath} scan '${zipFileName}' --watches ${watchName} --format=simple-json"
         }
 
-        // Check for and upload any pre-existing .zip files
         def zipFiles = findFiles(glob: "${buildOutputDir}/*.zip")
         if (zipFiles.size() > 0) {
             sh "${builderPath} rt u '${buildOutputDir}/*.zip' 'ecosys-dev-build-artifactory/plugins/dev/${formattedDate}/' --flat"
