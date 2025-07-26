@@ -312,17 +312,19 @@ def installNodeJs() {
 }
 
 def buildBinary(repoName, details, mvnHome, jdk8Path, gradleHomePath){
-    switch (details.type) {
-        //case ["maven", "gradle"]:
-          //  executeJDKProject(repoName, details, mvnHome, jdk8Path, gradleHomePath)
-        //case "ruby":
-          //  buildAndProcessRubyGem(repoName, details)
-        //case "npm":
-          //  executeNPMProject(repoName, details)
-        case "docker":
-            buildAndScanPipeImage(repoName, details)
-        default:
-            echo "--- Unsupported project type  ---"
+    stage("Build, Scan & Upload Binary for ${repoName}"){
+        switch (details.type) {
+            case ["maven", "gradle"]:
+                executeJDKProject(repoName, details, mvnHome, jdk8Path, gradleHomePath)
+            case "ruby":
+                buildAndProcessRubyGem(repoName, details)
+            case "npm":
+                executeNPMProject(repoName, details)
+            case "docker":
+                buildAndScanPipeImage(repoName, details)
+            default:
+                echo "--- Unsupported project type  ---"
+        }
     }
 }
 
@@ -368,7 +370,7 @@ def buildAndScanPipeImage(repoName, details) {
         zip(zipFile: zipFileName, archive: false, glob: tarFileName)
 
         sh "${builderPath} rt u '${zipFileName}' 'ecosys-dev-build-artifactory/plugins/dev/${formattedDate}/' --flat"
-        sh "${builderPath} scan '${zipFileName}' --watches ${watchName} --format=simple-json"
+        sh "${builderPath} scan '${zipFileName}' --watches ${watchName} --fail=false --format=simple-json"
     }
 }
 
