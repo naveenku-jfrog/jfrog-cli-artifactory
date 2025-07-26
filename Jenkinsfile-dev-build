@@ -102,6 +102,8 @@ node("docker-ubuntu20-xlarge") {
 
                             def jdk8Path = installJdkFromArchive('8')
 
+                            installNodeJs()
+
                             def tasks = [:]
                             reposMap.each { repoName, details ->
                                 tasks[repoName] = {
@@ -306,6 +308,19 @@ def executeJDKProject(repoName, details, mvnHome, jdk8Path, gradleHomePath){
     } else if(details.jdk=="11"){
         cloneAndBuild(repoName, details, mvnHome, gradleHomePath)
     }
+}
+
+def installNodeJs() {
+    echo "--- Installing Node.js and npm ---"
+
+    // 1. Update package lists and install nodejs and npm
+    sh 'sudo apt-get update -y'
+    sh 'sudo apt-get install -y nodejs npm'
+
+    // 2. Verify the installations
+    echo "--- Verifying installations ---"
+    sh 'node -v'
+    sh 'npm -v'
 }
 
 def buildBinary(repoName, details, mvnHome, jdk8Path, gradleHomePath){
