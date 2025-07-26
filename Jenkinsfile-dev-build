@@ -99,8 +99,11 @@ node("docker-ubuntu20-xlarge") {
                             def mvnHome = "${pwd()}/apache-maven-${mavenVersion}"
                             configRepo21()*/
                             sh "java -version"
-                            jdk8Home=installAndGetJdk8Path()
+                            jdk8Home=installJdkFromArchive('8')
                             sh "${jdk8Home}"
+                            withEnv(["JAVA_HOME=${jdk8Home}", "PATH+JAVA=${jdk8Home}/bin"]) {
+                                sh 'java -version'
+                            }
 
                             def tasks = [:]
                             reposMap.each { repoName, details ->
@@ -149,6 +152,41 @@ def notifyFailure(String stageName, error) {
         color: 'danger',
         message: message
     )
+}
+
+/**
+ * Downloads and extracts a specific OpenJDK version into the current workspace.
+ *
+ * @param version The major version of the JDK to install (e.g., "8", "11").
+ * @return The absolute path to the JAVA_HOME directory.
+ */
+def installJdkFromArchive(String version) {
+    // A map of direct download URLs for different JDK versions from Adoptium
+    def jdkUrlMap = [
+        "8": "https://api.adoptium.net/v3/binary/latest/8/ga/linux/x64/jdk/hotspot/normal/eclipse",
+        "11": "https://api.adoptium.net/v3/binary/latest/11/ga/linux/x64/jdk/hotspot/normal/eclipse"
+    ]
+
+    def downloadUrl = jdkUrlMap[version]
+    if (!downloadUrl) {
+        error "No download URL defined for JDK version ${version}"
+    }
+
+    echo "Downloading JDK ${version} from ${downloadUrl}..."
+    // Use -L to follow redirects
+    sh "curl -L -o jdk.tar.gz '${downloadUrl}'"
+
+    echo "Extracting JDK..."
+    sh "tar -xzf jdk.tar.gz"
+
+    // Find the name of the extracted directory
+    def jdkDirName = sh(script: "find . -maxdepth 1 -type d -name '*jdk*'", returnStdout: true).trim()
+    if (jdkDirName.isEmpty()) {
+        error "Could not find extracted JDK directory."
+    }
+
+    // Return the absolute path to the JDK home
+    return "${pwd()}/${jdkDirName}"
 }
 
 def cloneAndBuild(String repoName, Map details) {
