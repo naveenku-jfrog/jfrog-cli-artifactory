@@ -104,8 +104,6 @@ node("docker-ubuntu20-xlarge") {
 
                             installNodeJs()
 
-                            installRuby()
-
                             def tasks = [:]
                             reposMap.each { repoName, details ->
                                 tasks[repoName] = {
@@ -320,16 +318,6 @@ def installNodeJs() {
     sh 'npm -v'
 }
 
-def installRuby() {
-    sh 'apt-get update -y'
-    sh 'apt-get install -y ruby-full'
-    sh 'gem install bundler -v 2.4.22'
-
-    sh 'ruby -v'
-    sh 'gem -v'
-    sh 'bundle -v'
-}
-
 def buildBinary(repoName, details, mvnHome, jdk8Path, gradleHomePath){
     switch (details.type) {
         //case ["maven", "gradle"]:
@@ -369,17 +357,7 @@ def executeNPMProject(repoName, details){
 def buildAndProcessRubyGem(repoName, details){
     dir(repoName){
         git url: details.url, branch: details.branch
-        sh 'ls -la'
-        sh 'gem install cocoapods-art'
-        sh 'ls -la'
-        def gemPath = sh(script: "which pod-art", returnStdout: true).trim()
-        echo "The Gem executable directory is: ${gemPath}"
-        sh "ls -la ${gemPath}"
-        def zipFileName = "pod-art-executable.zip"
-        zip(zipFile: zipFileName, archive: false, glob: gemPath)
-        echo "Successfully created ${zipFileName}"
-        sh "${builderPath} rt u '${zipFileName}' 'ecosys-dev-build-artifactory/plugins/dev/${formattedDate}/' --flat"
-        sh "${builderPath} scan '${zipFileName}' --watches ${watchName} --format=simple-json"
+        sh "${builderPath} audit --watches ${watchName} --format=simple-json"
     }
 }
 
