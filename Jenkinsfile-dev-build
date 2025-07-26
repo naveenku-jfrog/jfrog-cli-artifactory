@@ -311,14 +311,9 @@ def executeJDKProject(repoName, details, mvnHome, jdk8Path, gradleHomePath){
 }
 
 def installNodeJs() {
-    echo "--- Installing Node.js and npm ---"
-
-    // 1. Update package lists and install nodejs and npm
     sh 'apt-get update -y'
     sh 'apt-get install -y nodejs npm'
 
-    // 2. Verify the installations
-    echo "--- Verifying installations ---"
     sh 'node -v'
     sh 'npm -v'
 }
@@ -353,13 +348,8 @@ def executeNPMProject(repoName, details){
     zip(zipFile: zipFileName, archive: false, glob: vsixFile)
     echo "Successfully created zip archive: ${zipFileName}"
 
-    stage("Upload Binaries for ${repoName}") {
-        sh "${builderPath} rt u '${zipFileName}' 'ecosys-dev-build-artifactory/plugins/dev/${formattedDate}/' --flat"
-    }
-
-    stage("Scan Binaries for ${repoName}") {
-        sh "${builderPath} scan '${zipFileName}' --watches ${watchName} --format=simple-json"
-    }
+    sh "${builderPath} rt u '${zipFileName}' 'ecosys-dev-build-artifactory/plugins/dev/${formattedDate}/' --flat"
+    sh "${builderPath} scan '${zipFileName}' --watches ${watchName} --format=simple-json"
 }
 def selectPlugins(Map reposMap) {
     def buildCauses = currentBuild.getBuildCauses()
