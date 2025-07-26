@@ -154,12 +154,6 @@ def notifyFailure(String stageName, error) {
     )
 }
 
-/**
- * Downloads and extracts a specific OpenJDK version into the current workspace.
- *
- * @param version The major version of the JDK to install (e.g., "8", "11").
- * @return The absolute path to the JAVA_HOME directory.
- */
 def installJdkFromArchive(String version) {
     def jdkUrlMap = [
         "8": "https://api.adoptium.net/v3/binary/latest/8/ga/linux/x64/jdk/hotspot/normal/eclipse",
