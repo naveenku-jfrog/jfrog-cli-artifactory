@@ -183,7 +183,7 @@ def installAndGetJdkPath(String version) {
     def jdkPackage = "openjdk-${version}-jdk"
 
     // 1. Install the specific version
-    sh "sudo apt-get update -y && sudo apt-get install -y ${jdkPackage}"
+    sh "apt-get update -y && apt-get install -y ${jdkPackage}"
 
     // 2. Find and return the installation path
     def javaHome = sh(script: "update-alternatives --display java | grep 'openjdk-${version}' | head -n1 | awk '{print \$1}' | sed 's|/bin/java||'", returnStdout: true).trim()
