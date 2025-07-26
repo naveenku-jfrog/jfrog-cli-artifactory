@@ -259,8 +259,8 @@ def executeGradle(repoName, details){
         sh "pwd"
         sh "ls -la"
         echo "Starting Gradle build for ${repoName}..."
-        def hasFunctionalTest = sh(script: "./gradlew tasks --all | grep 'functionalTest' || true", returnStdout: true).trim()
 
+        def hasFunctionalTest = sh(script: "./gradlew tasks --all | grep 'functionalTest' || true", returnStdout: true).trim()
         if (hasFunctionalTest) {
             echo "Project has a 'functionalTest' task. Excluding it."
             sh './gradlew clean build -x test -x functionalTest'
