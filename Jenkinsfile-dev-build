@@ -99,7 +99,7 @@ node("docker-ubuntu20-xlarge") {
                             def mvnHome = "${pwd()}/apache-maven-${mavenVersion}"
                             configRepo21()*/
                             sh "java -version"
-                            jdk8Home=installAndGetJdk8Path("8")
+                            jdk8Home=installAndGetJdk8Path()
                             sh "${jdk8Home}"
 
                             def tasks = [:]
