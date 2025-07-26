@@ -15,20 +15,20 @@ node("docker-ubuntu20-xlarge") {
                 }
 
                 def reposMap = [
-                    //"artifactory-jenkins-plugin": [url: "https://github.com/jfrog/jenkins-artifactory-plugin", branch:"master", type: "maven", jdk:"8"],
-                    //"build-info-extractor": [url: "https://github.com/jfrog/build-info", branch: "master", type: "gradle", jdk:"8"],
-                    //"teamcity-artifactory-plugin": [url: "https://github.com/jfrog/teamcity-artifactory-plugin.git", branch: "master",  type: "maven", jdk:"8"],
-                    //"artifactory-maven-plugin": [url: "https://github.com/jfrog/artifactory-maven-plugin.git", branch: "master", type: "maven", jdk:"8"],
-                    "artifactory-client-java": [url: "https://github.com/jfrog/artifactory-client-java.git", branch: "master", type: "gradle", jdk:"8"]
-                    //"artifactory-gradle-plugin": [url: "https://github.com/jfrog/artifactory-gradle-plugin.git", branch: "main", type: "gradle", jdk:"8"],
-                    //"file-specs-java": [url: "https://github.com/jfrog/file-specs-java.git", branch: "main", type: "gradle", jdk:"8"],
-                    //"jfrog-testing-infra": [url: "https://github.com/jfrog/jfrog-testing-infra.git", branch: "main", dir:"java", type: "gradle", jdk:"8"],
-                    //"bamboo-artifactory-plugin": [url: "https://github.com/jfrog/bamboo-artifactory-plugin.git", branch: "master", type: "maven", jdk:"11"],
-                    //"jfrog-plugin": [url: "https://github.com/jenkinsci/jfrog-plugin.git", branch:"main", type: "maven", j∂çdk:"11"],
-                    //"bamboo-jfrog-plugin": [url: "https://github.com/jfrog/bamboo-jfrog-plugin.git", branch: "main", type: "maven", jdk:"11"],
-                    //"jfrog-azure-devops-extension": [url: "https://github.com/jfrog/jfrog-azure-devops-extension.git",branch: "master", type: "npm"],
-                    //"cocoapods-art": [url: "https://github.com/jfrog/cocoapods-art.git", branch: "master", type: "ruby"],
-                    //"jfrog-setup-cli": [url: "https://bitbucket.org/jfrog/jfrog-setup-cli.git", branch: "master", type: "docker"]
+                    "artifactory-jenkins-plugin": [url: "https://github.com/jfrog/jenkins-artifactory-plugin", branch:"master", type: "maven", jdk:"8"],
+                    "build-info-extractor": [url: "https://github.com/jfrog/build-info", branch: "master", type: "gradle", buildDir:"build/libs", jdk:"8"],
+                    "teamcity-artifactory-plugin": [url: "https://github.com/jfrog/teamcity-artifactory-plugin.git", branch: "master",  type: "maven", jdk:"8"],
+                    "artifactory-maven-plugin": [url: "https://github.com/jfrog/artifactory-maven-plugin.git", branch: "master", type: "maven", jdk:"8"],
+                    "artifactory-client-java": [url: "https://github.com/jfrog/artifactory-client-java.git", branch: "master", type: "gradle", buildDir:"services/build/libs", "jdk:"8"],
+                    "artifactory-gradle-plugin": [url: "https://github.com/jfrog/artifactory-gradle-plugin.git", branch: "main", type: "gradle", buildDir:"build/libs", jdk:"8"],
+                    "file-specs-java": [url: "https://github.com/jfrog/file-specs-java.git", branch: "main", type: "gradle", buildDir:"build/libs", jdk:"8"],
+                    "jfrog-testing-infra": [url: "https://github.com/jfrog/jfrog-testing-infra.git", branch: "main", dir:"java", type: "gradle", buildDir:"build/libs", jdk:"8"],
+                    "bamboo-artifactory-plugin": [url: "https://github.com/jfrog/bamboo-artifactory-plugin.git", branch: "master", type: "maven", jdk:"11"],
+                    "jfrog-plugin": [url: "https://github.com/jenkinsci/jfrog-plugin.git", branch:"main", type: "maven", j∂çdk:"11"],
+                    "bamboo-jfrog-plugin": [url: "https://github.com/jfrog/bamboo-jfrog-plugin.git", branch: "main", type: "maven", jdk:"11"],
+                    "jfrog-azure-devops-extension": [url: "https://github.com/jfrog/jfrog-azure-devops-extension.git",branch: "master", type: "npm"],
+                    "cocoapods-art": [url: "https://github.com/jfrog/cocoapods-art.git", branch: "master", type: "ruby"],
+                    "jfrog-setup-cli": [url: "https://bitbucket.org/jfrog/jfrog-setup-cli.git", branch: "master", type: "docker"]
                 ]
 
                 buildStatus = 'SUCCESS'
@@ -269,7 +269,7 @@ def executeGradle(repoName, details){
             sh './gradlew clean build -x test'
         }
 
-        def buildOutputDir = 'services/build/libs'
+        def buildOutputDir = details.buildDir
         sh "ls -la ${buildOutputDir}"
 
         def jarFiles = findFiles(glob: "${buildOutputDir}/*.jar")
