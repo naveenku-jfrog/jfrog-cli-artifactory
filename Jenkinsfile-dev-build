@@ -176,23 +176,20 @@ def installJdkFromArchive(String version) {
 def cloneAndBuild(repoName, details, mvnHome) {
     withEnv(["PATH+MAVEN=${mvnHome}/bin"]) {
         echo "--- Starting process for ${repoName} ---"
-        /*
+        sh "java -version"
+        sh "mvn -v"
         dir(repoName) {
-            stage('Upload Binaries') {
+            stage('Build Binaries for $repoName') {
             }
 
-            stage('Upload Binaries') {
+            stage('Upload Binaries for $repoName') {
 
             }
-            stage('Scan Binaries') {
+            stage('Scan Binaries for $repoName') {
+
             }
 
         }
-        */
-        echo "--- Starting process for ${repoName} ---"
-        sh "java -version"
-        sh "mvn -v"
-        echo "--- Successfully finished build for ${repoName} ---"
     }
 }
 
