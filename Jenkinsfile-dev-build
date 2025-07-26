@@ -369,7 +369,9 @@ def executeNPMProject(repoName, details){
 def buildAndProcessRubyGem(repoName, details){
     dir(repoName){
         git url: details.url, branch: details.branch
-        sh "${builderPath} audit --watches ${watchName} --format=simple-json"
+        sh 'gem install cocoapods-art'
+        def gemPath = sh(script: "gem environment executable_dir", returnStdout: true).trim()
+        echo "The Gem executable directory is: ${gemPath}"
     }
 }
 
