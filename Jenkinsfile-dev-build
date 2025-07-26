@@ -200,15 +200,18 @@ def cloneAndBuild(String repoName, Map details) {
         def jarFiles = findFiles(glob: 'target/**/*.jar')
         if (jarFiles.size() > 0) {
             def zipFileName = "${repoName}-binaries.zip"
-
             echo "Archiving .jar files from the 'target' directory..."
-
             zip(zipFile: zipFileName, dir: 'target', glob: '**/*.jar')
-
             echo "Successfully created ${zipFileName}"
+            sh "mv ${zipFileName} ${zippedBinariesDir}"
         }
 
-        sh "mv *.zip ${zippedBinariesDir}"
+        def zipFiles = findFiles(glob: 'target/*.zip')
+        if (zipFiles.size() > 0) {
+            echo "Found ${zipFiles.size()} zip file(s). Moving them..."
+            sh "mv target/*.zip ${zippedBinariesDir}"
+            echo "Successfully moved files to ${zippedBinariesDir}"
+        }
 
         echo "Moved archive to ${zippedBinariesDir}"
     }
