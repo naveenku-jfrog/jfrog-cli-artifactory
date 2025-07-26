@@ -358,11 +358,16 @@ def buildAndScanPipeImage(repoName, details) {
     dir(repoName){
         git url: details.url, branch: details.branch
         def dockerImage = docker.build("jfrog-setup-cli-pipe:${formattedDate}")
-        sh "${builderPath} rt u '${dockerImage}' 'ecosys-dev-build-artifactory/plugins/dev/${formattedDate}/' --flat"
-        sh "${builderPath} scan '${dockerImage}' --watches ${watchName} --format=simple-json"
+
+        def tarFileName = "${dockerImage.replace(':', '_')}.tar"
+        sh "docker save -o ${tarFileName} ${dockerImage}"
+
+        def zipFileName = "${dockerImage.replace(':', '_')}.zip"
+        zip(zipFile: zipFileName, archive: false, glob: tarFileName)
+        sh "${builderPath} rt u '${zipFileName}' 'ecosys-dev-build-artifactory/plugins/dev/${formattedDate}/' --flat"
+        sh "${builderPath} scan '${zipFileName}' --watches ${watchName} --format=simple-json"
     }
 }
-
 
 def selectPlugins(Map reposMap) {
     def buildCauses = currentBuild.getBuildCauses()
