@@ -179,13 +179,13 @@ def cloneAndBuild(repoName, details, mvnHome) {
         sh "java -version"
         sh "mvn -v"
         dir(repoName) {
-            stage('Build Binaries for $repoName') {
+            stage('Build Binaries for ${repoName}') {
             }
 
-            stage('Upload Binaries for $repoName') {
+            stage('Upload Binaries for ${repoName}') {
 
             }
-            stage('Scan Binaries for $repoName') {
+            stage('Scan Binaries for ${repoName}') {
 
             }
 
