@@ -260,7 +260,7 @@ def executeGradle(repoName, details){
     def buildOutputDir = 'build/libs'
 
     // Check for and zip any .jar files
-    def jarFiles = findFiles(glob: "${buildOutputDir}/**/*.jar")
+    def jarFiles = findFiles(glob: '${buildOutputDir}/**/*.jar')
     if (jarFiles.size() > 0) {
         def zipFileName = "${repoName}-binaries.zip"
         zip(zipFile: zipFileName, dir: buildOutputDir, glob: '**/*.jar')
