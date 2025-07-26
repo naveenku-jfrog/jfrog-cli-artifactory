@@ -166,36 +166,29 @@ def installJdkFromArchive(String version) {
     sh "curl -L -o jdk.tar.gz '${downloadUrl}'"
     sh "tar -xzf jdk.tar.gz"
 
-    // Correctly capture the output of the find command
     def jdkDirName = sh(script: "find . -maxdepth 1 -type d -name '*jdk*'", returnStdout: true).trim()
 
     if (jdkDirName.isEmpty()) {
         error "Could not find extracted JDK directory."
     }
 
-    // Return the absolute path
     return "${pwd()}/${jdkDirName}"
 }
 
 def installGradle(String version) {
     echo "--- Installing Gradle v${version} ---"
 
-    // 2. Download the Gradle binary zip
     def downloadUrl = "https://services.gradle.org/distributions/gradle-${version}-bin.zip"
     sh "curl --fail -L -o gradle.zip '${downloadUrl}'"
 
-    // 3. Unzip the archive
     sh "unzip gradle.zip"
 
-    // 4. Find the name of the extracted directory
     def gradleDirName = sh(script: "find . -maxdepth 1 -type d -name 'gradle-*'", returnStdout: true).trim()
     if (gradleDirName.isEmpty()) {
         error "Could not find extracted Gradle directory."
     }
 
-    // 5. Return the absolute path to the Gradle home directory
     def gradleHome = "${pwd()}/${gradleDirName}"
-    echo "Gradle v${version} installed at: ${gradleHome}"
     return gradleHome
 }
 
@@ -322,12 +315,12 @@ def buildBinary(repoName, details, mvnHome, jdk8Path, gradleHomePath){
     switch (details.type) {
         //case ["maven", "gradle"]:
           //  executeJDKProject(repoName, details, mvnHome, jdk8Path, gradleHomePath)
-        case "ruby":
-            buildAndProcessRubyGem(repoName, details)
+        //case "ruby":
+          //  buildAndProcessRubyGem(repoName, details)
         //case "npm":
           //  executeNPMProject(repoName, details)
-        //case "docker":
-           // echo "--- docker project type  ---"
+        case "docker":
+            buildAndScanPipeImage(repoName, details)
         default:
             echo "--- Unsupported project type  ---"
     }
@@ -358,6 +351,17 @@ def buildAndProcessRubyGem(repoName, details){
     dir(repoName){
         git url: details.url, branch: details.branch
         sh "${builderPath} audit --watches ${watchName} --format=simple-json"
+    }
+}
+
+def buildAndScanPipeImage(repoName, details) {
+    dir(repoName){
+        git url: details.url, branch: details.branch
+
+        def dockerImage = docker.build(imageName)
+
+        sh "${builderPath} rt u '${zipFileName}' 'ecosys-dev-build-artifactory/plugins/dev/${formattedDate}/' --flat"
+        sh "${builderPath} scan '${zipFileName}' --watches ${watchName} --format=simple-json"
     }
 }
 
