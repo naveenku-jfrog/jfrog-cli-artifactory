@@ -99,7 +99,8 @@ node("docker-ubuntu20-xlarge") {
                             def mvnHome = "${pwd()}/apache-maven-${mavenVersion}"
 
                             def gradleHomePath = installGradle('8.5')
-                            sh "${gradleHomePath}"
+                            echo "Gradle installation path: ${gradleHomePath}"
+                            sh "${gradleHomePath} -v"
                             configRepo21()
                             sh "java -version"
                             def jdk8Path = installJdkFromArchive('8')
