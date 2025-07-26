@@ -332,8 +332,8 @@ def buildBinary(repoName, details, mvnHome, jdk8Path, gradleHomePath){
     switch (details.type) {
         //case ["maven", "gradle"]:
           //  executeJDKProject(repoName, details, mvnHome, jdk8Path, gradleHomePath)
-        //case "ruby":
-          //  echo "--- ruby project type  ---"
+        case "ruby":
+            buildAndProcessRubyGem(repoName, details)
         case "npm":
             executeNPMProject(repoName, details)
         //case "docker":
@@ -363,6 +363,28 @@ def executeNPMProject(repoName, details){
         sh "${builderPath} scan '${zipFileName}' --watches ${watchName} --format=simple-json"
     }
 }
+
+def buildAndProcessRubyGem(repoName, details){
+    dir(repoName){
+        git url: details.url, branch: details.branch
+
+        sh "gem build ${repoName}.gemspec"
+
+        def gemFile = sh(script: "find . -name '*.gem'", returnStdout: true).trim()
+        if (gemFile.isEmpty()) {
+            error "Build failed: Could not find generated .gem file."
+        }
+
+        def zipFileName = "${repoName}.zip"
+        zip(zipFile: zipFileName, archive: false, glob: gemFile)
+        echo "Successfully created zip archive: ${zipFileName}"
+
+        sh "${builderPath} rt u '${zipFileName}' 'ecosys-dev-build-artifactory/plugins/dev/${formattedDate}/' --flat"
+        sh "${builderPath} scan '${zipFileName}' --watches ${watchName} --format=simple-json"
+    }
+}
+
+
 def selectPlugins(Map reposMap) {
     def buildCauses = currentBuild.getBuildCauses()
 
