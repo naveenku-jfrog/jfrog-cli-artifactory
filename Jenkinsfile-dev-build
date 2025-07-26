@@ -261,7 +261,6 @@ def executeGradle(repoName, details){
         echo "Starting Gradle build for ${repoName}..."
         sh './gradlew clean build -x test'
 
-        // Gradle's output directory is 'build/libs'
         def buildOutputDir = 'build/libs'
         sh "ls -la ${buildOutputDir}"
 
