@@ -97,22 +97,9 @@ node("docker-ubuntu20-xlarge") {
                             sh "curl -O https://archive.apache.org/dist/maven/maven-3/${mavenVersion}/binaries/apache-maven-${mavenVersion}-bin.tar.gz"
                             sh "tar -xzf apache-maven-${mavenVersion}-bin.tar.gz"
                             def mvnHome = "${pwd()}/apache-maven-${mavenVersion}"
-                            configRepo21()
+                            configRepo21()*/
                             sh "java -version"
-                            jdk8Home=installJdkFromArchive('8')
-                            sh "${jdk8Home}"
-                            withEnv(["JAVA_HOME=${jdk8Home}", "PATH+JAVA=${jdk8Home}/bin"]) {
-                                sh 'java -version'
-                            }
 
-                            def tasks = [:]
-                            reposMap.each { repoName, details ->
-                                tasks[repoName] = {
-                                    buildBinary(repoName, details, mvnHome)
-                                }
-                            }
-                            parallel(tasks)
-                            */
                             def jdk8Path = installJdkFromArchive('8')
 
                             echo "Using JDK 8 at: ${jdk8Path}"
@@ -123,6 +110,17 @@ node("docker-ubuntu20-xlarge") {
                                 // 3. Run your commands, which will now use the correct JDK
                                 sh 'java -version'
                             }
+                            /*
+
+                            def tasks = [:]
+                            reposMap.each { repoName, details ->
+                                tasks[repoName] = {
+                                    buildBinary(repoName, details, mvnHome)
+                                }
+                            }
+                            parallel(tasks)
+                            */
+
                         }
                     }
                 }
