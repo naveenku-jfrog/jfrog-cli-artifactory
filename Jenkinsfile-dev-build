@@ -353,24 +353,24 @@ def buildAndProcessRubyGem(repoName, details){
         sh "${builderPath} audit --watches ${watchName} --format=simple-json"
     }
 }
+def buildAndScanPipeImage(repoName, details){
+    dir(repoName) {
+        git url: details.url, branch: details.branch
+        def dockerImage = docker.build("jfrog-setup-cli-pipe:${formattedDate}")
 
-dir(repoName) {
-    git url: details.url, branch: details.branch
-    def dockerImage = docker.build("jfrog-setup-cli-pipe:${formattedDate}")
+        String dockerImageString = dockerImage.toString()
+        String tarFileName = "${dockerImageString.replace(':', '_')}.tar"
 
-    String dockerImageString = dockerImage.toString()
-    String tarFileName = "${dockerImageString.replace(':', '_')}.tar"
+        sh "docker save -o ${tarFileName} ${dockerImageString}"
 
-    sh "docker save -o ${tarFileName} ${dockerImageString}"
+        String zipFileName = "${dockerImageString.replace(':', '_')}.zip"
 
-    String zipFileName = "${dockerImageString.replace(':', '_')}.zip"
+        zip(zipFile: zipFileName, archive: false, glob: tarFileName)
 
-    zip(zipFile: zipFileName, archive: false, glob: tarFileName)
+        sh "${builderPath} rt u '${zipFileName}' 'ecosys-dev-build-artifactory/plugins/dev/${formattedDate}/' --flat"
 
-    sh "${builderPath} rt u '${zipFileName}' 'ecosys-dev-build-artifactory/plugins/dev/${formattedDate}/' --flat"
-
-    // Scan the ZIP file
-    sh "${builderPath} scan '${zipFileName}' --watches ${watchName} --format=simple-json"
+        sh "${builderPath} scan '${zipFileName}' --watches ${watchName} --format=simple-json"
+    }
 }
 
 def selectPlugins(Map reposMap) {
