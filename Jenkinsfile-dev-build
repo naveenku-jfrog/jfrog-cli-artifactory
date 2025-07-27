@@ -4,7 +4,8 @@ node("docker-ubuntu20-xlarge") {
             cron('H 0 * * *')
         ])
     ])
-    def buildResults = []
+    def statusMatrix = new java.util.concurrent.ConcurrentHashMap()
+    statusMatrix[repoName] = [Build: 'PENDING', Upload: 'PENDING', Scan: 'PENDING']
     try {
         stage('Setup Environment and Tools') {
             def goRoot = tool name: 'go-1.23.9', type: 'go'
@@ -125,10 +126,7 @@ node("docker-ubuntu20-xlarge") {
     }
     finally {
         stage('Send Notifications') {
-            def summary = ""
-            buildResults.each { result ->
-                summary += "\n• ${result.name}: ${result.status}"
-            }
+            def summary = formatStatusMatrix(statusMatrix)
             if (buildStatus == 'SUCCESS') {
                 def message = "Dev Build Jenkins Pipeline has successfully completed.\n<${env.BUILD_URL}|View Build>${summary}"
                 slackSend(channel: "#${slackChannelName}", message: message, color: 'good')
@@ -141,6 +139,17 @@ node("docker-ubuntu20-xlarge") {
             echo "Final notification message would be: \n${message}"
         }
     }
+}
+
+def formatStatusMatrix(Map matrix) {
+    def message = "\n"
+    matrix.each { repo, stages ->
+        message += "• *${repo}*: "
+        message += "Build: ${stages.Build}, "
+        message += "Test: ${stages.Test}, "
+        message += "Upload: ${stages.Upload}\n"
+    }
+    return message
 }
 
 def notifyFailure(String stageName, error) {
@@ -245,7 +254,12 @@ def executeMaven(repoName, details){
 
 def UploadAndScanBinary(repoName, uploadFileName, scanFileName){
     stage("Upload Binary for ${repoName}"){
-        sh "${builderPath} rt u '${uploadFileName}' 'ecosys-dev-build-artifactory/plugins/dev/${formattedDate}/' --flat"
+        try{
+            sh "${builderPath} rt u '${uploadFileName}' 'ecosys-dev-build-artifactory/plugins/dev/${formattedDate}/' --flat"
+            statusMatrix[repoName].Upload = '✅ SUCCESS'
+        }catch (e) {
+            statusMatrix[repoName][Upload] = '❌ FAILURE'
+        }
     }
     stage("Scan Binary for ${repoName}"){
         sh "${builderPath} scan '${scanFileName}' --ant=true --watches ${watchName} --format=simple-json"
