@@ -33,7 +33,7 @@ node("docker-ubuntu20-xlarge") {
                 ]
 
                 buildStatus = 'SUCCESS'
-                cliExecutableName = 'jfrog'
+                cliExecutableName = 'jf'
                 repo = 'jfrog-cli'
                 formattedDate = new Date().format('yyyy-MM-dd')
                 env.CI = true
@@ -52,30 +52,14 @@ node("docker-ubuntu20-xlarge") {
                     slackChannelName = "ecosytem-plugins-dev-build-notifications"
                     watchName = "ecosystem-watch"
                     pluginSelectedForOnDemandScanning=""
-                    stage('Clone Source Repo') {
+                    stage('Installing Jf'){
                         try  {
-                            dir("${cliWorkspace}") {
-                                sh "git clone https://github.com/jfrog/jfrog-cli.git"
-                                dir("${repo}") {
-                                    sh "git checkout dev"
-                                }
+                        script{
+                             installJfrogCli("${cliWorkspace}/${builderDir}")
                             }
                         }
                         catch (e) {
-                            notifyFailure('Clone Source Repo', e)
-                            throw e
-                        }
-                    }
-                    stage('Build JFrog CLI') {
-                        try  {
-                            sh 'go version'
-                            dir("$jfrogCliRepoDir") {
-                                sh "build/build.sh $cliExecutableName"
-                            }
-                            sh "mv $jfrogCliRepoDir/$cliExecutableName $builderDir"
-                        }
-                        catch (e) {
-                            notifyFailure('Build JFrog CLI', e)
+                            notifyFailure('Installing Jf', e)
                             throw e
                         }
                     }
@@ -264,6 +248,12 @@ def UploadAndScanBinary(repoName, uploadFileName, scanFileName){
     stage("Scan Binary for ${repoName}"){
         sh "${builderPath} scan '${scanFileName}' --ant=true --watches ${watchName} --format=simple-json"
     }
+}
+
+def installJfrogCli(String installPath) {
+    echo "--- Installing JFrog CLI to ${installPath} ---"
+    sh "curl -fL https://install-cli.jfrog.io | sh -s -- -i ${installPath}"
+    sh "${installPath}/jf --version"
 }
 
 def executeGradle(repoName, details){
