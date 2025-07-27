@@ -250,7 +250,7 @@ def UploadAndScanBinary(repoName, uploadFileName, scanFileName){
     }
     stage("Scan Binary for ${repoName}"){
         try{
-            sh "${builderPath} gradlec --server-id-resolve=repo21 --repo-resolve-releases ecosys-dev-build-artifactory --repo-resolve-snapshots ecosys-dev-build-artifactory"
+            sh "${builderPath} gradlec --server-id-resolve=repo21 --repo-resolve=ecosys-dev-build-artifactory"
             sh "${builderPath} scan --server-id=repo21 '${scanFileName}' --ant=true --watches ${watchName} --format=simple-json > > scan-results.json"
             def results = readJSON(file: 'scan-results.json')
             if (results.errors) {
