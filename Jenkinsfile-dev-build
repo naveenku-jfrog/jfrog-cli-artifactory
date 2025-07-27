@@ -44,7 +44,7 @@ node("docker-ubuntu20-xlarge") {
                     sh "echo cliWorkspace=$cliWorkspace"
                     builderDir = "${cliExecutableName}-builder/"
                     sh "mkdir $builderDir"
-                    builderPath = "${cliWorkspace}/${builderDir}${cliExecutableName}"
+                    builderPath = "/usr/local/bin/jf"
                     jfrogCliRepoDir = "${cliWorkspace}/${repo}/"
                     zippedBinariesDir = "${jfrogCliRepoDir}zippedBinaries/"
                     pluginName = params.PLUGINS_NAME
@@ -55,7 +55,7 @@ node("docker-ubuntu20-xlarge") {
                     stage('Installing Jf'){
                         try  {
                         script{
-                             installJfrogCli("${cliWorkspace}/${builderDir}")
+                             installJfrogCli()
                             }
                         }
                         catch (e) {
@@ -250,10 +250,9 @@ def UploadAndScanBinary(repoName, uploadFileName, scanFileName){
     }
 }
 
-def installJfrogCli(String installPath) {
-    echo "--- Installing JFrog CLI to ${installPath} ---"
-    sh "curl -fL https://install-cli.jfrog.io | sh -s -- -i ${installPath}"
-    sh "${installPath}/jf --version"
+def installJfrogCli() {
+    sh 'curl -fL https://install-cli.jfrog.io | sh'
+    sh '/usr/local/bin/jf --version'
 }
 
 def executeGradle(repoName, details){
