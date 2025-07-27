@@ -253,16 +253,7 @@ def UploadAndScanBinary(repoName, uploadFileName, scanFileName){
         try{
             sh "${builderPath} gradlec --server-id-resolve=repo21 --repo-resolve=ecosys-dev-build-artifactory"
             sh "cp .jfrog/projects/gradle.yaml .jfrog/gradle.yaml"
-            sh "${builderPath} scan --server-id=repo21 '${scanFileName}' --ant=true --watches ${watchName} --format=simple-json > scan-results.json"
-            def results = readJSON(file: 'scan-results.json')
-            def prettyJson = JsonOutput.prettyPrint(JsonOutput.toJson(results))
-            echo prettyJson
-            if (results.errors) {
-                echo "jf scan reported the following errors:"
-                results.errors.each { err ->
-                    echo "- ${err.errorMessage}"
-                }
-            }
+            sh "${builderPath} scan --server-id=repo21 '${scanFileName}' --ant=true --watches ${watchName} --format=simple-json"
             statusMatrix[repoName]["Scan"] = '✅ SUCCESS'
         }catch(e){
             echo "Inside Scan Binary Catch"
