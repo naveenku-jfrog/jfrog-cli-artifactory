@@ -219,8 +219,12 @@ def executeMaven(repoName, details){
     echo "Cloning from ${details.url}..."
     git url: details.url, branch: details.branch
 
-    echo "Starting Maven build for ${repoName}..."
-    sh 'mvn clean install -DskipTests'
+    try{
+        sh 'mvn clean install -DskipTests'
+        statusMatrix[repoName][Build] = '✅ SUCCESS'
+    }catch (e) {
+        statusMatrix[repoName][Build] = '❌ FAILURE'
+    }
 
     def jarFiles = findFiles(glob: 'target/**/*.jar')
     if (jarFiles.size() > 0) {
@@ -239,13 +243,18 @@ def UploadAndScanBinary(repoName, uploadFileName, scanFileName){
     stage("Upload Binary for ${repoName}"){
         try{
             sh "${builderPath} rt u '${uploadFileName}' 'ecosys-dev-build-artifactory/plugins/dev/${formattedDate}/' --flat"
-            statusMatrix[repoName].Upload = '✅ SUCCESS'
+            statusMatrix[repoName][Scan] = '✅ SUCCESS'
         }catch (e) {
             statusMatrix[repoName][Upload] = '❌ FAILURE'
         }
     }
     stage("Scan Binary for ${repoName}"){
-        sh "${builderPath} scan '${scanFileName}' --ant=true --watches ${watchName} --format=simple-json"
+        try{
+            sh "${builderPath} scan '${scanFileName}' --ant=true --watches ${watchName} --format=simple-json"
+            statusMatrix[repoName][Scan] = '✅ SUCCESS'
+        }catch(e){
+            statusMatrix[repoName][Scan] = '❌ FAILURE'
+        }
     }
 }
 
