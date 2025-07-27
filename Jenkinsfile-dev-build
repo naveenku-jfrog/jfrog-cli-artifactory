@@ -115,9 +115,9 @@ node("docker-ubuntu20-xlarge") {
                 message = "Dev Build Jenkins Pipeline has successfully completed.\n<${env.BUILD_URL}|View Build>${summary}"
                 slackSend(channel: "#${slackChannelName}", message: message, color: 'good')
             } else {
-                def message = """@here Dev Build Jenkins Pipeline has a problem.
-                    *Status* : *${buildStatus}*.
-                    *Build* : <${env.BUILD_URL}|${env.JOB_NAME} #${env.BUILD_NUMBER}>${summary}"""
+                message = """@here Dev Build Jenkins Pipeline has a problem.
+                *Status* : *${buildStatus}*.
+                *Build* : <${env.BUILD_URL}|${env.JOB_NAME} #${env.BUILD_NUMBER}>${summary}"""
                 slackSend(channel: "#${slackChannelName}", message: message, color: 'danger')
             }
             echo "Final notification message would be: \n${message}"
