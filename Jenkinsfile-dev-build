@@ -243,7 +243,7 @@ def UploadAndScanBinary(repoName, uploadFileName, scanFileName){
     stage("Upload Binary for ${repoName}"){
         try{
             sh "${builderPath} rt u '${uploadFileName}' 'ecosys-dev-build-artifactory/plugins/dev/${formattedDate}/' --flat"
-            statusMatrix[repoName][Scan] = '✅ SUCCESS'
+            statusMatrix[repoName][Upload] = '✅ SUCCESS'
         }catch (e) {
             statusMatrix[repoName][Upload] = '❌ FAILURE'
         }
@@ -266,9 +266,6 @@ def installJfrogCli() {
 def executeGradle(repoName, details){
     echo "Cloning from ${details.url}...Inside executeGradle"
     git url: details.url, branch: details.branch
-    echo "Contents Inside.."
-    sh "pwd"
-    sh "ls -la"
 
     def buildLogic={
         echo "Contents Inside.."
@@ -279,10 +276,20 @@ def executeGradle(repoName, details){
         def hasFunctionalTest = sh(script: "./gradlew tasks --all | grep 'functionalTest' || true", returnStdout: true).trim()
         if (hasFunctionalTest) {
             echo "Project has a 'functionalTest' task. Excluding it."
-            sh './gradlew clean build -x test -x functionalTest'
+            try{
+                sh './gradlew clean build -x test -x functionalTest'
+                statusMatrix[repoName][Build] = '✅ SUCCESS'
+            }catch (e) {
+                statusMatrix[repoName][Build] = '❌ FAILURE'
+            }
         } else {
             echo "Project does not have a 'functionalTest' task."
-            sh './gradlew clean build -x test'
+            try{
+                sh './gradlew clean build -x test'
+                statusMatrix[repoName][Build] = '✅ SUCCESS'
+            }catch (e) {
+                statusMatrix[repoName][Build] = '❌ FAILURE'
+            }
         }
 
         def buildOutputDir = details.buildDir
