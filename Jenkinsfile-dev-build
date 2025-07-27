@@ -361,14 +361,19 @@ def buildBinary(repoName, details, mvnHome, jdk8Path, gradleHomePath){
         switch (details.type) {
             case ["maven", "gradle"]:
                 executeJDKProject(repoName, details, mvnHome, jdk8Path, gradleHomePath)
+                break
             case "ruby":
                 buildAndProcessRubyGem(repoName, details)
+                break
             case "npm":
                 executeNPMProject(repoName, details)
+                break
             case "docker":
                 buildAndScanPipeImage(repoName, details)
+                break
             default:
                 echo "--- Unsupported project type  ---"
+                break
         }
     }
 }
