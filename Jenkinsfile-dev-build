@@ -4,6 +4,7 @@ node("docker-ubuntu20-xlarge") {
             cron('H 0 * * *')
         ])
     ])
+    def buildResults = []
     try {
         stage('Setup Environment and Tools') {
             def goRoot = tool name: 'go-1.23.9', type: 'go'
@@ -15,20 +16,20 @@ node("docker-ubuntu20-xlarge") {
                 }
 
                 def reposMap = [
-                    "artifactory-jenkins-plugin": [url: "https://github.com/jfrog/jenkins-artifactory-plugin", branch:"master", type: "maven", jdk:"8"],
+                   /* "artifactory-jenkins-plugin": [url: "https://github.com/jfrog/jenkins-artifactory-plugin", branch:"master", type: "maven", jdk:"8"],
                     "build-info-extractor": [url: "https://github.com/jfrog/build-info", branch: "master", type: "gradle", buildDir:"build/libs", jdk:"8"],
                     "teamcity-artifactory-plugin": [url: "https://github.com/jfrog/teamcity-artifactory-plugin.git", branch: "master",  type: "maven", jdk:"8"],
                     "artifactory-maven-plugin": [url: "https://github.com/jfrog/artifactory-maven-plugin.git", branch: "master", type: "maven", jdk:"8"],
                     "artifactory-client-java": [url: "https://github.com/jfrog/artifactory-client-java.git", branch: "master", type: "gradle", buildDir:"services/build/libs", "jdk":"8"],
                     "artifactory-gradle-plugin": [url: "https://github.com/jfrog/artifactory-gradle-plugin.git", branch: "main", type: "gradle", buildDir:"build/libs", jdk:"8"],
-                    "file-specs-java": [url: "https://github.com/jfrog/file-specs-java.git", branch: "main", type: "gradle", buildDir:"build/libs", jdk:"8"],
-                    "jfrog-testing-infra": [url: "https://github.com/jfrog/jfrog-testing-infra.git", branch: "main", dir:"java", type: "gradle", buildDir:"build/libs", jdk:"8"],
-                    "bamboo-artifactory-plugin": [url: "https://github.com/jfrog/bamboo-artifactory-plugin.git", branch: "master", type: "maven", jdk:"11"],
+                    "file-specs-java": [url: "https://github.com/jfrog/file-specs-java.git", branch: "main", type: "gradle", buildDir:"build/libs", jdk:"8"],*/
+                    "jfrog-testing-infra": [url: "https://github.com/jfrog/jfrog-testing-infra.git", branch: "main", dir:"java", type: "gradle", buildDir:"build/libs", jdk:"8"]
+                    /*"bamboo-artifactory-plugin": [url: "https://github.com/jfrog/bamboo-artifactory-plugin.git", branch: "master", type: "maven", jdk:"11"],
                     "jfrog-plugin": [url: "https://github.com/jenkinsci/jfrog-plugin.git", branch:"main", type: "maven", j∂çdk:"11"],
                     "bamboo-jfrog-plugin": [url: "https://github.com/jfrog/bamboo-jfrog-plugin.git", branch: "main", type: "maven", jdk:"11"],
                     "jfrog-azure-devops-extension": [url: "https://github.com/jfrog/jfrog-azure-devops-extension.git",branch: "dev", type: "npm"],
                     "cocoapods-art": [url: "https://github.com/jfrog/cocoapods-art.git", branch: "master", type: "ruby"],
-                    "jfrog-setup-cli": [url: "https://bitbucket.org/jfrog/jfrog-setup-cli.git", branch: "master", type: "docker"]
+                    "jfrog-setup-cli": [url: "https://bitbucket.org/jfrog/jfrog-setup-cli.git", branch: "master", type: "docker"]*/
                 ]
 
                 buildStatus = 'SUCCESS'
@@ -111,6 +112,7 @@ node("docker-ubuntu20-xlarge") {
                                 }
                             }
                             parallel(tasks)
+                            cleanupRepo21()
                         }
                     }
                 }
@@ -123,15 +125,17 @@ node("docker-ubuntu20-xlarge") {
     }
     finally {
         stage('Send Notifications') {
-            message = ''
+            def summary = ""
+            buildResults.each { result ->
+                summary += "\n• ${result.name}: ${result.status}"
+            }
             if (buildStatus == 'SUCCESS') {
-                message = "Dev Build Jenkins Pipeline for Jfrog-CLI has successfully completed.\n<${env.BUILD_URL}|View Build>"
+                def message = "Dev Build Jenkins Pipeline has successfully completed.\n<${env.BUILD_URL}|View Build>${summary}"
                 slackSend(channel: "#${slackChannelName}", message: message, color: 'good')
             } else {
-                message = """@here Dev Build Jenkins Pipeline has a problem.
+                def message = """@here Dev Build Jenkins Pipeline has a problem.
                     *Status* : *${buildStatus}*.
-                    *Build* : <${env.BUILD_URL}|${env.JOB_NAME} #${env.BUILD_NUMBER}>
-                   """
+                    *Build* : <${env.BUILD_URL}|${env.JOB_NAME} #${env.BUILD_NUMBER}>${summary}"""
                 slackSend(channel: "#${slackChannelName}", message: message, color: 'danger')
             }
             echo "Final notification message would be: \n${message}"
