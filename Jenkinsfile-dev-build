@@ -1,10 +1,10 @@
+def statusMatrix = [:]
 node("docker-ubuntu20-xlarge") {
     properties([
         pipelineTriggers([
             cron('H 0 * * *')
         ])
     ])
-    def statusMatrix = [:]
     try {
         stage('Setup Environment and Tools') {
             def goRoot = tool name: 'go-1.23.9', type: 'go'
