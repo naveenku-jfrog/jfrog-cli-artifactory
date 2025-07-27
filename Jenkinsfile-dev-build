@@ -7,97 +7,82 @@ node("docker-ubuntu20-xlarge") {
     try {
         statusMatrix = [:]
         stage('Setup Environment and Tools') {
-            def goRoot = tool name: 'go-1.23.9', type: 'go'
-            withEnv(["GOROOT=${goRoot}", "PATH+GO=${goRoot}/bin"]) {
-                withCredentials([string(credentialsId: 'repo21-url', variable: 'REPO21_URL')]) {
-                    echo "${REPO21_URL}"
-                    def repo21Name = "${REPO21_URL}".substring(8, "${REPO21_URL}".length())
-                    env.REPO_NAME_21 = "$repo21Name"
-                }
-                def reposMap = [
-                   /* "artifactory-jenkins-plugin": [url: "https://github.com/jfrog/jenkins-artifactory-plugin", branch:"master", type: "maven", jdk:"8"],
-                    "build-info-extractor": [url: "https://github.com/jfrog/build-info", branch: "master", type: "gradle", buildDir:"build/libs", jdk:"8"],
-                    "teamcity-artifactory-plugin": [url: "https://github.com/jfrog/teamcity-artifactory-plugin.git", branch: "master",  type: "maven", jdk:"8"],
-                    "artifactory-maven-plugin": [url: "https://github.com/jfrog/artifactory-maven-plugin.git", branch: "master", type: "maven", jdk:"8"],
-                    "artifactory-client-java": [url: "https://github.com/jfrog/artifactory-client-java.git", branch: "master", type: "gradle", buildDir:"services/build/libs", "jdk":"8"],
-                    "artifactory-gradle-plugin": [url: "https://github.com/jfrog/artifactory-gradle-plugin.git", branch: "main", type: "gradle", buildDir:"build/libs", jdk:"8"],
-                    "file-specs-java": [url: "https://github.com/jfrog/file-specs-java.git", branch: "main", type: "gradle", buildDir:"build/libs", jdk:"8"],*/
-                    "jfrog-testing-infra": [url: "https://github.com/jfrog/jfrog-testing-infra.git", branch: "main", dir:"java", type: "gradle", buildDir:"build/libs", jdk:"8"]
-                    /*"bamboo-artifactory-plugin": [url: "https://github.com/jfrog/bamboo-artifactory-plugin.git", branch: "master", type: "maven", jdk:"11"],
-                    "jfrog-plugin": [url: "https://github.com/jenkinsci/jfrog-plugin.git", branch:"main", type: "maven", j∂çdk:"11"],
-                    "bamboo-jfrog-plugin": [url: "https://github.com/jfrog/bamboo-jfrog-plugin.git", branch: "main", type: "maven", jdk:"11"],
-                    "jfrog-azure-devops-extension": [url: "https://github.com/jfrog/jfrog-azure-devops-extension.git",branch: "dev", type: "npm"],
-                    "cocoapods-art": [url: "https://github.com/jfrog/cocoapods-art.git", branch: "master", type: "ruby"],
-                    "jfrog-setup-cli": [url: "https://bitbucket.org/jfrog/jfrog-setup-cli.git", branch: "master", type: "docker"]*/
-                ]
+            withCredentials([string(credentialsId: 'repo21-url', variable: 'REPO21_URL')]) {
+                echo "${REPO21_URL}"
+                def repo21Name = "${REPO21_URL}".substring(8, "${REPO21_URL}".length())
+                env.REPO_NAME_21 = "$repo21Name"
+            }
+            def reposMap = [
+                "artifactory-jenkins-plugin": [url: "https://github.com/jfrog/jenkins-artifactory-plugin", branch:"master", type: "maven", jdk:"8"],
+                "build-info-extractor": [url: "https://github.com/jfrog/build-info", branch: "master", type: "gradle", buildDir:"build/libs", jdk:"8"],
+                "teamcity-artifactory-plugin": [url: "https://github.com/jfrog/teamcity-artifactory-plugin.git", branch: "master",  type: "maven", jdk:"8"],
+                "artifactory-maven-plugin": [url: "https://github.com/jfrog/artifactory-maven-plugin.git", branch: "master", type: "maven", jdk:"8"],
+                "artifactory-client-java": [url: "https://github.com/jfrog/artifactory-client-java.git", branch: "master", type: "gradle", buildDir:"services/build/libs", "jdk":"8"],
+                "artifactory-gradle-plugin": [url: "https://github.com/jfrog/artifactory-gradle-plugin.git", branch: "main", type: "gradle", buildDir:"build/libs", jdk:"8"],
+                "file-specs-java": [url: "https://github.com/jfrog/file-specs-java.git", branch: "main", type: "gradle", buildDir:"build/libs", jdk:"8"],
+                "jfrog-testing-infra": [url: "https://github.com/jfrog/jfrog-testing-infra.git", branch: "main", dir:"java", type: "gradle", buildDir:"build/libs", jdk:"8"],
+                "bamboo-artifactory-plugin": [url: "https://github.com/jfrog/bamboo-artifactory-plugin.git", branch: "master", type: "maven", jdk:"11"],
+                "jfrog-plugin": [url: "https://github.com/jenkinsci/jfrog-plugin.git", branch:"main", type: "maven", j∂çdk:"11"],
+                "bamboo-jfrog-plugin": [url: "https://github.com/jfrog/bamboo-jfrog-plugin.git", branch: "main", type: "maven", jdk:"11"],
+                "jfrog-azure-devops-extension": [url: "https://github.com/jfrog/jfrog-azure-devops-extension.git",branch: "dev", type: "npm"],
+                "cocoapods-art": [url: "https://github.com/jfrog/cocoapods-art.git", branch: "master", type: "ruby"],
+                "jfrog-setup-cli": [url: "https://bitbucket.org/jfrog/jfrog-setup-cli.git", branch: "master", type: "docker"]
+            ]
 
-                buildStatus = 'SUCCESS'
-                cliExecutableName = 'jf'
-                repo = 'jfrog-cli'
+            buildStatus = 'SUCCESS'
+            cliExecutableName = 'jf'
+            formattedDate = new Date().format('yyyy-MM-dd')
+            env.CI = true
+            env.JFROG_CLI_LOG_LEVEL = "DEBUG"
+            dir('temp') {
+                sh "cat /etc/lsb-release"
+                builderPath = "/usr/local/bin/jf"
+                pluginName = params.PLUGINS_NAME
                 formattedDate = new Date().format('yyyy-MM-dd')
-                env.CI = true
-                env.JFROG_CLI_LOG_LEVEL = "DEBUG"
-                dir('temp') {
-                    sh "cat /etc/lsb-release"
-                    cliWorkspace = pwd()
-                    sh "echo cliWorkspace=$cliWorkspace"
-                    builderDir = "${cliExecutableName}-builder/"
-                    sh "mkdir $builderDir"
-                    builderPath = "/usr/local/bin/jf"
-                    jfrogCliRepoDir = "${cliWorkspace}/${repo}/"
-                    zippedBinariesDir = "${jfrogCliRepoDir}zippedBinaries/"
-                    pluginName = params.PLUGINS_NAME
-                    formattedDate = new Date().format('yyyy-MM-dd')
-                    slackChannelName = "ecosytem-plugins-dev-build-notifications"
-                    watchName = "ecosystem-watch"
-                    pluginSelectedForOnDemandScanning=""
-                    stage('Installing Jf'){
-                        try  {
-                        script{
-                             installJfrogCli()
-                            }
-                        }
-                        catch (e) {
-                            notifyFailure('Installing Jf', e)
-                            throw e
+                slackChannelName = "ecosytem-plugins-dev-build-notifications"
+                watchName = "ecosystem-watch"
+                pluginSelectedForOnDemandScanning="ALL"
+                stage('Installing Jf'){
+                    try  {
+                    script{
+                         installJfrogCli()
                         }
                     }
-                    stage('Select Plugins for execution'){
-                        try  {
-                        script{
-                             selectPlugins(reposMap)
-                            }
-                        }
-                        catch (e) {
-                            notifyFailure('Select Plugins for execution', e)
-                            throw e
+                    catch (e) {
+                        notifyFailure('Installing Jf', e)
+                        throw e
+                    }
+                }
+                stage('Select Plugins for execution'){
+                    try  {
+                    script{
+                         selectPlugins(reposMap)
                         }
                     }
-                    stage('Installing Tools'){
-                        script {
-                            sh "mkdir -p ${zippedBinariesDir}"
-                            sh 'apt-get update -y && apt-get install -y unzip'
+                    catch (e) {
+                        notifyFailure('Select Plugins for execution', e)
+                        throw e
+                    }
+                }
+                stage('Installing Tools'){
+                    script {
+                        sh 'apt-get update -y && apt-get install -y unzip'
 
-                            def mvnHome = installMaven("3.9.6")
+                        def mvnHome = installMaven("3.9.6")
 
-                            def gradleHomePath = installGradle('8.5')
+                        def gradleHomePath = installGradle('8.5')
 
-                            configRepo21()
+                        configRepo21()
 
-                            def jdk8Path = installJdkFromArchive('8')
+                        def jdk8Path = installJdkFromArchive('8')
 
-                            installNodeJs()
+                        installNodeJs()
 
-                            def tasks = [:]
-                            reposMap.each { repoName, details ->
-                                tasks[repoName] = {
-                                    statusMatrix[repoName] = [Build: 'PENDING', Upload: 'PENDING', Scan: 'PENDING']
-                                    buildBinary(repoName, details, mvnHome, jdk8Path, gradleHomePath)
-                                }
-                            }
-                            parallel(tasks)
-                            cleanupRepo21()
-                        }
+                        def tasksToRun = createBuildTasks(reposMap, pluginSelectedForOnDemandScanning, mvnHome, jdk8Path, gradleHomePath)
+
+                        parallel(tasks)
+
+                        cleanupRepo21()
                     }
                 }
             }
@@ -123,6 +108,31 @@ node("docker-ubuntu20-xlarge") {
             echo "Final notification message would be: \n${message}"
         }
     }
+}
+
+def createBuildTasks(Map reposMap, String pluginSelected, String mvnHome, String jdk8Path, String gradleHomePath) {
+    def tasks = [:]
+
+    if (pluginSelected == "ALL") {
+        reposMap.each { repoName, details ->
+            tasks[repoName] = {
+                statusMatrix[repoName] = [Build: 'PENDING', Upload: 'PENDING', Scan: 'PENDING']
+                buildBinary(repoName, details, mvnHome, jdk8Path, gradleHomePath)
+            }
+        }
+    } else {
+        if (reposMap.containsKey(pluginSelected)) {
+            def repoName = pluginSelected
+            def details = reposMap[pluginSelected]
+            tasks[repoName] = {
+                statusMatrix[repoName] = [Build: 'PENDING', Upload: 'PENDING', Scan: 'PENDING']
+                buildBinary(repoName, details, mvnHome, jdk8Path, gradleHomePath)
+            }
+        } else {
+            error("Plugin '${pluginSelected}' was not found in the repository map.")
+        }
+    }
+    return tasks
 }
 
 def formatStatusMatrix(Map matrix) {
@@ -407,14 +417,11 @@ def buildAndScanPipeImage(repoName, details) {
     }
 }
 
-def selectPlugins(Map reposMap) {
+def selectPlugin(Map reposMap) {
     def buildCauses = currentBuild.getBuildCauses()
-
     def timerCause = buildCauses.find { it instanceof hudson.triggers.TimerTrigger$TimerTriggerCause }
     if (!timerCause) {
         pluginSelectedForOnDemandScanning=pluginName
-    } else {
-        pluginSelectedForOnDemandScanning="all"
     }
 }
 
