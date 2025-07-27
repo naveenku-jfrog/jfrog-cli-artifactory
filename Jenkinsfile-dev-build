@@ -263,7 +263,7 @@ def UploadAndScanBinary(repoName, uploadFileName, scanFileName){
                 echo "Gradle config file does not exist in this directory."
             }
             sh "cp .jfrog/projects/gradle.yaml .jfrog/gradle.yaml"
-            sh "${builderPath} scan --server-id=repo21 '${scanFileName}' --ant=true --watches ${watchName} --format=simple-json > > scan-results.json"
+            sh "${builderPath} scan --server-id=repo21 '${scanFileName}' --ant=true --watches ${watchName} --format=simple-json > scan-results.json"
             def results = readJSON(file: 'scan-results.json')
             if (results.errors) {
                 error "jf scan reported errors: ${results.errors[0].errorMessage}"
