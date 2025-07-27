@@ -253,6 +253,7 @@ def UploadAndScanBinary(repoName, uploadFileName, scanFileName){
             sh "${builderPath} gradlec --server-id-resolve=repo21 --repo-resolve=ecosys-dev-build-artifactory"
             sh "pwd"
             sh "ls -la"
+            sh "ls -la .jfrog"
             def configFile = '.jfrog/gradle.yaml'
             if (fileExists(configFile)) {
                 echo "Gradle config file found. Contents:"
