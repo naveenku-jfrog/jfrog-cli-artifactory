@@ -250,10 +250,18 @@ def UploadAndScanBinary(repoName, uploadFileName, scanFileName){
     }
     stage("Scan Binary for ${repoName}"){
         try{
-            sh "${builderPath} scan '${scanFileName}' --ant=true --watches ${watchName} --format=simple-json"
+            sh "${builderPath} scan '${scanFileName}' --ant=true --watches ${watchName} --format=simple-json > > scan-results.json"
+            def results = readJSON(file: 'scan-results.json')
+            if (results.errors) {
+                error "jf scan reported errors: ${results.errors[0].errorMessage}"
+            }
             statusMatrix[repoName]["Scan"] = '✅ SUCCESS'
         }catch(e){
             statusMatrix[repoName]["Scan"] = '❌ FAILURE'
+        }
+        finally {
+            echo "Cleaning up scan results file..."
+            sh "rm -f scan-results.json"
         }
     }
 }
