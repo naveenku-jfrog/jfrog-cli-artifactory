@@ -1,4 +1,3 @@
-statusMatrix = [:]
 node("docker-ubuntu20-xlarge") {
     properties([
         pipelineTriggers([
@@ -6,6 +5,7 @@ node("docker-ubuntu20-xlarge") {
         ])
     ])
     try {
+        statusMatrix = [:]
         stage('Setup Environment and Tools') {
             def goRoot = tool name: 'go-1.23.9', type: 'go'
             withEnv(["GOROOT=${goRoot}", "PATH+GO=${goRoot}/bin"]) {
@@ -14,7 +14,6 @@ node("docker-ubuntu20-xlarge") {
                     def repo21Name = "${REPO21_URL}".substring(8, "${REPO21_URL}".length())
                     env.REPO_NAME_21 = "$repo21Name"
                 }
-
                 def reposMap = [
                    /* "artifactory-jenkins-plugin": [url: "https://github.com/jfrog/jenkins-artifactory-plugin", branch:"master", type: "maven", jdk:"8"],
                     "build-info-extractor": [url: "https://github.com/jfrog/build-info", branch: "master", type: "gradle", buildDir:"build/libs", jdk:"8"],
@@ -130,8 +129,8 @@ def formatStatusMatrix(Map matrix) {
     matrix.each { repo, stages ->
         message += "• *${repo}*: "
         message += "Build: ${stages.Build}, "
-        message += "Test: ${stages.Test}, "
-        message += "Upload: ${stages.Upload}\n"
+        message += "Upload: ${stages.Upload}, "
+        message += "Scan: ${stages.Scan}\n"
     }
     return message
 }
