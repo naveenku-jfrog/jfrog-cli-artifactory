@@ -110,6 +110,15 @@ node("docker-ubuntu20-xlarge") {
     }
 }
 
+def selectPlugins(Map reposMap) {
+    def buildCauses = currentBuild.getBuildCauses()
+
+    def timerCause = buildCauses.find { it instanceof hudson.triggers.TimerTrigger$TimerTriggerCause }
+    if (!timerCause) {
+        pluginSelectedForOnDemandScanning=pluginName
+    }
+}
+
 def createBuildTasks(Map reposMap, String pluginSelected, String mvnHome, String jdk8Path, String gradleHomePath) {
     def tasks = [:]
 
