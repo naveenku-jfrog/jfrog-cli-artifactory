@@ -109,9 +109,10 @@ node("docker-ubuntu20-xlarge") {
     }
     finally {
         stage('Send Notifications') {
+            def message = ''
             def summary = formatStatusMatrix(statusMatrix)
             if (buildStatus == 'SUCCESS') {
-                def message = "Dev Build Jenkins Pipeline has successfully completed.\n<${env.BUILD_URL}|View Build>${summary}"
+                message = "Dev Build Jenkins Pipeline has successfully completed.\n<${env.BUILD_URL}|View Build>${summary}"
                 slackSend(channel: "#${slackChannelName}", message: message, color: 'good')
             } else {
                 def message = """@here Dev Build Jenkins Pipeline has a problem.
