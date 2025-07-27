@@ -1,4 +1,4 @@
-def statusMatrix = [:]
+statusMatrix = [:]
 node("docker-ubuntu20-xlarge") {
     properties([
         pipelineTriggers([
