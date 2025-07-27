@@ -221,9 +221,9 @@ def executeMaven(repoName, details){
 
     try{
         sh 'mvn clean install -DskipTests'
-        statusMatrix[repoName][Build] = '✅ SUCCESS'
+        statusMatrix[repoName]["Build"] = '✅ SUCCESS'
     }catch (e) {
-        statusMatrix[repoName][Build] = '❌ FAILURE'
+        statusMatrix[repoName]["Build"] = '❌ FAILURE'
     }
 
     def jarFiles = findFiles(glob: 'target/**/*.jar')
@@ -243,17 +243,17 @@ def UploadAndScanBinary(repoName, uploadFileName, scanFileName){
     stage("Upload Binary for ${repoName}"){
         try{
             sh "${builderPath} rt u '${uploadFileName}' 'ecosys-dev-build-artifactory/plugins/dev/${formattedDate}/' --flat"
-            statusMatrix[repoName][Upload] = '✅ SUCCESS'
+            statusMatrix[repoName]["Upload"] = '✅ SUCCESS'
         }catch (e) {
-            statusMatrix[repoName][Upload] = '❌ FAILURE'
+            statusMatrix[repoName]["Upload"] = '❌ FAILURE'
         }
     }
     stage("Scan Binary for ${repoName}"){
         try{
             sh "${builderPath} scan '${scanFileName}' --ant=true --watches ${watchName} --format=simple-json"
-            statusMatrix[repoName][Scan] = '✅ SUCCESS'
+            statusMatrix[repoName]["Scan"] = '✅ SUCCESS'
         }catch(e){
-            statusMatrix[repoName][Scan] = '❌ FAILURE'
+            statusMatrix[repoName]["Scan"] = '❌ FAILURE'
         }
     }
 }
@@ -278,17 +278,17 @@ def executeGradle(repoName, details){
             echo "Project has a 'functionalTest' task. Excluding it."
             try{
                 sh './gradlew clean build -x test -x functionalTest'
-                statusMatrix[repoName][Build] = '✅ SUCCESS'
+                statusMatrix[repoName]["Build"] = '✅ SUCCESS'
             }catch (e) {
-                statusMatrix[repoName][Build] = '❌ FAILURE'
+                statusMatrix[repoName]["Build"] = '❌ FAILURE'
             }
         } else {
             echo "Project does not have a 'functionalTest' task."
             try{
                 sh './gradlew clean build -x test'
-                statusMatrix[repoName][Build] = '✅ SUCCESS'
+                statusMatrix[repoName]["Build"] = '✅ SUCCESS'
             }catch (e) {
-                statusMatrix[repoName][Build] = '❌ FAILURE'
+                statusMatrix[repoName]["Build"] = '❌ FAILURE'
             }
         }
 
