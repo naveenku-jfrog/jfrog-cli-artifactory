@@ -252,25 +252,16 @@ def UploadAndScanBinary(repoName, uploadFileName, scanFileName){
     stage("Scan Binary for ${repoName}"){
         try{
             sh "${builderPath} gradlec --server-id-resolve=repo21 --repo-resolve=ecosys-dev-build-artifactory"
-            sh "pwd"
-            sh "ls -la"
-            sh "ls -la .jfrog"
-            def configFile = '.jfrog/projects/gradle.yaml'
-            if (fileExists(configFile)) {
-                echo "Gradle config file found. Contents:"
-                // Print the contents of the file to the console log
-                sh "cat ${configFile}"
-            } else {
-                echo "Gradle config file does not exist in this directory."
-            }
             sh "cp .jfrog/projects/gradle.yaml .jfrog/gradle.yaml"
             sh "${builderPath} scan --server-id=repo21 '${scanFileName}' --ant=true --watches ${watchName} --format=simple-json > scan-results.json"
             def results = readJSON(file: 'scan-results.json')
             if (results.errors) {
+                echo "Inside Scan Binary results.errors"
                 error "jf scan reported errors: ${results.errors[0].errorMessage}"
             }
             statusMatrix[repoName]["Scan"] = '✅ SUCCESS'
         }catch(e){
+            echo "Inside Scan Binary Catch"
             statusMatrix[repoName]["Scan"] = '❌ FAILURE'
         }
         finally {
