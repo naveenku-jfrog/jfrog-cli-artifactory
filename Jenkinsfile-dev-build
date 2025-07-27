@@ -120,7 +120,7 @@ def selectPlugins(Map reposMap) {
 }
 
 def createBuildTasks(Map reposMap, String pluginSelected, String mvnHome, String jdk8Path, String gradleHomePath) {
-    def tasks = [:]
+    tasks = [:]
 
     if (pluginSelected == "ALL") {
         reposMap.each { repoName, details ->
