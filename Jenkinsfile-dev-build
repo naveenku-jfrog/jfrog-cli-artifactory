@@ -226,10 +226,13 @@ def cloneAndBuild(repoName, details, mvnHome, gradleHomePath) {
             switch (details.type) {
                 case "maven":
                     executeMaven(repoName, details)
+                    break
                 case "gradle":
                     executeGradle(repoName, details)
+                    break
                 default:
                     echo "--- Unsupported project type  ---"
+                    break
             }
         }
     }
