@@ -4,8 +4,7 @@ node("docker-ubuntu20-xlarge") {
             cron('H 0 * * *')
         ])
     ])
-    def statusMatrix = new java.util.concurrent.ConcurrentHashMap()
-    statusMatrix[repoName] = [Build: 'PENDING', Upload: 'PENDING', Scan: 'PENDING']
+    def statusMatrix = [:]
     try {
         stage('Setup Environment and Tools') {
             def goRoot = tool name: 'go-1.23.9', type: 'go'
@@ -109,6 +108,7 @@ node("docker-ubuntu20-xlarge") {
                             def tasks = [:]
                             reposMap.each { repoName, details ->
                                 tasks[repoName] = {
+                                    statusMatrix[repoName] = [Build: 'PENDING', Upload: 'PENDING', Scan: 'PENDING']
                                     buildBinary(repoName, details, mvnHome, jdk8Path, gradleHomePath)
                                 }
                             }
