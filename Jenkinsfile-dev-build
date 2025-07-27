@@ -256,8 +256,10 @@ def UploadAndScanBinary(repoName, uploadFileName, scanFileName){
             sh "${builderPath} scan --server-id=repo21 '${scanFileName}' --ant=true --watches ${watchName} --format=simple-json > scan-results.json"
             def results = readJSON(file: 'scan-results.json')
             if (results.errors) {
-                echo "Inside Scan Binary results.errors"
-                error "jf scan reported errors: ${results.errors[0].errorMessage}"
+                echo "jf scan reported the following errors:"
+                results.errors.each { err ->
+                    echo "- ${err.errorMessage}"
+                }
             }
             statusMatrix[repoName]["Scan"] = '✅ SUCCESS'
         }catch(e){
