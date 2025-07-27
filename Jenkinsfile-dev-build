@@ -254,7 +254,7 @@ def UploadAndScanBinary(repoName, uploadFileName, scanFileName){
             sh "pwd"
             sh "ls -la"
             sh "ls -la .jfrog"
-            def configFile = '.jfrog/gradle.yaml'
+            def configFile = '.jfrog/projects/gradle.yaml'
             if (fileExists(configFile)) {
                 echo "Gradle config file found. Contents:"
                 // Print the contents of the file to the console log
