@@ -74,6 +74,8 @@ node("docker-ubuntu20-xlarge") {
 
                         configRepo21()
 
+                        configGradle()
+
                         def jdk8Path = installJdkFromArchive('8')
 
                         def jdk17Path = installJdkFromArchive('17')
@@ -99,7 +101,6 @@ node("docker-ubuntu20-xlarge") {
             def message = ''
             updateUnsupportedPluginStatus(statusMatrix)
             def summary = formatStatusMatrix(statusMatrix)
-            echo "Updated matrix: ${statusMatrix}"
             if (buildStatus == 'SUCCESS') {
                 message = "Dev Build Jenkins Pipeline has successfully completed.\n<${env.BUILD_URL}|View Build>${summary}"
                 slackSend(channel: "#${slackChannelName}", message: message, color: 'good')
@@ -155,6 +156,11 @@ def createBuildTasks(Map reposMap, String pluginSelected, String mvnHome, String
     return tasks
 }
 
+def configGradle(){
+    sh "${builderPath} gradlec --server-id-resolve=repo21 --repo-resolve=ecosys-dev-build-artifactory"
+    //sh "cp .jfrog/projects/gradle.yaml .jfrog/gradle.yaml"
+}
+
 def updateUnsupportedPluginStatus(Map matrix) {
     unsupportedPlugins=["cocoapods-art"]
     unsupportedPlugins.each { plugin ->
@@ -162,7 +168,6 @@ def updateUnsupportedPluginStatus(Map matrix) {
         matrix[plugin]["Upload"]="🚫"
         matrix[plugin]["Scan"]="🚫"
     }
-    echo "Updated matrix: ${matrix}"
 }
 
 def formatStatusMatrix(Map matrix) {
@@ -316,8 +321,6 @@ def UploadAndScanBinary(repoName, uploadFileName, scanFileName){
     }
     stage("Scan Binary for ${repoName}"){
         try{
-            sh "${builderPath} gradlec --server-id-resolve=repo21 --repo-resolve=ecosys-dev-build-artifactory"
-            sh "cp .jfrog/projects/gradle.yaml .jfrog/gradle.yaml"
             sh "${builderPath} scan --server-id=repo21 '${scanFileName}' --ant=true --watches ${watchName} --format=simple-json"
             statusMatrix[repoName]["Scan"] = '✅'
         }catch(e){
