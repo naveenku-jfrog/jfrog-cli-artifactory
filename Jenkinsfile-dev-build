@@ -136,7 +136,7 @@ def createBuildTasks(Map reposMap, String pluginSelected, String mvnHome, String
         if (reposMap.containsKey(pluginSelected)) {
             def repoName = pluginSelected
             def details = reposMap[pluginSelected]
-            details.branch = ${branchSelectedForOnDemandScanning}
+            details.branch = branchSelectedForOnDemandScanning
             tasks[repoName] = {
                 statusMatrix[repoName] = [Build: 'PENDING', Upload: 'PENDING', Scan: 'PENDING']
                 buildBinary(repoName, details, mvnHome, jdk8Path, jdk17Path, gradleHomePath)
