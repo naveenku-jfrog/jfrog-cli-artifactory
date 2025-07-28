@@ -189,16 +189,22 @@ def installJdkFromArchive(String version) {
         error "No download URL defined for JDK version ${version}"
     }
 
-    sh "curl -L -o jdk.tar.gz '${downloadUrl}'"
-    sh "tar -xzf jdk.tar.gz"
+    def installDir = "jdk-${version}-install"
+    sh "mkdir -p ${installDir}"
 
-    def jdkDirName = sh(script: "find . -maxdepth 1 -type d -name '*jdk*'", returnStdout: true).trim()
+    dir(installDir) {
+        echo "Downloading JDK ${version}..."
+        sh "curl -L -o jdk.tar.gz '${downloadUrl}'"
+        echo "Extracting JDK..."
+        sh "tar -xzf jdk.tar.gz"
 
-    if (jdkDirName.isEmpty()) {
-        error "Could not find extracted JDK directory."
+        def jdkDirName = sh(script: "find . -maxdepth 1 -type d -name '*jdk*'", returnStdout: true).trim()
+        if (jdkDirName.isEmpty()) {
+            error "Could not find extracted JDK directory."
+        }
+
+        return "${pwd()}/${jdkDirName}"
     }
-
-    return "${pwd()}/${jdkDirName}"
 }
 
 def installGradle(String version) {
