@@ -118,6 +118,11 @@ def selectPlugins() {
         cause._class == 'hudson.triggers.TimerTrigger$TimerTriggerCause'
     }
     echo "timerCause value: ${timerCause}"
+    timerCause = buildCauses.find { cause ->
+        echo "Checking cause: ${cause?.toString()}"
+        cause instanceof hudson.triggers.TimerTrigger$TimerTriggerCause
+    }
+    echo "timerCause value: ${timerCause}"
     if (timerCause) {
         pluginSelectedForOnDemandScanning="all"
     } else {
