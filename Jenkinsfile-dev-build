@@ -128,7 +128,7 @@ def selectPlugins() {
     echo "Selected PluginName is : ${pluginSelectedForOnDemandScanning}"
 }
 
-def createBuildTasks(Map reposMap, String pluginSelected, String mvnHome, String jdk8Path, String gradleHomePath) {
+def createBuildTasks(Map reposMap, String pluginSelected, String mvnHome, String jdk8Path, String jdk17Path, String gradleHomePath) {
     tasks = [:]
 
     if (pluginSelected == "ALL") {
