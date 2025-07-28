@@ -98,6 +98,7 @@ node("docker-ubuntu20-xlarge") {
         stage('Send Notifications') {
             def message = ''
             def summary = formatStatusMatrix(statusMatrix)
+            updateUnsupportedPluginStatus(statusMatrix)
             if (buildStatus == 'SUCCESS') {
                 message = "Dev Build Jenkins Pipeline has successfully completed.\n<${env.BUILD_URL}|View Build>${summary}"
                 slackSend(channel: "#${slackChannelName}", message: message, color: 'good')
@@ -151,6 +152,15 @@ def createBuildTasks(Map reposMap, String pluginSelected, String mvnHome, String
         }
     }
     return tasks
+}
+
+def updateUnsupportedPluginStatus(Map matrix) {
+    unsupportedPlugins=["cocoapods-art"]
+    unsupportedPlugins.each { plugin ->
+        matrix[plugin]["Build"]="🚫"
+        matrix[plugin]["Upload"]="🚫"
+        matrix[plugin]["Scan"]="🚫"
+    }
 }
 
 def formatStatusMatrix(Map matrix) {
@@ -400,24 +410,22 @@ def installNodeJs() {
 }
 
 def buildBinary(repoName, details, mvnHome, jdk8Path, jdk17Path, gradleHomePath){
-    stage("Build Binary for ${repoName}"){
-        switch (details.type) {
-            case ["maven", "gradle"]:
-                executeJDKProject(repoName, details, mvnHome, jdk8Path, jdk17Path, gradleHomePath)
-                break
-            case "ruby":
-                buildAndProcessRubyGem(repoName, details)
-                break
-            case "npm":
-                executeNPMProject(repoName, details)
-                break
-            case "docker":
-                buildAndScanPipeImage(repoName, details)
-                break
-            default:
-                echo "--- Unsupported project type  ---"
-                break
-        }
+    switch (details.type) {
+        case ["maven", "gradle"]:
+            executeJDKProject(repoName, details, mvnHome, jdk8Path, jdk17Path, gradleHomePath)
+            break
+        case "ruby":
+            buildAndProcessRubyGem(repoName, details)
+            break
+        case "npm":
+            executeNPMProject(repoName, details)
+            break
+        case "docker":
+            buildAndScanPipeImage(repoName, details)
+            break
+        default:
+            echo "--- Unsupported project type  ---"
+            break
     }
 }
 
