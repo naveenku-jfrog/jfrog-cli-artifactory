@@ -76,9 +76,11 @@ node("docker-ubuntu20-xlarge") {
 
                         def jdk8Path = installJdkFromArchive('8')
 
+                        def jdk17Path = installJdkFromArchive('17')
+
                         installNodeJs()
 
-                        def tasksToRun = createBuildTasks(reposMap, pluginSelectedForOnDemandScanning, mvnHome, jdk8Path, gradleHomePath)
+                        def tasksToRun = createBuildTasks(reposMap, pluginSelectedForOnDemandScanning, mvnHome, jdk8Path, jdk17Path, gradleHomePath)
 
                         parallel(tasks)
 
@@ -133,7 +135,7 @@ def createBuildTasks(Map reposMap, String pluginSelected, String mvnHome, String
         reposMap.each { repoName, details ->
             tasks[repoName] = {
                 statusMatrix[repoName] = [Build: 'PENDING', Upload: 'PENDING', Scan: 'PENDING']
-                buildBinary(repoName, details, mvnHome, jdk8Path, gradleHomePath)
+                buildBinary(repoName, details, mvnHome, jdk8Path, jdk17Path, gradleHomePath)
             }
         }
     } else {
@@ -142,7 +144,7 @@ def createBuildTasks(Map reposMap, String pluginSelected, String mvnHome, String
             def details = reposMap[pluginSelected]
             tasks[repoName] = {
                 statusMatrix[repoName] = [Build: 'PENDING', Upload: 'PENDING', Scan: 'PENDING']
-                buildBinary(repoName, details, mvnHome, jdk8Path, gradleHomePath)
+                buildBinary(repoName, details, mvnHome, jdk8Path, jdk17Path, gradleHomePath)
             }
         } else {
             error("Plugin '${pluginSelected}' was not found in the repository map.")
@@ -365,7 +367,7 @@ def executeGradle(repoName, details){
     }
 }
 
-def executeJDKProject(repoName, details, mvnHome, jdk8Path, gradleHomePath){
+def executeJDKProject(repoName, details, mvnHome, jdk8Path, jdk17Path, gradleHomePath){
     if(details.jdk=="8"){
         withEnv(["JAVA_HOME=${jdk8Path}", "PATH+JAVA=${jdk8Path}/bin"]) {
             cloneAndBuild(repoName, details, mvnHome, gradleHomePath)
@@ -373,8 +375,8 @@ def executeJDKProject(repoName, details, mvnHome, jdk8Path, gradleHomePath){
     } else if(details.jdk=="11"){
         cloneAndBuild(repoName, details, mvnHome, gradleHomePath)
     } else if(details.jdk=="17"){
-        jdk = installJdkFromArchive("17")
-        withEnv(["JAVA_HOME=${jdk}", "PATH+JAVA=${jdk}/bin"]) {
+        echo "Inside java 17 block"
+        withEnv(["JAVA_HOME=${jdk17Path}", "PATH+JAVA=${jdk17Path}/bin"]) {
             sh "java -version"
             cloneAndBuild(repoName, details, mvnHome, gradleHomePath)
         }
@@ -389,11 +391,11 @@ def installNodeJs() {
     sh 'npm -v'
 }
 
-def buildBinary(repoName, details, mvnHome, jdk8Path, gradleHomePath){
+def buildBinary(repoName, details, mvnHome, jdk8Path, jdk17Path, gradleHomePath){
     stage("Build Binary for ${repoName}"){
         switch (details.type) {
             case ["maven", "gradle"]:
-                executeJDKProject(repoName, details, mvnHome, jdk8Path, gradleHomePath)
+                executeJDKProject(repoName, details, mvnHome, jdk8Path, jdk17Path, gradleHomePath)
                 break
             case "ruby":
                 buildAndProcessRubyGem(repoName, details)
