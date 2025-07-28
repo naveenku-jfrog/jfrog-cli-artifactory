@@ -305,7 +305,7 @@ def executeMaven(repoName, details){
     dir(tempScanDir) {
         def filesToScan = findFiles(glob: '**/*')
         if (filesToScan.size() > 0) {
-            UploadAndScanBinary(repoName, ".", ".")
+            UploadAndScanBinary(repoName, "*.zip", "*.zip")
         } else {
             echo "No files found in ${tempScanDir} to scan."
         }
