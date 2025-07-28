@@ -99,6 +99,7 @@ node("docker-ubuntu20-xlarge") {
             def message = ''
             def summary = formatStatusMatrix(statusMatrix)
             updateUnsupportedPluginStatus(statusMatrix)
+            echo "Updated matrix: ${statusMatrix}"
             if (buildStatus == 'SUCCESS') {
                 message = "Dev Build Jenkins Pipeline has successfully completed.\n<${env.BUILD_URL}|View Build>${summary}"
                 slackSend(channel: "#${slackChannelName}", message: message, color: 'good')
@@ -161,6 +162,7 @@ def updateUnsupportedPluginStatus(Map matrix) {
         matrix[plugin]["Upload"]="🚫"
         matrix[plugin]["Scan"]="🚫"
     }
+    echo "Updated matrix: ${matrix}"
 }
 
 def formatStatusMatrix(Map matrix) {
