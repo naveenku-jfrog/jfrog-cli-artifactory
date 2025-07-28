@@ -442,7 +442,7 @@ def executeNPMProject(repoName, details){
                     error "Build failed: Could not find generated .vsix file."
                 }
                 zipFileName = "${vsixFile}.zip"
-                zip(zipFile: zipFileName, archive: false, glob: vsixFile)
+                zip(zipFile: zipFileName, archive: true, glob: vsixFile)
                 echo "Successfully created zip archive: ${zipFileName}"
                 statusMatrix[repoName]["Build"] = '✅'
             }catch(e){
