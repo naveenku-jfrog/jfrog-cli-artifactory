@@ -323,7 +323,7 @@ def UploadAndScanBinary(repoName, uploadFileName, scanFileName){
     }
     stage("Scan Binary for ${repoName}"){
         try{
-            sh "${builderPath} scan --server-id=repo21 '${scanFileName}' --ant=true --watches ${watchName} --format=simple-json"
+            sh "${builderPath} scan --server-id=repo21 '${scanFileName}' --ant=true --watches ${watchName}"
             statusMatrix[repoName]["Scan"] = '✅'
         }catch(e){
             echo "Inside Scan Binary Catch"
