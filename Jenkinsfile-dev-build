@@ -274,7 +274,7 @@ def executeMaven(repoName, details){
             def existingZipFiles = findFiles(glob: 'target/*.zip')
             if (existingZipFiles.size() > 0) {
                 echo "Found ${existingZipFiles.size()} pre-existing zip file(s). Copying them..."
-                sh "cp target/*.zip ${tempScanDir}/"
+                sh "cp target/*.zip ${tempScanDir}"
             }
             statusMatrix[repoName]["Build"] = '✅ SUCCESS'
         }catch (e) {
