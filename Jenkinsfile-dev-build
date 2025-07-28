@@ -114,7 +114,9 @@ def selectPlugins() {
     def buildCauses = currentBuild.getBuildCauses()
     echo "DEBUG: Build causes are: ${buildCauses}"
     echo "PluginName is : ${pluginName}"
-    def timerCause = buildCauses.find { it instanceof hudson.triggers.TimerTrigger$TimerTriggerCause }
+    def timerCause = buildCauses.find { cause ->
+        cause.class.name == 'hudson.triggers.TimerTrigger$TimerTriggerCause'
+    }
     if (timerCause) {
         pluginSelectedForOnDemandScanning="all"
     } else {
