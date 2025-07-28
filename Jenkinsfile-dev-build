@@ -371,6 +371,11 @@ def executeJDKProject(repoName, details, mvnHome, jdk8Path, gradleHomePath){
         }
     } else if(details.jdk=="11"){
         cloneAndBuild(repoName, details, mvnHome, gradleHomePath)
+    } else if(details.jdk=="17"){
+        def jdk = tool name: 'jdk-17'
+        withEnv(["JAVA_HOME=${jdk}", "PATH+JAVA=${jdk}/bin"]) {
+            cloneAndBuild(repoName, details, mvnHome, gradleHomePath)
+        }
     }
 }
 
