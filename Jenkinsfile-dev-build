@@ -37,13 +37,12 @@ node("docker-ubuntu20-xlarge") {
         dir('temp') {
             sh "cat /etc/lsb-release"
             builderPath = "/usr/local/bin/jf"
-            pluginName = params.PLUGINS_NAME
             formattedDate = new Date().format('yyyy-MM-dd')
-            slackChannelName = "ecosytem-plugins-dev-build-notifications"
-            watchName = "ecosystem-watch"
-            pluginSelectedForOnDemandScanning="ALL"
-            branchSelectedForOnDemandScanning = "access-bug"
-            jfrogPluginsDevBuildTargetRepoName = "ecosys-dev-build-artifactory"
+            slackChannelName = params.SLACK_CHANNEL_FOR_PLUGINS_DEV_BUILD_NOTIFICATION
+            watchName = params.WATCH_NAME
+            pluginSelectedForOnDemandScanning=params.PLUGINS_NAME
+            branchSelectedForOnDemandScanning = params.BRANCH_FOR_SCANNING
+            jfrogPluginsDevBuildTargetRepoName = params.REPO_FOR_PLUGINS_DEV_UPLOAD
             mvnHome = ""
             jdk8Path = ""
             jdk17Path = ""
@@ -108,16 +107,12 @@ node("docker-ubuntu20-xlarge") {
 
 def selectPlugins() {
     def buildCauses = currentBuild.getBuildCauses()
-    echo "DEBUG: Build causes are: ${buildCauses}"
-    echo "PluginName is : ${pluginName}"
     def timerCause = buildCauses.find { cause ->
         cause._class == 'hudson.triggers.TimerTrigger$TimerTriggerCause'
     }
     echo "timerCause value: ${timerCause}"
     if (timerCause) {
         pluginSelectedForOnDemandScanning="ALL"
-    } else {
-        pluginSelectedForOnDemandScanning=pluginName
     }
     echo "Selected PluginName is : ${pluginSelectedForOnDemandScanning}"
 }
@@ -136,7 +131,9 @@ def createBuildTasks(Map reposMap, String pluginSelected, String mvnHome, String
         if (reposMap.containsKey(pluginSelected)) {
             def repoName = pluginSelected
             def details = reposMap[pluginSelected]
-            details.branch = branchSelectedForOnDemandScanning
+            if (branchSelectedForOnDemandScanning!="default") {
+                details.branch = branchSelectedForOnDemandScanning
+            }
             tasks[repoName] = {
                 statusMatrix[repoName] = [Build: 'PENDING', Upload: 'PENDING', Scan: 'PENDING']
                 buildBinary(repoName, details, mvnHome, jdk8Path, jdk17Path, gradleHomePath)
