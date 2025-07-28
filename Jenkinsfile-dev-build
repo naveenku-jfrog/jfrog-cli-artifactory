@@ -97,8 +97,8 @@ node("docker-ubuntu20-xlarge") {
     finally {
         stage('Send Notifications') {
             def message = ''
-            def summary = formatStatusMatrix(statusMatrix)
             updateUnsupportedPluginStatus(statusMatrix)
+            def summary = formatStatusMatrix(statusMatrix)
             echo "Updated matrix: ${statusMatrix}"
             if (buildStatus == 'SUCCESS') {
                 message = "Dev Build Jenkins Pipeline has successfully completed.\n<${env.BUILD_URL}|View Build>${summary}"
