@@ -437,11 +437,11 @@ def executeNPMProject(repoName, details){
                 sh 'npm install'
                 sh 'npm run create'
 
-                def vsixFile = sh(script: "find . -name '*.vsix'", returnStdout: true).trim()
+                def vsixFile = sh(script: "find . -maxdepth 1 -name '*.vsix'", returnStdout: true).trim()
                 if (vsixFile.isEmpty()) {
                     error "Build failed: Could not find generated .vsix file."
                 }
-                zipFileName = "${vsixFile}.zip"
+                zipFileName = "${vsixFile.replace('./', '')}.zip"
                 zip(zipFile: zipFileName, archive: true, glob: vsixFile)
                 echo "Successfully created zip archive: ${zipFileName}"
                 statusMatrix[repoName]["Build"] = '✅'
