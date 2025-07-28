@@ -119,7 +119,7 @@ def selectPlugins() {
     }
     echo "timerCause value: ${timerCause}"
     if (timerCause) {
-        pluginSelectedForOnDemandScanning="all"
+        pluginSelectedForOnDemandScanning="ALL"
     } else {
         pluginSelectedForOnDemandScanning=pluginName
     }
