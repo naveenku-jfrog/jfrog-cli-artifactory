@@ -149,12 +149,12 @@ def createBuildTasks(Map reposMap, String pluginSelected, String mvnHome, String
 }
 
 def formatStatusMatrix(Map matrix) {
-    def message = "\n"
-    matrix.each { repo, stages ->
-        message += "• *${repo}*: "
-        message += "Build: ${stages.Build}, "
-        message += "Upload: ${stages.Upload}, "
-        message += "Scan: ${stages.Scan}\n"
+    def message = ""
+    matrix.each { repo, stage ->
+        message += "\n• *${repo}:*"
+        message += "\n    1. Build: ${stage.Build}"
+        message += "\n    2. Upload: ${stage.Upload}"
+        message += "\n    3. Scan: ${stage.Scan}"
     }
     return message
 }
