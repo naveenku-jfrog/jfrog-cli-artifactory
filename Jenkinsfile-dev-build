@@ -277,9 +277,9 @@ def executeMaven(repoName, details){
                 echo "Found ${existingZipFiles.size()} pre-existing zip file(s). Copying them..."
                 sh "cp target/*.zip ${tempScanDir}/"
             }
-            statusMatrix[repoName]["Build"] = '✅ SUCCESS'
+            statusMatrix[repoName]["Build"] = '✅'
         }catch (e) {
-            statusMatrix[repoName]["Build"] = '❌ FAILURE'
+            statusMatrix[repoName]["Build"] = '❌'
         }
     }
 
@@ -297,9 +297,9 @@ def UploadAndScanBinary(repoName, uploadFileName, scanFileName){
     stage("Upload Binary for ${repoName}"){
         try{
             sh "${builderPath} rt u '${uploadFileName}' 'ecosys-dev-build-artifactory/plugins/dev/${formattedDate}/' --flat"
-            statusMatrix[repoName]["Upload"] = '✅ SUCCESS'
+            statusMatrix[repoName]["Upload"] = '✅'
         }catch (e) {
-            statusMatrix[repoName]["Upload"] = '❌ FAILURE'
+            statusMatrix[repoName]["Upload"] = '❌'
         }
     }
     stage("Scan Binary for ${repoName}"){
@@ -307,10 +307,10 @@ def UploadAndScanBinary(repoName, uploadFileName, scanFileName){
             sh "${builderPath} gradlec --server-id-resolve=repo21 --repo-resolve=ecosys-dev-build-artifactory"
             sh "cp .jfrog/projects/gradle.yaml .jfrog/gradle.yaml"
             sh "${builderPath} scan --server-id=repo21 '${scanFileName}' --ant=true --watches ${watchName} --format=simple-json"
-            statusMatrix[repoName]["Scan"] = '✅ SUCCESS'
+            statusMatrix[repoName]["Scan"] = '✅'
         }catch(e){
             echo "Inside Scan Binary Catch"
-            statusMatrix[repoName]["Scan"] = '❌ FAILURE'
+            statusMatrix[repoName]["Scan"] = '❌'
         }
     }
 }
@@ -335,17 +335,17 @@ def executeGradle(repoName, details){
             echo "Project has a 'functionalTest' task. Excluding it."
             try{
                 sh './gradlew clean build -x test -x functionalTest'
-                statusMatrix[repoName]["Build"] = '✅ SUCCESS'
+                statusMatrix[repoName]["Build"] = '✅'
             }catch (e) {
-                statusMatrix[repoName]["Build"] = '❌ FAILURE'
+                statusMatrix[repoName]["Build"] = '❌'
             }
         } else {
             echo "Project does not have a 'functionalTest' task."
             try{
                 sh './gradlew clean build -x test'
-                statusMatrix[repoName]["Build"] = '✅ SUCCESS'
+                statusMatrix[repoName]["Build"] = '✅'
             }catch (e) {
-                statusMatrix[repoName]["Build"] = '❌ FAILURE'
+                statusMatrix[repoName]["Build"] = '❌'
             }
         }
 
@@ -437,9 +437,9 @@ def executeNPMProject(repoName, details){
                 zipFileName = "${vsixFile}.zip"
                 zip(zipFile: zipFileName, archive: false, glob: vsixFile)
                 echo "Successfully created zip archive: ${zipFileName}"
-                statusMatrix[repoName]["Build"] = '✅ SUCCESS'
+                statusMatrix[repoName]["Build"] = '✅'
             }catch(e){
-                statusMatrix[repoName]["Build"] = '❌ FAILURE'
+                statusMatrix[repoName]["Build"] = '❌'
             }
         }
         UploadAndScanBinary(repoName, "${zipFileName}", "${zipFileName}")
@@ -452,20 +452,20 @@ def buildAndProcessRubyGem(repoName, details){
             git url: details.url, branch: details.branch
             try{
                 git url: details.url, branch: details.branch
-                statusMatrix[repoName]["Build"] = '✅ SUCCESS'
+                statusMatrix[repoName]["Build"] = '✅'
             }catch(e){
-                statusMatrix[repoName]["Build"] = '❌ FAILURE'
+                statusMatrix[repoName]["Build"] = '❌'
             }
         }
         stage("Upload Binary for ${repoName}"){
-            statusMatrix[repoName]["Upload"] = '✅ SUCCESS'
+            statusMatrix[repoName]["Upload"] = '✅'
         }
         stage("Audit for ${repoName}"){
             try{
                 sh "${builderPath} audit --watches ${watchName} --format=simple-json"
-                statusMatrix[repoName]["Scan"] = '✅ SUCCESS'
+                statusMatrix[repoName]["Scan"] = '✅'
             }catch(e){
-                statusMatrix[repoName]["Scan"] = '❌ FAILURE'
+                statusMatrix[repoName]["Scan"] = '❌'
             }
         }
     }
@@ -486,9 +486,9 @@ def buildAndScanPipeImage(repoName, details) {
                 sh "docker save -o ${tarFileName} ${imageName}"
 
                 zip(zipFile: zipFileName, archive: false, glob: tarFileName)
-                statusMatrix[repoName]["Build"] = '✅ SUCCESS'
+                statusMatrix[repoName]["Build"] = '✅'
             }catch(e){
-                statusMatrix[repoName]["Build"] = '❌ FAILURE'
+                statusMatrix[repoName]["Build"] = '❌'
             }
         }
         UploadAndScanBinary(repoName, "${zipFileName}", "${zipFileName}")
