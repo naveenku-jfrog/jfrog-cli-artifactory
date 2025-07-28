@@ -118,6 +118,7 @@ def selectPlugins(Map reposMap) {
     if (!timerCause) {
         pluginSelectedForOnDemandScanning=pluginName
     }
+    echo "Selected PluginName is : ${pluginSelectedForOnDemandScanning}"
 }
 
 def createBuildTasks(Map reposMap, String pluginSelected, String mvnHome, String jdk8Path, String gradleHomePath) {
@@ -427,14 +428,6 @@ def buildAndScanPipeImage(repoName, details) {
 
         zip(zipFile: zipFileName, archive: false, glob: tarFileName)
         UploadAndScanBinary(repoName, "${zipFileName}", "${zipFileName}")
-    }
-}
-
-def selectPlugin(Map reposMap) {
-    def buildCauses = currentBuild.getBuildCauses()
-    def timerCause = buildCauses.find { it instanceof hudson.triggers.TimerTrigger$TimerTriggerCause }
-    if (!timerCause) {
-        pluginSelectedForOnDemandScanning=pluginName
     }
 }
 
