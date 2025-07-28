@@ -42,11 +42,13 @@ node("docker-ubuntu20-xlarge") {
             slackChannelName = "ecosytem-plugins-dev-build-notifications"
             watchName = "ecosystem-watch"
             pluginSelectedForOnDemandScanning="ALL"
+            branchSelectedForOnDemandScanning = "access-bug"
+            jfrogPluginsDevBuildTargetRepoName = "ecosys-dev-build-artifactory"
             mvnHome = ""
             jdk8Path = ""
             jdk17Path = ""
             gradleHomePath = ""
-            stage('Installing Jf & Tools'){
+            stage('Initial Setup'){
                 try  {
                 script{
                      installJfrogCli()
@@ -74,12 +76,10 @@ node("docker-ubuntu20-xlarge") {
                     throw e
                 }
             }
-            stage('Installing Tools'){
-                script {
-                    tasksToRun = createBuildTasks(reposMap, pluginSelectedForOnDemandScanning, mvnHome, jdk8Path, jdk17Path, gradleHomePath)
-                    parallel(tasksToRun)
-                    cleanupRepo21()
-                }
+            script {
+                tasksToRun = createBuildTasks(reposMap, pluginSelectedForOnDemandScanning, mvnHome, jdk8Path, jdk17Path, gradleHomePath)
+                parallel(tasksToRun)
+                cleanupRepo21()
             }
         }
     } catch (e) {
@@ -136,6 +136,7 @@ def createBuildTasks(Map reposMap, String pluginSelected, String mvnHome, String
         if (reposMap.containsKey(pluginSelected)) {
             def repoName = pluginSelected
             def details = reposMap[pluginSelected]
+            details.branch = ${branchSelectedForOnDemandScanning}
             tasks[repoName] = {
                 statusMatrix[repoName] = [Build: 'PENDING', Upload: 'PENDING', Scan: 'PENDING']
                 buildBinary(repoName, details, mvnHome, jdk8Path, jdk17Path, gradleHomePath)
@@ -148,7 +149,7 @@ def createBuildTasks(Map reposMap, String pluginSelected, String mvnHome, String
 }
 
 def configGradle(){
-    sh "${builderPath} gradlec --server-id-resolve=repo21 --repo-resolve=ecosys-dev-build-artifactory"
+    sh "${builderPath} gradlec --server-id-resolve=repo21 --repo-resolve='${jfrogPluginsDevBuildTargetRepoName}'"
 }
 
 def updateUnsupportedPluginStatus(Map matrix) {
@@ -307,7 +308,7 @@ def UploadAndScanBinary(repoName, uploadFileName, scanFileName){
         try{
             sh "pwd"
             sh "ls -la"
-            sh "${builderPath} rt u '${uploadFileName}' 'ecosys-dev-build-artifactory/plugins/dev/${formattedDate}/' --flat"
+            sh "${builderPath} rt u '${uploadFileName}' '${jfrogPluginsDevBuildTargetRepoName}/plugins/dev/${formattedDate}/' --flat"
             statusMatrix[repoName]["Upload"] = '✅'
         }catch (e) {
             statusMatrix[repoName]["Upload"] = '❌'
