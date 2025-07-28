@@ -1,7 +1,7 @@
 node("docker-ubuntu20-xlarge") {
     properties([
         pipelineTriggers([
-            cron('H/15 * * * *')
+            cron('H/5 * * * *')
         ])
     ])
     try {
