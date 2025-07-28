@@ -256,13 +256,14 @@ def cloneAndBuild(repoName, details, mvnHome, gradleHomePath) {
 
 def executeMaven(repoName, details){
     def tempScanDir = "temp-scan-dir"
-    sh "mkdir -p ${tempScanDir}"
     stage("Build Binary for ${repoName}"){
         try{
             echo "Cloning from ${details.url}..."
             git url: details.url, branch: details.branch
 
             sh 'mvn clean install -DskipTests'
+
+            sh "mkdir -p ${tempScanDir}"
 
             def jarFiles = findFiles(glob: 'target/**/*.jar')
             if (jarFiles.size() > 0) {
@@ -274,7 +275,7 @@ def executeMaven(repoName, details){
             def existingZipFiles = findFiles(glob: 'target/*.zip')
             if (existingZipFiles.size() > 0) {
                 echo "Found ${existingZipFiles.size()} pre-existing zip file(s). Copying them..."
-                sh "cp target/*.zip ${tempScanDir}"
+                sh "cp target/*.zip ${tempScanDir}/"
             }
             statusMatrix[repoName]["Build"] = '✅ SUCCESS'
         }catch (e) {
