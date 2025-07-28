@@ -1,7 +1,7 @@
 node("docker-ubuntu20-xlarge") {
     properties([
         pipelineTriggers([
-            cron('H 0 * * *')
+            cron('H * * * *')
         ])
     ])
     try {
@@ -112,6 +112,7 @@ node("docker-ubuntu20-xlarge") {
 
 def selectPlugins(Map reposMap) {
     def buildCauses = currentBuild.getBuildCauses()
+    echo "PluginName is : ${pluginName}"
 
     def timerCause = buildCauses.find { it instanceof hudson.triggers.TimerTrigger$TimerTriggerCause }
     if (!timerCause) {
