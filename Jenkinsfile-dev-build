@@ -375,7 +375,7 @@ def executeJDKProject(repoName, details, mvnHome, jdk8Path, jdk17Path, gradleHom
     } else if(details.jdk=="11"){
         cloneAndBuild(repoName, details, mvnHome, gradleHomePath)
     } else if(details.jdk=="17"){
-        withEnv(["JAVA_HOME=${jdk17Path}", "PATH+JAVA=${jdk17Path}/bin"]) {
+        withEnv(["JAVA_HOME=${jdk17Path}", "PATH=${jdk17Path}/bin:${env.PATH}"]) {
             echo "Inside java 17 block: ${jdk17Path}"
             sh "java -version"
             cloneAndBuild(repoName, details, mvnHome, gradleHomePath)
