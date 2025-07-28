@@ -1,7 +1,7 @@
 node("docker-ubuntu20-xlarge") {
     properties([
         pipelineTriggers([
-            cron('H/5 * * * *')
+            cron('0 * * * *')
         ])
     ])
     try {
@@ -246,26 +246,41 @@ def cloneAndBuild(repoName, details, mvnHome, gradleHomePath) {
 }
 
 def executeMaven(repoName, details){
-    echo "Cloning from ${details.url}..."
-    git url: details.url, branch: details.branch
+    def tempScanDir = "temp-scan-dir"
+    stage("Build Binary for ${repoName}"){
+        try{
+            echo "Cloning from ${details.url}..."
+            git url: details.url, branch: details.branch
 
-    try{
-        sh 'mvn clean install -DskipTests'
-        statusMatrix[repoName]["Build"] = '✅ SUCCESS'
-    }catch (e) {
-        statusMatrix[repoName]["Build"] = '❌ FAILURE'
+            sh 'mvn clean install -DskipTests'
+
+            sh "mkdir -p ${tempScanDir}"
+
+            def jarFiles = findFiles(glob: 'target/**/*.jar')
+            if (jarFiles.size() > 0) {
+                def zipFileName = "${repoName}-binaries.zip"
+                zip(zipFile: "${tempScanDir}/${zipFileName}", dir: 'target', glob: '**/*.jar')
+                echo "Successfully created archive of .jar files in ${tempScanDir}"
+            }
+
+            def existingZipFiles = findFiles(glob: 'target/*.zip')
+            if (existingZipFiles.size() > 0) {
+                echo "Found ${existingZipFiles.size()} pre-existing zip file(s). Copying them..."
+                sh "cp target/*.zip ${tempScanDir}/"
+            }
+            statusMatrix[repoName]["Build"] = '✅ SUCCESS'
+        }catch (e) {
+            statusMatrix[repoName]["Build"] = '❌ FAILURE'
+        }
     }
 
-    def jarFiles = findFiles(glob: 'target/**/*.jar')
-    if (jarFiles.size() > 0) {
-        def zipFileName = "${repoName}-binaries.zip"
-        zip(zipFile: zipFileName, dir: 'target', glob: '**/*.jar')
-        echo "Successfully created ${zipFileName}"
-        UploadAndScanBinary(repoName, "${zipFileName}", "**/*.zip")
-    }
-    def zipFiles = findFiles(glob: 'target/*.zip')
-    if (zipFiles.size() > 0) {
-        UploadAndScanBinary(repoName, "target/*.zip", "**/*.zip")
+    dir(tempScanDir) {
+        def filesToScan = findFiles(glob: '**/*')
+        if (filesToScan.size() > 0) {
+            UploadAndScanBinary(repoName, ".", ".")
+        } else {
+            echo "No files found in ${tempScanDir} to scan."
+        }
     }
 }
 
@@ -287,10 +302,6 @@ def UploadAndScanBinary(repoName, uploadFileName, scanFileName){
         }catch(e){
             echo "Inside Scan Binary Catch"
             statusMatrix[repoName]["Scan"] = '❌ FAILURE'
-        }
-        finally {
-            echo "Cleaning up scan results file..."
-            sh "rm -f scan-results.json"
         }
     }
 }
@@ -396,42 +407,74 @@ def buildBinary(repoName, details, mvnHome, jdk8Path, gradleHomePath){
 
 def executeNPMProject(repoName, details){
     dir(repoName){
-        git url: details.url, branch: details.branch
-        sh 'npm install'
+        def zipFileName = ""
+        stage("Build Binary for ${repoName}"){
+            git url: details.url, branch: details.branch
+            try{
+                sh 'npm install'
+                sh 'npm run create'
 
-        sh 'npm run create'
-
-        def vsixFile = sh(script: "find . -name '*.vsix'", returnStdout: true).trim()
-        if (vsixFile.isEmpty()) {
-            error "Build failed: Could not find generated .vsix file."
+                def vsixFile = sh(script: "find . -name '*.vsix'", returnStdout: true).trim()
+                if (vsixFile.isEmpty()) {
+                    error "Build failed: Could not find generated .vsix file."
+                }
+                zipFileName = "${vsixFile}.zip"
+                zip(zipFile: zipFileName, archive: false, glob: vsixFile)
+                echo "Successfully created zip archive: ${zipFileName}"
+                statusMatrix[repoName]["Build"] = '✅ SUCCESS'
+            }catch(e){
+                statusMatrix[repoName]["Build"] = '❌ FAILURE'
+            }
         }
-
-        def zipFileName = "${vsixFile}.zip"
-        zip(zipFile: zipFileName, archive: false, glob: vsixFile)
-        echo "Successfully created zip archive: ${zipFileName}"
         UploadAndScanBinary(repoName, "${zipFileName}", "${zipFileName}")
     }
 }
 
 def buildAndProcessRubyGem(repoName, details){
     dir(repoName){
-        git url: details.url, branch: details.branch
-        sh "${builderPath} audit --watches ${watchName} --format=simple-json"
+        stage("Build Binary for ${repoName}"){
+            git url: details.url, branch: details.branch
+            try{
+                git url: details.url, branch: details.branch
+                statusMatrix[repoName]["Build"] = '✅ SUCCESS'
+            }catch(e){
+                statusMatrix[repoName]["Build"] = '❌ FAILURE'
+            }
+        }
+        stage("Upload Binary for ${repoName}"){
+            statusMatrix[repoName]["Upload"] = '✅ SUCCESS'
+        }
+        stage("Audit for ${repoName}"){
+            try{
+                sh "${builderPath} audit --watches ${watchName} --format=simple-json"
+                statusMatrix[repoName]["Scan"] = '✅ SUCCESS'
+            }catch(e){
+                statusMatrix[repoName]["Scan"] = '❌ FAILURE'
+            }
+        }
     }
 }
 
 def buildAndScanPipeImage(repoName, details) {
     dir(repoName) {
-        git url: details.url, branch: details.branch
-        String imageName = "jfrog-setup-cli-pipe:${formattedDate}"
-        def dockerImage = docker.build(imageName)
+        String zipFileName = ""
+        stage("Build Binary for ${repoName}"){
+            try{
+                git url: details.url, branch: details.branch
+                String imageName = "jfrog-setup-cli-pipe:${formattedDate}"
+                def dockerImage = docker.build(imageName)
 
-        String tarFileName = "jfrog-setup-cli-pipe_${formattedDate}.tar"
-        String zipFileName = "jfrog-setup-cli-pipe_${formattedDate}.zip"
+                String tarFileName = "jfrog-setup-cli-pipe_${formattedDate}.tar"
+                zipFileName = "jfrog-setup-cli-pipe_${formattedDate}.zip"
 
-        sh "docker save -o ${tarFileName} ${imageName}"
+                sh "docker save -o ${tarFileName} ${imageName}"
 
-        zip(zipFile: zipFileName, archive: false, glob: tarFileName)
+                zip(zipFile: zipFileName, archive: false, glob: tarFileName)
+                statusMatrix[repoName]["Build"] = '✅ SUCCESS'
+            }catch(e){
+                statusMatrix[repoName]["Build"] = '❌ FAILURE'
+            }
+        }
         UploadAndScanBinary(repoName, "${zipFileName}", "${zipFileName}")
     }
 }
