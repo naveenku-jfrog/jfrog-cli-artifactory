@@ -56,7 +56,7 @@ node("docker-ubuntu20-xlarge") {
                 stage('Select Plugins for execution'){
                     try  {
                     script{
-                         selectPlugins(reposMap)
+                         selectPlugins()
                         }
                     }
                     catch (e) {
@@ -110,12 +110,13 @@ node("docker-ubuntu20-xlarge") {
     }
 }
 
-def selectPlugins(Map reposMap) {
+def selectPlugins() {
     def buildCauses = currentBuild.getBuildCauses()
     echo "PluginName is : ${pluginName}"
-
     def timerCause = buildCauses.find { it instanceof hudson.triggers.TimerTrigger$TimerTriggerCause }
-    if (!timerCause) {
+    if (timerCause) {
+        pluginSelectedForOnDemandScanning="ALL"
+    }else{
         pluginSelectedForOnDemandScanning=pluginName
     }
     echo "Selected PluginName is : ${pluginSelectedForOnDemandScanning}"
