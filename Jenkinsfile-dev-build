@@ -1,7 +1,7 @@
 node("docker-ubuntu20-xlarge") {
     properties([
         pipelineTriggers([
-            cron('H * * * *')
+            cron('H/15 * * * *')
         ])
     ])
     try {
@@ -112,11 +112,12 @@ node("docker-ubuntu20-xlarge") {
 
 def selectPlugins() {
     def buildCauses = currentBuild.getBuildCauses()
+    echo "DEBUG: Build causes are: ${buildCauses}"
     echo "PluginName is : ${pluginName}"
     def timerCause = buildCauses.find { it instanceof hudson.triggers.TimerTrigger$TimerTriggerCause }
     if (timerCause) {
-        pluginSelectedForOnDemandScanning="ALL"
-    }else{
+        pluginSelectedForOnDemandScanning="all"
+    } else {
         pluginSelectedForOnDemandScanning=pluginName
     }
     echo "Selected PluginName is : ${pluginSelectedForOnDemandScanning}"
