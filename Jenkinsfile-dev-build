@@ -42,6 +42,10 @@ node("docker-ubuntu20-xlarge") {
             slackChannelName = "ecosytem-plugins-dev-build-notifications"
             watchName = "ecosystem-watch"
             pluginSelectedForOnDemandScanning="ALL"
+            mvnHome = ""
+            jdk8Path = ""
+            jdk17Path = ""
+            gradleHomePath = ""
             stage('Installing Jf & Tools'){
                 try  {
                 script{
@@ -49,17 +53,17 @@ node("docker-ubuntu20-xlarge") {
                      selectPlugins()
                      sh 'apt-get update -y && apt-get install -y unzip'
 
-                     def mvnHome = installMaven("3.9.6")
+                     mvnHome = installMaven("3.9.6")
 
-                     def gradleHomePath = installGradle('8.5')
+                     gradleHomePath = installGradle('8.5')
 
                      configRepo21()
 
                      configGradle()
 
-                     def jdk8Path = installJdkFromArchive('8')
+                     jdk8Path = installJdkFromArchive('8')
 
-                     def jdk17Path = installJdkFromArchive('17')
+                     jdk17Path = installJdkFromArchive('17')
 
                      installNodeJs()
 
@@ -145,7 +149,6 @@ def createBuildTasks(Map reposMap, String pluginSelected, String mvnHome, String
 
 def configGradle(){
     sh "${builderPath} gradlec --server-id-resolve=repo21 --repo-resolve=ecosys-dev-build-artifactory"
-    //sh "cp .jfrog/projects/gradle.yaml .jfrog/gradle.yaml"
 }
 
 def updateUnsupportedPluginStatus(Map matrix) {
