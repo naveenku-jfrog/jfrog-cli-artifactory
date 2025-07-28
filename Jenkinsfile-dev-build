@@ -164,9 +164,11 @@ def configGradle(){
 def updateUnsupportedPluginStatus(Map matrix) {
     unsupportedPlugins=["cocoapods-art"]
     unsupportedPlugins.each { plugin ->
-        matrix[plugin]["Build"]="🚫"
-        matrix[plugin]["Upload"]="🚫"
-        matrix[plugin]["Scan"]="🚫"
+        if (matrix.containsKey(plugin)) {
+            matrix[plugin]["Build"]="🚫"
+            matrix[plugin]["Upload"]="🚫"
+            matrix[plugin]["Scan"]="🚫"
+        }
     }
 }
 
