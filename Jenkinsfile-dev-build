@@ -315,6 +315,8 @@ def executeMaven(repoName, details){
 def UploadAndScanBinary(repoName, uploadFileName, scanFileName){
     stage("Upload Binary for ${repoName}"){
         try{
+            sh "pwd"
+            sh "ls -la"
             sh "${builderPath} rt u '${uploadFileName}' 'ecosys-dev-build-artifactory/plugins/dev/${formattedDate}/' --flat"
             statusMatrix[repoName]["Upload"] = '✅'
         }catch (e) {
