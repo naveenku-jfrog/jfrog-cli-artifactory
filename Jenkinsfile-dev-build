@@ -131,9 +131,9 @@ def createBuildTasks(Map reposMap, String pluginSelected, String mvnHome, String
             }
         }
     } else {
-        if (reposMap.containsKey(pluginProvided)) {
-            def repoName = pluginProvided
-            def details = reposMap[pluginProvided]
+        if (reposMap.containsKey(pluginSelected)) {
+            def repoName = pluginSelected
+            def details = reposMap[pluginSelected]
             if (branchProvidedForOnDemandScanning!="default") {
                 details.branch = branchProvidedForOnDemandScanning
             }
@@ -148,7 +148,7 @@ def createBuildTasks(Map reposMap, String pluginSelected, String mvnHome, String
                 buildBinary(repoName, details, mvnHome, jdk8Path, jdk17Path, gradleHomePath)
             }
         } else {
-            error("Plugin '${pluginProvided}' was not found in the repository map.")
+            error("Plugin '${pluginSelected}' was not found in the repository map.")
         }
     }
     return tasks
