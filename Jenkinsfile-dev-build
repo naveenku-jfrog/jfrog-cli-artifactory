@@ -161,9 +161,9 @@ def updateUnsupportedPluginStatus(Map matrix) {
     unsupportedPlugins=["cocoapods-art"]
     unsupportedPlugins.each { plugin ->
         if (matrix.containsKey(plugin)) {
-            matrix[plugin]["Build"]="🚫"
-            matrix[plugin]["Upload"]="🚫"
-            matrix[plugin]["Scan"]="🚫"
+            matrix[plugin]["Build"]="⚠️"
+            matrix[plugin]["Upload"]="⚠️"
+            matrix[plugin]["Scan"]="⚠️"
         }
     }
 }
