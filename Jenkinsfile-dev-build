@@ -40,6 +40,7 @@ node("docker-ubuntu20-xlarge") {
             formattedDate = new Date().format('yyyy-MM-dd')
             slackChannelName = params.SLACK_CHANNEL_FOR_PLUGINS_DEV_BUILD_NOTIFICATION
             watchName = params.WATCH_NAME
+            pluginSelected = "ALL"
             pluginProvidedForOnDemandScanning=params.PLUGINS_NAME
             repoUrlProvidedForOnDemand=params.REPO_URL_FOR_SCANNING
             branchProvidedForOnDemandScanning = params.BRANCH_FOR_SCANNING
@@ -78,7 +79,7 @@ node("docker-ubuntu20-xlarge") {
                 }
             }
             script {
-                tasksToRun = createBuildTasks(reposMap, pluginProvidedForOnDemandScanning, mvnHome, jdk8Path, jdk17Path, gradleHomePath)
+                tasksToRun = createBuildTasks(reposMap, pluginSelected, mvnHome, jdk8Path, jdk17Path, gradleHomePath)
                 parallel(tasksToRun)
                 cleanupRepo21()
             }
@@ -113,10 +114,10 @@ def selectPlugins() {
         cause._class == 'hudson.triggers.TimerTrigger$TimerTriggerCause'
     }
     echo "timerCause value: ${timerCause}"
-    if (timerCause) {
-        pluginProvidedForOnDemandScanning="ALL"
+    if (!timerCause) {
+        pluginSelected=pluginProvidedForOnDemandScanning
     }
-    echo "Selected PluginName is : ${pluginProvidedForOnDemandScanning}"
+    echo "Selected PluginName's : ${pluginSelected}"
 }
 
 def createBuildTasks(Map reposMap, String pluginSelected, String mvnHome, String jdk8Path, String jdk17Path, String gradleHomePath) {
