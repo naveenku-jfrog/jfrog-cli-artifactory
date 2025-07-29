@@ -40,10 +40,11 @@ node("docker-ubuntu20-xlarge") {
             formattedDate = new Date().format('yyyy-MM-dd')
             slackChannelName = params.SLACK_CHANNEL_FOR_PLUGINS_DEV_BUILD_NOTIFICATION
             watchName = params.WATCH_NAME
-            pluginSelectedForOnDemandScanning=params.PLUGINS_NAME
-            branchSelectedForOnDemandScanning = params.BRANCH_FOR_SCANNING
+            pluginProvidedForOnDemandScanning=params.PLUGINS_NAME
+            repoUrlProvidedForOnDemand=params.REPO_URL_FOR_SCANNING
+            branchProvidedForOnDemandScanning = params.BRANCH_FOR_SCANNING
             jfrogPluginsDevBuildTargetRepoName = params.REPO_FOR_PLUGINS_DEV_UPLOAD
-            jdkSelectedForOnDemand = params.JDK_VERSION
+            jdkProvidedForOnDemand = params.JDK_VERSION
             mvnHome = ""
             jdk8Path = ""
             jdk17Path = ""
@@ -129,21 +130,24 @@ def createBuildTasks(Map reposMap, String pluginSelected, String mvnHome, String
             }
         }
     } else {
-        if (reposMap.containsKey(pluginSelected)) {
-            def repoName = pluginSelected
-            def details = reposMap[pluginSelected]
-            if (branchSelectedForOnDemandScanning!="default") {
-                details.branch = branchSelectedForOnDemandScanning
+        if (reposMap.containsKey(pluginProvided)) {
+            def repoName = pluginProvided
+            def details = reposMap[pluginProvided]
+            if (branchProvidedForOnDemandScanning!="default") {
+                details.branch = branchProvidedForOnDemandScanning
             }
-            if (jdkSelectedForOnDemand!="default" && details.jdk!=null){
-                details.jdk = jdkSelectedForOnDemand
+            if (jdkProvidedForOnDemand!="default" && details.jdk!=null){
+                details.jdk = jdkProvidedForOnDemand
+            }
+            if (repoUrlProvidedForOnDemand!="default") {
+                details.url = repoUrlProvidedForOnDemand
             }
             tasks[repoName] = {
                 statusMatrix[repoName] = [Build: 'PENDING', Upload: 'PENDING', Scan: 'PENDING']
                 buildBinary(repoName, details, mvnHome, jdk8Path, jdk17Path, gradleHomePath)
             }
         } else {
-            error("Plugin '${pluginSelected}' was not found in the repository map.")
+            error("Plugin '${pluginProvided}' was not found in the repository map.")
         }
     }
     return tasks
