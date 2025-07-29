@@ -78,7 +78,7 @@ node("docker-ubuntu20-xlarge") {
                 }
             }
             script {
-                tasksToRun = createBuildTasks(reposMap, pluginSelectedForOnDemandScanning, mvnHome, jdk8Path, jdk17Path, gradleHomePath)
+                tasksToRun = createBuildTasks(reposMap, pluginProvidedForOnDemandScanning, mvnHome, jdk8Path, jdk17Path, gradleHomePath)
                 parallel(tasksToRun)
                 cleanupRepo21()
             }
@@ -114,9 +114,9 @@ def selectPlugins() {
     }
     echo "timerCause value: ${timerCause}"
     if (timerCause) {
-        pluginSelectedForOnDemandScanning="ALL"
+        pluginProvidedForOnDemandScanning="ALL"
     }
-    echo "Selected PluginName is : ${pluginSelectedForOnDemandScanning}"
+    echo "Selected PluginName is : ${pluginProvidedForOnDemandScanning}"
 }
 
 def createBuildTasks(Map reposMap, String pluginSelected, String mvnHome, String jdk8Path, String jdk17Path, String gradleHomePath) {
