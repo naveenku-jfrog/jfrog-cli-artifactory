@@ -43,6 +43,7 @@ node("docker-ubuntu20-xlarge") {
             pluginSelectedForOnDemandScanning=params.PLUGINS_NAME
             branchSelectedForOnDemandScanning = params.BRANCH_FOR_SCANNING
             jfrogPluginsDevBuildTargetRepoName = params.REPO_FOR_PLUGINS_DEV_UPLOAD
+            jdkSelectedForOnDemand = params.JDK_VERSION
             mvnHome = ""
             jdk8Path = ""
             jdk17Path = ""
@@ -133,6 +134,9 @@ def createBuildTasks(Map reposMap, String pluginSelected, String mvnHome, String
             def details = reposMap[pluginSelected]
             if (branchSelectedForOnDemandScanning!="default") {
                 details.branch = branchSelectedForOnDemandScanning
+            }
+            if (jdkSelectedForOnDemand!="default" && details.jdk!=null){
+                details.jdk = jdkSelectedForOnDemand
             }
             tasks[repoName] = {
                 statusMatrix[repoName] = [Build: 'PENDING', Upload: 'PENDING', Scan: 'PENDING']
