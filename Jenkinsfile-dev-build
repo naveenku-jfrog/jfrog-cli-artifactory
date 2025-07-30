@@ -485,7 +485,6 @@ def buildAndProcessRubyGem(repoName, details){
                 statusMatrix[repoName]["Build"] = '✅'
             }catch(e){
                 statusMatrix[repoName]["Build"] = '❌'
-                throw e
             }
         }
         stage("Upload Binary for ${repoName}"){
@@ -497,7 +496,6 @@ def buildAndProcessRubyGem(repoName, details){
                 statusMatrix[repoName]["Scan"] = '✅'
             }catch(e){
                 statusMatrix[repoName]["Scan"] = '❌'
-                throw e
             }
         }
     }
