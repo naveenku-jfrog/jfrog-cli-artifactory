@@ -172,7 +172,6 @@ def updateUnsupportedPluginStatus(Map matrix) {
 def formatStatusMatrix(Map matrix) {
     def message = new StringBuilder()
 
-    message.append("\n")
     message.append("| Repo | Build | Upload | Scan |\n")
     message.append("|------|-------|--------|------|\n")
 
