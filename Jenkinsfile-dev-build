@@ -170,14 +170,13 @@ def updateUnsupportedPluginStatus(Map matrix) {
 }
 
 def formatStatusMatrix(Map matrix) {
-    def message = ""
+    def message = new StringBuilder()
+    message.append("| Repo | Build | Upload | Scan |\n")
+    message.append("|------|-------|--------|------|\n")
     matrix.each { repo, stage ->
-        message += "\n• *${repo}:*"
-        message += "\n    1. Build: ${stage.Build}"
-        message += "\n    2. Upload: ${stage.Upload}"
-        message += "\n    3. Scan: ${stage.Scan}"
+        message.append("| ${repo} | ${stage.Build} | ${stage.Upload} | ${stage.Scan} |\n")
     }
-    return message
+    return message.toString()
 }
 
 def notifyFailure(String stageName, error) {
