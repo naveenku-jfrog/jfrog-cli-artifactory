@@ -95,7 +95,7 @@ node("docker-ubuntu20-xlarge") {
             updateUnsupportedPluginStatus(statusMatrix)
             def summary = formatStatusMatrix(statusMatrix)
             if (buildStatus == 'SUCCESS') {
-                message = "Dev Build Jenkins Pipeline has successfully completed.\n<${env.BUILD_URL}|View Build>${summary}"
+                message = "Dev Build Jenkins Pipeline has successfully completed.\n<${env.BUILD_URL}|View Build>\n${summary}"
                 slackSend(channel: "#${slackChannelName}", message: message, color: 'good')
             } else {
                 message = """@here Dev Build Jenkins Pipeline has a problem.
@@ -177,10 +177,10 @@ def formatStatusMatrix(Map matrix) {
     message.append("|------|-------|--------|------|\n")
 
     matrix.each { repo, stage ->
-        // Use safe navigation operator (?.) and Elvis operator (?:)
-        def uploadStatus = stage?.Upload ?: 'N/A'
-        def scanStatus = stage?.Scan ?: 'N/A'
-        message.append("| ${repo} | ${buildStatus} | ${uploadStatus} | ${scanStatus} |\n")
+        def build = stage?.Build ?: 'N/A'
+        def upload = stage?.Upload ?: 'N/A'
+        def scan = stage?.Scan ?: 'N/A'
+        message.append("| ${repo} | ${build} | ${upload} | ${scan} |\n")
     }
 
     return message.toString()
