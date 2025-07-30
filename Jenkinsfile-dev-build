@@ -172,7 +172,7 @@ def updateUnsupportedPluginStatus(Map matrix) {
 def formatStatusMatrix(Map matrix) {
     def message = new StringBuilder("```\n")
 
-    message.append(String.format("%-30s | %-10s | %-10s | %-10s\n", "Repo", "Build", "Upload", "Scan"))
+    message.append(String.format("%-30s | %-10s | %-10s | %-10s\n", "Plugin", "Build", "Upload", "Scan"))
     message.append(String.format("%-30s | %-10s | %-10s | %-10s\n", "------------------------------", "----------", "----------", "----------"))
 
     matrix.each { repo, stages ->
