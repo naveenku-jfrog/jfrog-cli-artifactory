@@ -176,9 +176,9 @@ def formatStatusMatrix(Map matrix) {
     message.append(String.format("%-30s | %-10s | %-10s | %-10s\n", "------------------------------", "----------", "----------", "----------"))
 
     matrix.each { repo, stages ->
-        def build = stages.Build ?: 'N/A'+ ' '
-        def upload = stages.Upload ?: 'N/A'+ ' '
-        def scan = stages.Scan ?: 'N/A'+ ' '
+        def build = stages.Build ?: 'N/A'
+        def upload = stages.Upload ?: 'N/A'
+        def scan = stages.Scan ?: 'N/A'
 
         message.append("| ${repo} | ${build} | ${upload} | ${scan} |\n")
     }
