@@ -162,9 +162,9 @@ def updateUnsupportedPluginStatus(Map matrix) {
     unsupportedPlugins=["cocoapods-art"]
     unsupportedPlugins.each { plugin ->
         if (matrix.containsKey(plugin)) {
-            matrix[plugin]["Build"]  = "⚠️        "
-            matrix[plugin]["Upload"] = "⚠️        "
-            matrix[plugin]["Scan"]   = "⚠️        "
+            matrix[plugin]["Build"]  = "⚠️"
+            matrix[plugin]["Upload"] = "⚠️"
+            matrix[plugin]["Scan"]   = "⚠️"
         }
     }
 }
@@ -180,7 +180,7 @@ def formatStatusMatrix(Map matrix) {
         def upload = stages.Upload ?: 'N/A'
         def scan = stages.Scan ?: 'N/A'
 
-        message.append("| ${repo} | ${build} | ${upload} | ${scan} |\n")
+        message.append(String.format("%-30s | %-10s | %-10s | %-10s\n", repo, build, upload, scan))
     }
 
     message.append("```")
