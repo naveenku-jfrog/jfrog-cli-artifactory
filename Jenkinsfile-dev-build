@@ -171,11 +171,18 @@ def updateUnsupportedPluginStatus(Map matrix) {
 
 def formatStatusMatrix(Map matrix) {
     def message = new StringBuilder()
+
+    message.append("\n")
     message.append("| Repo | Build | Upload | Scan |\n")
     message.append("|------|-------|--------|------|\n")
+
     matrix.each { repo, stage ->
-        message.append("| ${repo} | ${stage.Build} | ${stage.Upload} | ${stage.Scan} |\n")
+        // Use safe navigation operator (?.) and Elvis operator (?:)
+        def uploadStatus = stage?.Upload ?: 'N/A'
+        def scanStatus = stage?.Scan ?: 'N/A'
+        message.append("| ${repo} | ${buildStatus} | ${uploadStatus} | ${scanStatus} |\n")
     }
+
     return message.toString()
 }
 
