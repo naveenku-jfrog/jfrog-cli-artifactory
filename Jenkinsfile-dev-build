@@ -5,7 +5,7 @@ node("docker-ubuntu20-xlarge") {
         ])
     ])
     try {
-        statusMatrix = [:]
+        statusMatrix = new java.util.concurrent.ConcurrentHashMap()
         withCredentials([string(credentialsId: 'repo21-url', variable: 'REPO21_URL')]) {
             echo "${REPO21_URL}"
             def repo21Name = "${REPO21_URL}".substring(8, "${REPO21_URL}".length())
@@ -163,7 +163,7 @@ def updateUnsupportedPluginStatus(Map matrix) {
     unsupportedPlugins.each { plugin ->
         if (matrix.containsKey(plugin)) {
             matrix[plugin]["Build"]  = "⚪ "
-            matrix[plugin]["Upload"] = "⚪  "
+            matrix[plugin]["Upload"] = "⚪ "
             matrix[plugin]["Scan"]   = "⚪ "
         }
     }
