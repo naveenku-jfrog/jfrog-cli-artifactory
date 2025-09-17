@@ -15,6 +15,7 @@ import (
 	"github.com/jfrog/jfrog-client-go/jpd"
 	"github.com/jfrog/jfrog-client-go/lifecycle"
 	"github.com/jfrog/jfrog-client-go/utils/log"
+	"github.com/pterm/pterm"
 	"strings"
 )
 
@@ -211,6 +212,11 @@ func (sa *StatsArtifactory) GetCommandMap() map[string]StatsFunc {
 		"rt":  sa.GetArtifactoryStats,
 		"pj":  sa.GetProjectsStats,
 	}
+}
+
+var needAdminTokenMap = map[string]bool{
+	"PROJECTS": true,
+	"JPD":      true,
 }
 
 var processingOrders = []string{"pj", "rt", "jpd", "rb"}
@@ -516,13 +522,13 @@ func PrintReleaseBundlesSimple(rbResponse *ReleaseBundleResponse) {
 	if loopRange > displayLimit {
 		loopRange = displayLimit
 	}
-	actualReleaseBundlesCount := len(rbResponse.ReleaseBundles)
+	actualProjectsCount := len(rbResponse.ReleaseBundles)
 	for i := 0; i < loopRange; i++ {
 		rb := rbResponse.ReleaseBundles[i]
 		log.Output(rb)
 	}
-	if actualReleaseBundlesCount > displayLimit {
-		text.FgYellow.Sprintf("\n...and %d more release bundles. Refer JSON output format for complete list.", actualReleaseBundlesCount-displayLimit)
+	if actualProjectsCount > displayLimit {
+		log.Output(pterm.Yellow(fmt.Sprintf("...and %d more release bundles, try JSON format for complete list", actualProjectsCount-displayLimit)))
 	}
 	log.Output()
 }
@@ -567,7 +573,7 @@ func PrintProjectsStats(projects []services.Project) {
 		log.Output(project)
 	}
 	if actualProjectsCount > displayLimit {
-		text.FgYellow.Sprintf("\n...and %d more projects, Try JSON output format for complete list.", actualProjectsCount-displayLimit)
+		log.Output(pterm.Yellow(fmt.Sprintf("...and %d more projects, try JSON format for complete list", actualProjectsCount-displayLimit)))
 	}
 	log.Output()
 }
@@ -589,17 +595,20 @@ func PrintJPDsStats(jpdList *[]JPD) {
 		log.Output(jpd)
 	}
 	if actualProjectsCount > displayLimit {
-		text.FgYellow.Sprintf("\n...and %d more JPDs, Try JSON output format for complete list.", actualProjectsCount-displayLimit)
+		log.Output(pterm.Yellow(fmt.Sprintf("...and %d more JPDs, try JSON format for complete list", actualProjectsCount-displayLimit)))
 	}
 }
 
 func PrintGenericError(err *jpd.GenericError) {
-	if err != nil {
-		log.Output("--- Unable to get error logs ---")
-		return
+	_, ok := needAdminTokenMap[err.Product]
+	Suggestion := ""
+	if ok {
+		Suggestion = "Need Admin Token"
+	} else {
+		Suggestion = err.Err
 	}
 	log.Output("---", err.Product, "---")
-	log.Output("Error: ", err.Err)
+	log.Output("Error: ", Suggestion)
 	log.Output()
 }
 
@@ -629,11 +638,11 @@ func (sa *StatsArtifactory) GetProjectsStats() (interface{}, error) {
 func (sa *StatsArtifactory) GetJPDsStats() (interface{}, error) {
 	body, err := sa.JPDServicesManager.GetJPDsStats(sa.ServerUrl)
 	if err != nil {
-		return nil, jpd.NewGenericError("JPDs", err.Error())
+		return nil, jpd.NewGenericError("JPDs", "Unable to Reach Server API")
 	}
 	var jpdList []JPD
 	if err := json.Unmarshal(body, &jpdList); err != nil {
-		return nil, jpd.NewGenericError("JPDs", fmt.Errorf("error parsing JPDs JSON: %w", err))
+		return nil, jpd.NewGenericError("JPDs", fmt.Sprintf("error parsing JPDs JSON: %w", err))
 	}
 	return &jpdList, nil
 }
@@ -641,11 +650,11 @@ func (sa *StatsArtifactory) GetJPDsStats() (interface{}, error) {
 func (sa *StatsArtifactory) GetReleaseBundlesStats() (interface{}, error) {
 	body, err := sa.LifecycleServiceManager.GetReleaseBundlesStats(sa.ServerUrl)
 	if err != nil {
-		return nil, jpd.NewGenericError("ReleaseBundles", err.Error())
+		return nil, jpd.NewGenericError("ReleaseBundles", "Unable to Reach Server API")
 	}
 	var releaseBundles ReleaseBundleResponse
 	if err := json.Unmarshal(body, &releaseBundles); err != nil {
-		return nil, jpd.NewGenericError("RELEASE-BUNDLES", fmt.Errorf("error parsing ReleaseBundles JSON: %w", err))
+		return nil, fmt.Errorf("error parsing ReleaseBundles JSON: %w", err)
 	}
 	return &releaseBundles, nil
 }
