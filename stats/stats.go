@@ -15,7 +15,6 @@ import (
 	"github.com/jfrog/jfrog-client-go/jpd"
 	"github.com/jfrog/jfrog-client-go/lifecycle"
 	"github.com/jfrog/jfrog-client-go/utils/log"
-	"github.com/pterm/pterm"
 	"strings"
 )
 
@@ -522,13 +521,13 @@ func PrintReleaseBundlesSimple(rbResponse *ReleaseBundleResponse) {
 	if loopRange > displayLimit {
 		loopRange = displayLimit
 	}
-	actualProjectsCount := len(rbResponse.ReleaseBundles)
+	actualReleaseBundlesCount := len(rbResponse.ReleaseBundles)
 	for i := 0; i < loopRange; i++ {
 		rb := rbResponse.ReleaseBundles[i]
 		log.Output(rb)
 	}
-	if actualProjectsCount > displayLimit {
-		log.Output(pterm.Yellow(fmt.Sprintf("...and %d more release bundles, try JSON format for complete list", actualProjectsCount-displayLimit)))
+	if actualReleaseBundlesCount > displayLimit {
+		text.FgYellow.Sprintf("\n...and %d more release bundles. Refer JSON output format for complete list.", actualReleaseBundlesCount-displayLimit)
 	}
 	log.Output()
 }
@@ -573,7 +572,7 @@ func PrintProjectsStats(projects []services.Project) {
 		log.Output(project)
 	}
 	if actualProjectsCount > displayLimit {
-		log.Output(pterm.Yellow(fmt.Sprintf("...and %d more projects, try JSON format for complete list", actualProjectsCount-displayLimit)))
+		text.FgYellow.Sprintf("\n...and %d more projects, Try JSON output format for complete list.", actualProjectsCount-displayLimit)
 	}
 	log.Output()
 }
@@ -595,7 +594,7 @@ func PrintJPDsStats(jpdList *[]JPD) {
 		log.Output(jpd)
 	}
 	if actualProjectsCount > displayLimit {
-		log.Output(pterm.Yellow(fmt.Sprintf("...and %d more JPDs, try JSON format for complete list", actualProjectsCount-displayLimit)))
+		text.FgYellow.Sprintf("\n...and %d more JPDs, Try JSON output format for complete list.", actualProjectsCount-displayLimit)
 	}
 }
 
