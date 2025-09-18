@@ -20,6 +20,7 @@ import (
 	commandsutils "github.com/jfrog/jfrog-cli-core/v2/artifactory/commands/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/artifactory/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/artifactory/utils/container"
+	"github.com/jfrog/jfrog-cli-core/v2/artifactory/utils/maven"
 	"github.com/jfrog/jfrog-cli-core/v2/artifactory/utils/npm"
 	"github.com/jfrog/jfrog-cli-core/v2/artifactory/utils/yarn"
 	"github.com/jfrog/jfrog-cli-core/v2/common/project"
@@ -439,24 +440,24 @@ func (sc *SetupCommand) configureContainer() error {
 
 // configureMaven updates the Maven settings.xml file to use the repo Url as mirror.
 func (sc *SetupCommand) configureMaven() error {
-	//username := sc.serverDetails.GetUser()
-	//password := sc.serverDetails.GetPassword()
-	//
-	//// Get credentials from access-token if exists.
-	//if sc.serverDetails.GetAccessToken() != "" {
-	//	if username == "" {
-	//		username = auth.ExtractUsernameFromAccessToken(sc.serverDetails.GetAccessToken())
-	//	}
-	//	password = sc.serverDetails.GetAccessToken()
-	//}
-	//
-	//settingsXml, err := maven.NewSettingsXmlManager()
-	//if err != nil {
-	//	return fmt.Errorf("failed to create a new Maven settings.xml manager: %w", err)
-	//}
-	//if err = settingsXml.ConfigureArtifactoryMirror(sc.serverDetails.GetArtifactoryUrl(), sc.repoName, username, password); err != nil {
-	//	return fmt.Errorf("failed to update Artifactory mirror in Maven settings.xml: %w", err)
-	//}
+	username := sc.serverDetails.GetUser()
+	password := sc.serverDetails.GetPassword()
+
+	// Get credentials from access-token if exists.
+	if sc.serverDetails.GetAccessToken() != "" {
+		if username == "" {
+			username = auth.ExtractUsernameFromAccessToken(sc.serverDetails.GetAccessToken())
+		}
+		password = sc.serverDetails.GetAccessToken()
+	}
+
+	settingsXml, err := maven.NewSettingsXmlManager()
+	if err != nil {
+		return fmt.Errorf("failed to create a new Maven settings.xml manager: %w", err)
+	}
+	if err = settingsXml.ConfigureArtifactoryRepository(sc.serverDetails.GetArtifactoryUrl(), sc.repoName, username, password); err != nil {
+		return fmt.Errorf("failed to update Artifactory mirror in Maven settings.xml: %w", err)
+	}
 	return nil
 }
 
