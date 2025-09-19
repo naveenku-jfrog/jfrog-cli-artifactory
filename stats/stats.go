@@ -599,15 +599,12 @@ func PrintJPDsStats(jpdList *[]JPD) {
 }
 
 func PrintGenericError(err *jpd.GenericError) {
-	_, ok := needAdminTokenMap[err.Product]
-	Suggestion := ""
-	if ok {
-		Suggestion = "Need Admin Token"
-	} else {
-		Suggestion = err.Err
+	if err != nil {
+		log.Output("--- Unable to get error logs ---")
+		return
 	}
 	log.Output("---", err.Product, "---")
-	log.Output("Error: ", Suggestion)
+	log.Output("Error: ", err.Err)
 	log.Output()
 }
 
@@ -637,11 +634,11 @@ func (sa *StatsArtifactory) GetProjectsStats() (interface{}, error) {
 func (sa *StatsArtifactory) GetJPDsStats() (interface{}, error) {
 	body, err := sa.JPDServicesManager.GetJPDsStats(sa.ServerUrl)
 	if err != nil {
-		return nil, jpd.NewGenericError("JPDs", "Unable to Reach Server API")
+		return nil, jpd.NewGenericError("JPDs", err.Error())
 	}
 	var jpdList []JPD
 	if err := json.Unmarshal(body, &jpdList); err != nil {
-		return nil, jpd.NewGenericError("JPDs", fmt.Sprintf("error parsing JPDs JSON: %w", err))
+		return nil, jpd.NewGenericError("JPDs", fmt.Errorf("error parsing JPDs JSON: %w", err))
 	}
 	return &jpdList, nil
 }
@@ -649,11 +646,11 @@ func (sa *StatsArtifactory) GetJPDsStats() (interface{}, error) {
 func (sa *StatsArtifactory) GetReleaseBundlesStats() (interface{}, error) {
 	body, err := sa.LifecycleServiceManager.GetReleaseBundlesStats(sa.ServerUrl)
 	if err != nil {
-		return nil, jpd.NewGenericError("ReleaseBundles", "Unable to Reach Server API")
+		return nil, jpd.NewGenericError("ReleaseBundles", err.Error())
 	}
 	var releaseBundles ReleaseBundleResponse
 	if err := json.Unmarshal(body, &releaseBundles); err != nil {
-		return nil, fmt.Errorf("error parsing ReleaseBundles JSON: %w", err)
+		return nil, jpd.NewGenericError("RELEASE-BUNDLES", fmt.Errorf("error parsing ReleaseBundles JSON: %w", err))
 	}
 	return &releaseBundles, nil
 }
