@@ -213,11 +213,6 @@ func (sa *StatsArtifactory) GetCommandMap() map[string]StatsFunc {
 	}
 }
 
-var needAdminTokenMap = map[string]bool{
-	"PROJECTS": true,
-	"JPD":      true,
-}
-
 var processingOrders = []string{"pj", "rt", "jpd", "rb"}
 
 var printingOrders = []string{"rt", "pj", "jpd", "rb"}
@@ -599,15 +594,12 @@ func PrintJPDsStats(jpdList *[]JPD) {
 }
 
 func PrintGenericError(err *jpd.GenericError) {
-	_, ok := needAdminTokenMap[err.Product]
-	Suggestion := ""
-	if ok {
-		Suggestion = "Need Admin Token"
-	} else {
-		Suggestion = err.Err
+	if err != nil {
+		log.Output("--- Unable to get error logs ---")
+		return
 	}
 	log.Output("---", err.Product, "---")
-	log.Output("Error: ", Suggestion)
+	log.Output("Error: ", err.Err)
 	log.Output()
 }
 
