@@ -187,3 +187,4 @@ require (
 replace github.com/jfrog/jfrog-cli-core/v2 => github.com/naveenku-jfrog/jfrog-cli-core/v2 v2.0.0-20250918043710-ee0ae26a79a4
 
 replace github.com/jfrog/jfrog-client-go => github.com/naveenku-jfrog/jfrog-client-go v1.54.2-0.20250919073604-436c7c7f4360
+
