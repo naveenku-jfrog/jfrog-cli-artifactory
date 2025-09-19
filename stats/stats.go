@@ -233,15 +233,14 @@ func (sa *StatsArtifactory) GetStats() error {
 	}
 
 	if filter != "" {
-		commandFunc, _ := commandMap[filter]
-		allResultsMap[filter] = GetStatsUsingFilter(commandFunc)
+		allResultsMap[filter] = GetStatsUsingFilter(commandMap[filter])
 		if filter == "rt" {
 			allResultsMap["pj"] = GetStatsUsingFilter(commandMap["pj"])
 			updateProjectInArtifactoryInfo(&allResultsMap)
 			delete(allResultsMap, "pj")
 		}
 	} else {
-		for _, filter := range processingOrders {
+		for _, filter = range processingOrders {
 			allResultsMap[filter] = GetStatsUsingFilter(commandMap[filter])
 		}
 		updateProjectInArtifactoryInfo(&allResultsMap)
@@ -303,7 +302,11 @@ func (rw *GenericResultsWriter) PrintJson() error {
 		case *ReleaseBundleResponse:
 			msg = "Release Bundles: No Release Bundle Info Available"
 		case jpd.GenericError:
-			msg = fmt.Sprintf("Errors: %s", rw.data.(error).Error())
+			if err, ok := rw.data.(error); ok {
+				msg = fmt.Sprintf("Errors: %s", err.Error())
+			} else {
+				msg = "Errors: An unknown data type was received."
+			}
 		}
 		jsonBytes, err = json.MarshalIndent(msg, "", "  ")
 		if err != nil {
