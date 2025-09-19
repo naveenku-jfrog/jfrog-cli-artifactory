@@ -612,12 +612,14 @@ func (sa *StatsArtifactory) GetArtifactoryStats() (interface{}, error) {
 	var artifactoryStats ArtifactoryInfo
 	storageInfo, err := sa.ServicesManager.GetStorageInfo()
 	if err != nil {
-		return nil, jpd.NewGenericError("ARTIFACTORY", err.Error())
+		wrappedError := fmt.Errorf("failed to build ARTIFACTORY API endpoint: %w", err)
+		return nil, jpd.NewGenericError("ARTIFACTORY", wrappedError)
 	}
 	artifactoryStats.StorageInfo = *storageInfo
 	repositoriesDetails, err := sa.ServicesManager.GetAllRepositories()
 	if err != nil {
-		return nil, jpd.NewGenericError("ARTIFACTORY", err.Error())
+		wrappedError := fmt.Errorf("failed to call ARTIFACTORY API: %w", err)
+		return nil, jpd.NewGenericError("ARTIFACTORY", wrappedError)
 	}
 	artifactoryStats.RepositoriesDetails = *repositoriesDetails
 	return &artifactoryStats, nil
@@ -626,7 +628,8 @@ func (sa *StatsArtifactory) GetArtifactoryStats() (interface{}, error) {
 func (sa *StatsArtifactory) GetProjectsStats() (interface{}, error) {
 	projects, err := sa.AccessManager.GetAllProjects()
 	if err != nil {
-		return nil, jpd.NewGenericError("PROJECTS", err.Error())
+		wrappedError := fmt.Errorf("failed to call PROJECTS API: %w", err)
+		return nil, jpd.NewGenericError("PROJECTS", wrappedError)
 	}
 	return projects, nil
 }
@@ -634,11 +637,13 @@ func (sa *StatsArtifactory) GetProjectsStats() (interface{}, error) {
 func (sa *StatsArtifactory) GetJPDsStats() (interface{}, error) {
 	body, err := sa.JPDServicesManager.GetJPDsStats(sa.ServerUrl)
 	if err != nil {
-		return nil, jpd.NewGenericError("JPDs", err.Error())
+		wrappedError := fmt.Errorf("failed to call PROJECTS API: %w", err)
+		return nil, jpd.NewGenericError("JPDs", wrappedError)
 	}
 	var jpdList []JPD
 	if err := json.Unmarshal(body, &jpdList); err != nil {
-		return nil, jpd.NewGenericError("JPDs", fmt.Errorf("error parsing JPDs JSON: %w", err))
+		wrappedError := fmt.Errorf("error parsing JPDs JSON: %w", err)
+		return nil, jpd.NewGenericError("JPDs", wrappedError)
 	}
 	return &jpdList, nil
 }
@@ -646,11 +651,13 @@ func (sa *StatsArtifactory) GetJPDsStats() (interface{}, error) {
 func (sa *StatsArtifactory) GetReleaseBundlesStats() (interface{}, error) {
 	body, err := sa.LifecycleServiceManager.GetReleaseBundlesStats(sa.ServerUrl)
 	if err != nil {
-		return nil, jpd.NewGenericError("ReleaseBundles", err.Error())
+		wrappedError := fmt.Errorf("failed to call RELEASE-BUNDLES API endpoint: %w", err)
+		return nil, jpd.NewGenericError("RELEASE-BUNDLES", wrappedError)
 	}
 	var releaseBundles ReleaseBundleResponse
 	if err := json.Unmarshal(body, &releaseBundles); err != nil {
-		return nil, jpd.NewGenericError("RELEASE-BUNDLES", fmt.Errorf("error parsing ReleaseBundles JSON: %w", err))
+		wrappedError := fmt.Errorf("error parsing RELEASE-BUNDLES JSON: %w", err)
+		return nil, jpd.NewGenericError("RELEASE-BUNDLES", wrappedError)
 	}
 	return &releaseBundles, nil
 }
