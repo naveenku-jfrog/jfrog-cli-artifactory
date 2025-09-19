@@ -213,11 +213,6 @@ func (sa *StatsArtifactory) GetCommandMap() map[string]StatsFunc {
 	}
 }
 
-var needAdminTokenMap = map[string]bool{
-	"PROJECTS": true,
-	"JPD":      true,
-}
-
 var processingOrders = []string{"pj", "rt", "jpd", "rb"}
 
 var printingOrders = []string{"rt", "pj", "jpd", "rb"}
