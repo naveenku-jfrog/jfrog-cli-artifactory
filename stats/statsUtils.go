@@ -25,7 +25,7 @@ type ErrorResponse struct {
 
 type JPD struct {
 	ID       string    `json:"id"`
-	Name     string    `json:"name" write:"Name"`
+	Name     string    `json:"name" log:"Name"`
 	URL      string    `json:"base_url"`
 	Status   Status    `json:"status"`
 	Local    bool      `json:"local"`
@@ -34,7 +34,7 @@ type JPD struct {
 }
 
 type Status struct {
-	Code    string `json:"code" write:"Code"`
+	Code    string `json:"code" log:"Code"`
 	Message string `json:"message"`
 }
 
@@ -50,12 +50,12 @@ type License struct {
 }
 
 type ArtifactoryStatsSummary struct {
-	ProjectsCount       int                          `write:"Total Projects"`
-	TotalBinariesCount  string                       `write:"Total No of Binaries"`
-	TotalBinariesSize   string                       `write:"Total Binaries Size"`
-	TotalArtifactsCount string                       `write:"Total No of Artifacts"`
-	TotalArtifactsSize  string                       `write:"Total Artifacts Size"`
-	StorageType         string                       `write:"Storage Type"`
+	ProjectsCount       int                          `log:"Total Projects"`
+	TotalBinariesCount  string                       `log:"Total No of Binaries"`
+	TotalBinariesSize   string                       `log:"Total Binaries Size"`
+	TotalArtifactsCount string                       `log:"Total No of Artifacts"`
+	TotalArtifactsSize  string                       `log:"Total Artifacts Size"`
+	StorageType         string                       `log:"Storage Type"`
 	RepositoriesDetails []services.RepositoryDetails `json:"-"`
 }
 
@@ -64,9 +64,9 @@ type ReleaseBundleResponse struct {
 }
 
 type ReleaseBundleInfo struct {
-	RepositoryKey     string `json:"repository_key" write:"Repository Key"`
-	ReleaseBundleName string `json:"release_bundle_name" write:"Release Bundle Name"`
-	ProjectKey        string `json:"project_key" write:"Project Key"`
+	RepositoryKey     string `json:"repository_key" log:"Repository Key"`
+	ReleaseBundleName string `json:"release_bundle_name" log:"Release Bundle Name"`
+	ProjectKey        string `json:"project_key" log:"Project Key"`
 }
 
 type ArtifactoryStats struct {
@@ -129,11 +129,11 @@ func (sa *ArtifactoryStats) Run() error {
 		return err
 	}
 	sa.LifecycleServiceManager = *lifecycleServicesManager
-	//jpdServiceManager, err := utils.CreateJPDServiceManager(serverDetails, false)
-	//if err != nil {
-	//	return err
-	//}
-	//sa.JPDServicesManager = *jpdServiceManager
+	jpdServiceManager, err := utils.CreateJPDServiceManager(serverDetails, false)
+	if err != nil {
+		return err
+	}
+	sa.JPDServicesManager = *jpdServiceManager
 	sa.ServerUrl = serverDetails.Url
 	err = sa.GetStats()
 	if err != nil {
