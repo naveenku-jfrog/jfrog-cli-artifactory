@@ -392,8 +392,8 @@ github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 h1:C3w9PqII01/Oq
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
 github.com/naveenku-jfrog/jfrog-cli-core/v2 v2.0.0-20251007071921-a9564595b084 h1:0WpVdjkQ2GHCFa7xOCSxFlu44F368nhTlxUjsMz7MvM=
 github.com/naveenku-jfrog/jfrog-cli-core/v2 v2.0.0-20251007071921-a9564595b084/go.mod h1:twQVxj66QUC8PEfOyCP0AYSe9S9qYpKOAAcVh4IBMC0=
-github.com/naveenku-jfrog/jfrog-client-go v1.54.2-0.20251007070655-36fd459484a2 h1:kWkKjSYiHPs9oK3FXynkcjZF83i7g0NYio17XvxHk4A=
-github.com/naveenku-jfrog/jfrog-client-go v1.54.2-0.20251007070655-36fd459484a2/go.mod h1:E2s23qRRDdyPdzSYG1irPOEpjJ6kXvhV1U4g/0rG93k=
+github.com/naveenku-jfrog/jfrog-client-go v1.54.2-0.20251007084958-5eeaa42c31a6 h1:dAB4uiw7hMvokkY0aWRrhfZAwUI49O97aGRcFbWLPaM=
+github.com/naveenku-jfrog/jfrog-client-go v1.54.2-0.20251007084958-5eeaa42c31a6/go.mod h1:E2s23qRRDdyPdzSYG1irPOEpjJ6kXvhV1U4g/0rG93k=
 github.com/nwaples/rardecode v1.1.3 h1:cWCaZwfM5H7nAD6PyEdcVnczzV8i/JtotnyW/dD9lEc=
 github.com/nwaples/rardecode v1.1.3/go.mod h1:5DzqNKiOdpKKBH87u8VlvAnPZMXcGRhxWkRpHbbfGS0=
 github.com/oklog/ulid v1.3.1 h1:EGfNDEx6MqHz8B3uNV6QAib1UR2Lm97sHi3ocA6ESJ4=
