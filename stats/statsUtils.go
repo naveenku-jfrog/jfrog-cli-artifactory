@@ -129,11 +129,11 @@ func (sa *ArtifactoryStats) Run() error {
 		return err
 	}
 	sa.LifecycleServiceManager = *lifecycleServicesManager
-	//jpdServiceManager, err := utils.CreateJPDServiceManager(serverDetails, false)
-	//if err != nil {
-	//	return err
-	//}
-	//sa.JPDServicesManager = *jpdServiceManager
+	jpdServiceManager, err := utils.CreateJPDServiceManager(serverDetails, false)
+	if err != nil {
+		return err
+	}
+	sa.JPDServicesManager = *jpdServiceManager
 	sa.ServerUrl = serverDetails.Url
 	err = sa.GetStats()
 	if err != nil {

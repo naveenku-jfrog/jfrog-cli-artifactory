@@ -33,8 +33,7 @@ func (s *Stats) SetServerId(id string) *Stats {
 }
 
 func (ss *Stats) Run() error {
-	var cmd CommandRunner
-	cmd = ss.NewArtifactoryStatsCommand()
+	cmd := ss.NewArtifactoryStatsCommand()
 	return cmd.Run()
 }
 
