@@ -349,7 +349,7 @@ func FormatWithDisplayTags(v interface{}) string {
 	var builder strings.Builder
 	for i := 0; i < val.NumField(); i++ {
 		field := typeOfVal.Field(i)
-		displayTag := field.Tag.Get("log")
+		displayTag := field.Tag.Get("write")
 		if displayTag == "" {
 			continue
 		}

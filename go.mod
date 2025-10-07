@@ -5,10 +5,10 @@ go 1.24.6
 require (
 	github.com/c-bata/go-prompt v0.2.6
 	github.com/distribution/reference v0.6.0
-	github.com/forPelevin/gomoji v1.3.1
+	github.com/forPelevin/gomoji v1.4.0
 	github.com/gookit/color v1.6.0
 	github.com/jedib0t/go-pretty/v6 v6.6.8
-	github.com/jfrog/build-info-go v1.11.0
+	github.com/jfrog/build-info-go v1.12.0
 	github.com/jfrog/froggit-go v1.20.3
 	github.com/jfrog/gofrog v1.7.6
 	github.com/jfrog/jfrog-cli-core/v2 v2.60.0
@@ -32,7 +32,7 @@ require golang.org/x/net v0.43.0 // indirect
 require (
 	dario.cat/mergo v1.0.2 // indirect
 	github.com/BurntSushi/toml v1.5.0 // indirect
-	github.com/CycloneDX/cyclonedx-go v0.9.2 // indirect
+	github.com/CycloneDX/cyclonedx-go v0.9.3 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/ProtonMail/go-crypto v1.3.0 // indirect
 	github.com/VividCortex/ewma v1.2.0 // indirect
@@ -59,7 +59,7 @@ require (
 	github.com/go-chi/chi v4.1.2+incompatible // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.6.2 // indirect
-	github.com/go-git/go-git/v5 v5.16.2 // indirect
+	github.com/go-git/go-git/v5 v5.16.3 // indirect
 	github.com/go-jose/go-jose/v4 v4.0.5 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -186,4 +186,4 @@ require (
 
 replace github.com/jfrog/jfrog-cli-core/v2 => github.com/naveenku-jfrog/jfrog-cli-core/v2 v2.0.0-20250929050103-7661eda385b4
 
-replace github.com/jfrog/jfrog-client-go => github.com/naveenku-jfrog/jfrog-client-go v1.54.2-0.20250929043331-99e7b9120eb2
+replace github.com/jfrog/jfrog-client-go => github.com/naveenku-jfrog/jfrog-client-go v1.54.2-0.20251007070655-36fd459484a2
