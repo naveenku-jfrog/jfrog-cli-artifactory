@@ -143,6 +143,9 @@ func PrintProjectsDashboard(projects []services.Project, displayLimit int) {
 		project := (projects)[i]
 		tableData = append(tableData, TableRow{Metric: text.FgHiBlue.Sprint(project.ProjectKey), Value: text.FgGreen.Sprint(project.DisplayName)})
 	}
+	if len(tableData) == 1 {
+		tableData = []TableRow{}
+	}
 
 	footer := ""
 	if actualProjectsCount > displayLimit {
@@ -177,6 +180,9 @@ func PrintJPDsDashboard(jpdList []JPD, displayLimit int) {
 			Value:  status,
 		})
 	}
+	if len(tableData) == 1 {
+		tableData = []TableRow{}
+	}
 
 	footer := ""
 	if actualCount > displayLimit {
@@ -198,7 +204,7 @@ func PrintReleaseBundlesDashboard(rbResponse *ReleaseBundleResponse, displayLimi
 	}
 	actualCount := len(rbResponse.ReleaseBundles)
 
-	tableData := []TableRow{{"Name", "Project Key"}} // Headers
+	tableData := []TableRow{{"Name", "Release Bundle"}}
 	for i := 0; i < loopRange; i++ {
 		rb := rbResponse.ReleaseBundles[i]
 		tableData = append(tableData, TableRow{
@@ -206,7 +212,9 @@ func PrintReleaseBundlesDashboard(rbResponse *ReleaseBundleResponse, displayLimi
 			Value:  text.FgWhite.Sprint(rb.ProjectKey),
 		})
 	}
-
+	if len(tableData) == 1 {
+		tableData = []TableRow{}
+	}
 	footer := ""
 	if actualCount > displayLimit {
 		footer = text.FgYellow.Sprintf("\n...and %d more release bundles. Refer JSON output format for complete list.", actualCount-displayLimit)
