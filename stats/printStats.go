@@ -58,7 +58,7 @@ func (rw *GenericResultsWriter) PrintJson() error {
 			msg = "JPDs: No JPD Available"
 		case *ReleaseBundleResponse:
 			msg = "Release Bundles: No Release Bundle Info Available"
-		case jpd.GenericError:
+		case *jpd.GenericError:
 			msg = fmt.Sprintf("Errors: %s", v.Error())
 		}
 		jsonBytes, err = json.MarshalIndent(msg, "", "  ")
@@ -86,7 +86,7 @@ func (rw *GenericResultsWriter) PrintDashboard() error {
 		PrintJPDsDashboard(*v, rw.displayLimit)
 	case *ReleaseBundleResponse:
 		PrintReleaseBundlesDashboard(v, rw.displayLimit)
-	case jpd.GenericError:
+	case *jpd.GenericError:
 		PrintErrorsDashboard(v)
 	}
 	return nil
@@ -228,8 +228,8 @@ func PrintReleaseBundlesDashboard(rbResponse *ReleaseBundleResponse, displayLimi
 	log.Output()
 }
 
-func PrintErrorsDashboard(genericError jpd.GenericError) {
-	errRows := createErrorRows(genericError)
+func PrintErrorsDashboard(genericError *jpd.GenericError) {
+	errRows := createErrorRows(*genericError)
 
 	err := coreutils.PrintTableWithBorderless(errRows, text.FgCyan.Sprint(genericError.Product), "", genericError.Error(), false)
 	if err != nil {
@@ -241,7 +241,6 @@ func PrintErrorsDashboard(genericError jpd.GenericError) {
 
 func createErrorRows(genericError jpd.GenericError) []TableRow {
 	errorRows := []TableRow{
-		{Metric: text.FgCyan.Sprint("Product"), Value: text.FgRed.Sprint(genericError.Product)},
 		{Metric: text.FgCyan.Sprint("Error"), Value: text.FgRed.Sprint(genericError.Error())},
 	}
 	return errorRows
