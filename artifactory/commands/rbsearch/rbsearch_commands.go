@@ -7,37 +7,37 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/errorutils"
 )
 
-type RBSearchCommand struct {
+type RbSearchCommand struct {
 	serverDetails *config.ServerDetails
 	subCmdName    string
 }
 
-func NewRBSearchCommand() *RBSearchCommand {
-	return &RBSearchCommand{}
+func NewRbSearchCommand() *RbSearchCommand {
+	return &RbSearchCommand{}
 }
 
-func (rbSearch *RBSearchCommand) SetSubCmdName(subCmdName string) {
-	rbSearch.subCmdName = subCmdName
+func (rbs *RbSearchCommand) SetSubCmdName(subCmdName string) {
+	rbs.subCmdName = subCmdName
 }
 
-func (rbSearch *RBSearchCommand) SetServerDetails(serverDetails *config.ServerDetails) {
-	rbSearch.serverDetails = serverDetails
+func (rbs *RbSearchCommand) SetServerDetails(serverDetails *config.ServerDetails) {
+	rbs.serverDetails = serverDetails
 }
 
-func (rbSearch *RBSearchCommand) CommandName() string {
+func (rbs *RbSearchCommand) CommandName() string {
 	return "release-bundle-search"
 }
 
-func (rbSearch *RBSearchCommand) ServerDetails() (*config.ServerDetails, error) {
-	return rbSearch.serverDetails, nil
+func (rbs *RbSearchCommand) ServerDetails() (*config.ServerDetails, error) {
+	return rbs.serverDetails, nil
 }
 
-func (rbSearch *RBSearchCommand) Run() error {
-	lcServicesManager, err := rtUtils.CreateLifecycleServiceManager(rbSearch.serverDetails, false)
+func (rbs *RbSearchCommand) Run() error {
+	lcServicesManager, err := rtUtils.CreateLifecycleServiceManager(rbs.serverDetails, false)
 	if err != nil {
 		return err
 	}
-	switch rbSearch.subCmdName {
+	switch rbs.subCmdName {
 	case "names":
 		return lcServicesManager.ReleaseBundlesSearchNames()
 	case "versions":
@@ -51,6 +51,6 @@ func (rbSearch *RBSearchCommand) Run() error {
 	case "signature":
 		return lcServicesManager.ReleaseBundlesSearchSignature()
 	default:
-		return errorutils.CheckError(errors.New("Unknown SubCommand: " + rbSearch.subCmdName))
+		return errorutils.CheckError(errors.New("Unknown SubCommand: " + rbs.subCmdName))
 	}
 }

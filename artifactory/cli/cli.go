@@ -1483,8 +1483,9 @@ func rbSearchCmd(c *components.Context) error {
 	if err != nil {
 		return err
 	}
-	rbSearchCmd := rbsearch.NewRBSearchCommand()
-	rbSearchCmd.SetSubCmdName(c.Arguments[0])
+	subCmdName := c.Arguments[0]
+	rbSearchCmd := rbsearch.NewRbSearchCommand()
+	rbSearchCmd.SetSubCmdName(subCmdName)
 	rbSearchCmd.SetServerDetails(rtDetails)
 	return commands.Exec(rbSearchCmd)
 }
