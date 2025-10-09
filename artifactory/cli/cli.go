@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"github.com/jfrog/jfrog-cli-artifactory/artifactory/commands/rbsearch"
 	"os"
 	"strconv"
 	"strings"
@@ -39,6 +40,7 @@ import (
 	"github.com/jfrog/jfrog-cli-artifactory/artifactory/docs/ping"
 	"github.com/jfrog/jfrog-cli-artifactory/artifactory/docs/podmanpull"
 	"github.com/jfrog/jfrog-cli-artifactory/artifactory/docs/podmanpush"
+	rbSearchDocs "github.com/jfrog/jfrog-cli-artifactory/artifactory/docs/rbsearch"
 	"github.com/jfrog/jfrog-cli-artifactory/artifactory/docs/replicationcreate"
 	"github.com/jfrog/jfrog-cli-artifactory/artifactory/docs/replicationdelete"
 	"github.com/jfrog/jfrog-cli-artifactory/artifactory/docs/replicationtemplate"
@@ -402,6 +404,15 @@ func GetCommands() []components.Command {
 			Arguments:   replicationdelete.GetArguments(),
 			Action:      replicationDeleteCmd,
 			Category:    replicCategory,
+		},
+		{
+			Name:        "rbsearch",
+			Aliases:     []string{"rbs"},
+			Flags:       flagkit.GetCommandFlags(flagkit.RbSearch),
+			Description: rbSearchDocs.GetDescription(),
+			Arguments:   rbSearchDocs.GetArguments(),
+			Action:      rbSearchCmd,
+			Category:    releaseBundlesV2,
 		},
 	}
 
@@ -1462,6 +1473,20 @@ func replicationDeleteCmd(c *components.Context) error {
 	replicationDeleteCmd := replication.NewReplicationDeleteCommand()
 	replicationDeleteCmd.SetRepoKey(c.GetArgumentAt(0)).SetServerDetails(rtDetails).SetQuiet(common.GetQuietValue(c))
 	return commands.Exec(replicationDeleteCmd)
+}
+
+func rbSearchCmd(c *components.Context) error {
+	if c.GetNumberOfArgs() != 1 {
+		return common.WrongNumberOfArgumentsHandler(c)
+	}
+	rtDetails, err := common.CreateArtifactoryDetailsByFlags(c)
+	if err != nil {
+		return err
+	}
+	rbSearchCmd := rbsearch.NewRBSearchCommand()
+	rbSearchCmd.SetSubCmdName(c.Arguments[0])
+	rbSearchCmd.SetServerDetails(rtDetails)
+	return commands.Exec(rbSearchCmd)
 }
 
 func createDefaultCopyMoveSpec(c *components.Context) (*spec.SpecFiles, error) {
