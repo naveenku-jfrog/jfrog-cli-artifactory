@@ -113,7 +113,7 @@ func (svc *SearchVersionsCommand) Run() error {
 			loopRange = displayLimit
 		}
 
-		tableData := []stats.TableRow{{Metric: "Name", Value: "Version"}}
+		tableData := []stats.TableRow{{"Name", "Version"}}
 		for i := 0; i < loopRange; i++ {
 			rbDetails := searchVersionResponse.ReleaseBundles[i]
 			tableData = append(tableData, stats.TableRow{
