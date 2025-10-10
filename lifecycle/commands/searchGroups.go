@@ -100,7 +100,7 @@ func (sgc *SearchGroupCommand) Run() error {
 			loopRange = displayLimit
 		}
 		actualCount := len(searchGroupResponse.ReleaseBundleSearchGroup)
-		tableData := []stats.TableRow{{"Name", "Lastest Version"}}
+		tableData := []stats.TableRow{{Metric: "Name", Value: "Lastest Version"}}
 		for i := 0; i < loopRange; i++ {
 			rbDetails := searchGroupResponse.ReleaseBundleSearchGroup[i]
 			tableData = append(tableData, stats.TableRow{
