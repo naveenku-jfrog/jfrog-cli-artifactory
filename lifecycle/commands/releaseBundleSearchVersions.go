@@ -1,7 +1,7 @@
 package commands
 
 import (
-  "encoding/json"
+	"encoding/json"
 	"errors"
 	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/jfrog/jfrog-cli-artifactory/stats"
@@ -91,7 +91,7 @@ func (svc *SearchVersionsCommand) Run() error {
 	if err != nil {
 		return err
 	}
-  queryParameters := services.GetSearchOptionalQueryParams{
+	queryParameters := services.GetSearchOptionalQueryParams{
 		Offset:   svc.offset,
 		Limit:    svc.limit,
 		FilterBy: svc.filterBy,
@@ -137,10 +137,6 @@ func printReleaseBundleSearchVersionsTable(searchVersionResponse services.Releas
 	err := coreutils.PrintTableWithBorderless(tableData, text.FgCyan.Sprint("Release Bundles Versions"), footer, "No Release Bundle Version Found", false)
 	if err != nil {
 		return errors.New("failed to print ReleaseBundlesSearchVersions table")
-	}
-  _, err = lcServicesManager.ReleaseBundlesSearchVersions(svc.GetReleaseBundleName())
-	if err != nil {
-		return err
 	}
 	return nil
 }
