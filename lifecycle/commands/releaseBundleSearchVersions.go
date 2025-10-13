@@ -61,6 +61,10 @@ func (svc *SearchVersionsCommand) SetReleaseBundleName(releaseBundleName string)
 	return svc
 }
 
+func (svc *SearchVersionsCommand) GetReleaseBundleName() string {
+	return svc.releaseBundleName
+}
+
 func (svc *SearchVersionsCommand) SetOutputFormat(format string) *SearchVersionsCommand {
 	svc.format = format
 	return svc
@@ -79,7 +83,7 @@ func (svc *SearchVersionsCommand) Run() error {
 	if err != nil {
 		return err
 	}
-	_, err = lcServicesManager.ReleaseBundlesSearchVersions(svc.releaseBundleName)
+	_, err = lcServicesManager.ReleaseBundlesSearchVersions(svc.GetReleaseBundleName())
 	if err != nil {
 		return err
 	}

@@ -3,6 +3,7 @@ package lifecycle
 import (
 	"errors"
 	"fmt"
+	"github.com/jfrog/jfrog-cli-artifactory/artifactory/cli"
 	rbsearch "github.com/jfrog/jfrog-cli-artifactory/lifecycle/docs/rbsearch"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"os"
@@ -117,11 +118,11 @@ func GetCommands() []components.Command {
 		{
 			Name:        "release-bundle-search",
 			Aliases:     []string{"rbs"},
-			Flags:       flagkit.GetCommandFlags(flagkit.RbSearch),
+			Flags:       flagkit.GetCommandFlags(flagkit.ReleaseBundleSearch),
 			Description: rbsearch.GetDescription(),
 			Arguments:   rbsearch.GetArguments(),
 			Category:    lcCategory,
-			Action:      search,
+			Action:      releaseBundleSearch,
 		},
 	}
 }
@@ -602,7 +603,7 @@ func PlatformToLifecycleUrls(lcDetails *config.ServerDetails) {
 	lcDetails.Url = ""
 }
 
-func search(c *components.Context) error {
+func releaseBundleSearch(c *components.Context) error {
 	if show, err := pluginsCommon.ShowCmdHelpIfNeeded(c, c.Arguments); show || err != nil {
 		return err
 	}
@@ -613,24 +614,20 @@ func search(c *components.Context) error {
 	if len(c.Arguments) == 0 {
 		return pluginsCommon.WrongNumberOfArgumentsHandler(c)
 	}
-	subCmdName := c.Arguments[0]
-	offset, _ := c.GetDefaultIntFlagValueIfNotSet(flagkit.Offset, 0)
-	limit, _ := c.GetDefaultIntFlagValueIfNotSet(flagkit.Limit, 0)
-	if offset < 0 {
-		return errors.New("The '--offset' option should have a positive numeric value.")
+	option := c.Arguments[0]
+	offset, limit, err := cli.GetOffsetAndLimitValues(c)
+	if err != nil {
+		return err
 	}
-	if limit < 0 {
-		return errors.New("The '--limit' option should have a positive numeric value.")
-	}
-	log.Output("SubCmdName:", subCmdName)
+	log.Output("Option:", option)
 	log.Output("Offset:", offset, "Limit:", limit)
-	switch subCmdName {
+	switch option {
 	case "names":
 		return GetReleaseBundleGroupCmd(c, lcDetails, offset, limit)
 	case "versions":
 		return GetReleaseBundleVersionsCmd(c, lcDetails, offset, limit)
 	default:
-		return errors.New("SubCommand '" + subCmdName + "' is not supported.")
+		return errors.New("Option '" + option + "' is not supported.")
 	}
 }
 
