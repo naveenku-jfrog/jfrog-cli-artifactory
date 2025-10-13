@@ -609,6 +609,9 @@ func search(c *components.Context) error {
 	if err != nil {
 		return err
 	}
+	if len(c.Arguments) == 0 {
+		return pluginsCommon.WrongNumberOfArgumentsHandler(c)
+	}
 	subCmdName := c.Arguments[0]
 	offset, _ := c.GetDefaultIntFlagValueIfNotSet(flagkit.Offset, 0)
 	limit, _ := c.GetDefaultIntFlagValueIfNotSet(flagkit.Limit, 0)
@@ -623,9 +626,6 @@ func search(c *components.Context) error {
 }
 
 func GetReleaseBundleGroupCmd(c *components.Context, lcDetails *config.ServerDetails, offset, limit int) (err error) {
-	if len(c.Arguments) != 1 {
-		return pluginsCommon.WrongNumberOfArgumentsHandler(c)
-	}
 	rbSearchCmd := lifecycle.NewSearchGroupCommand().
 		SetServerDetails(lcDetails).SetOffset(offset).SetLimit(limit).
 		SetFilterBy(c.GetStringFlagValue(flagkit.FilterBy)).
