@@ -1,8 +1,16 @@
 package commands
 
 import (
+	"encoding/json"
+	"errors"
+	"github.com/jedib0t/go-pretty/v6/text"
+	"github.com/jfrog/jfrog-cli-artifactory/stats"
 	rtUtils "github.com/jfrog/jfrog-cli-core/v2/artifactory/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
+	"github.com/jfrog/jfrog-client-go/lifecycle/services"
+	clientutils "github.com/jfrog/jfrog-client-go/utils"
+	"github.com/jfrog/jfrog-client-go/utils/log"
 )
 
 type SearchVersionsCommand struct {
@@ -79,9 +87,48 @@ func (svc *SearchVersionsCommand) Run() error {
 	if err != nil {
 		return err
 	}
-	_, err = lcServicesManager.ReleaseBundlesSearchVersions(svc.releaseBundleName)
+	queryParameters := services.GetSearchOptionalQueryParams{
+		Offset:   svc.offset,
+		Limit:    svc.limit,
+		FilterBy: svc.filterBy,
+		OrderBy:  svc.orderBy,
+		OrderAsc: svc.orderAsc,
+	}
+	searchVersionResponse, err := lcServicesManager.ReleaseBundlesSearchVersions(svc.releaseBundleName, queryParameters)
 	if err != nil {
 		return err
+	}
+	if svc.format == "json" {
+		content, err := json.Marshal(searchVersionResponse)
+		if err != nil {
+			return err
+		}
+		log.Output(clientutils.IndentJson(content))
+		return nil
+	} else {
+		displayLimit := 10
+		actualCount := len(searchVersionResponse.ReleaseBundles)
+		loopRange := len(searchVersionResponse.ReleaseBundles)
+		if loopRange > displayLimit {
+			loopRange = displayLimit
+		}
+
+		tableData := []stats.TableRow{{Metric: "Name", Value: "Version"}}
+		for i := 0; i < loopRange; i++ {
+			rbDetails := searchVersionResponse.ReleaseBundles[i]
+			tableData = append(tableData, stats.TableRow{
+				Metric: text.FgHiBlue.Sprint(rbDetails.ReleaseBundleName),
+				Value:  text.FgHiGreen.Sprint(rbDetails.ReleaseBundleVersion),
+			})
+		}
+		footer := ""
+		if actualCount > loopRange {
+			footer = text.FgYellow.Sprintf("\n...and %d more release bundle versions. Refer JSON output format for complete list.", actualCount-loopRange)
+		}
+		err = coreutils.PrintTableWithBorderless(tableData, text.FgCyan.Sprint("Release Bundles Versions"), footer, "No Release Bundle Version Found", false)
+		if err != nil {
+			return errors.New("failed to print ReleaseBundlesSearchVersions table")
+		}
 	}
 	return nil
 }
