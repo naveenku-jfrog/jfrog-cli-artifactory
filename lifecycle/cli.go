@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	rbsearch "github.com/jfrog/jfrog-cli-artifactory/lifecycle/docs/rbsearch"
-	"github.com/jfrog/jfrog-client-go/utils/log"
 	"os"
 	"strconv"
 	"strings"
@@ -622,8 +621,6 @@ func search(c *components.Context) error {
 	if limit < 0 {
 		return errors.New("The '--limit' option should have a positive numeric value.")
 	}
-	log.Output("SubCmdName:", subCmdName)
-	log.Output("Offset:", offset, "Limit:", limit)
 	switch subCmdName {
 	case "names":
 		return GetReleaseBundleGroupCmd(c, lcDetails, offset, limit)
