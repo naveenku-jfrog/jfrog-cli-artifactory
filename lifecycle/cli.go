@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/jfrog/jfrog-cli-artifactory/artifactory/cli"
 	rbsearch "github.com/jfrog/jfrog-cli-artifactory/lifecycle/docs/rbsearch"
-	"github.com/jfrog/jfrog-client-go/utils/log"
 	"os"
 	"strconv"
 	"strings"
@@ -619,8 +618,6 @@ func releaseBundleSearch(c *components.Context) error {
 	if err != nil {
 		return err
 	}
-	log.Output("Option:", option)
-	log.Output("Offset:", offset, "Limit:", limit)
 	switch option {
 	case "names":
 		return GetReleaseBundleGroupCmd(c, lcDetails, offset, limit)

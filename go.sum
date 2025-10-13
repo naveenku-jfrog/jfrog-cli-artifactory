@@ -392,8 +392,8 @@ github.com/modern-go/reflect2 v1.0.2 h1:xBagoLtFs94CBntxluKeaWgTMpvLxC4ur3nMaC9G
 github.com/modern-go/reflect2 v1.0.2/go.mod h1:yWuevngMOJpCy52FWWMvUC8ws7m/LJsjYzDa0/r8luk=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 h1:C3w9PqII01/Oq1c1nUAm88MOHcQC9l5mIlSMApZMrHA=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
-github.com/naveenku-jfrog/jfrog-client-go v1.54.2-0.20251013054755-0cf00e3f22ca h1:pAxWU1sTPINTknpDr8B0aimuq+FLHOXH9XeOvuCSHug=
-github.com/naveenku-jfrog/jfrog-client-go v1.54.2-0.20251013054755-0cf00e3f22ca/go.mod h1:jrODQbAbCt97F24d/0bYpqpdc0PFMuBxNJOTfTdW+Fk=
+github.com/naveenku-jfrog/jfrog-client-go v1.54.2-0.20251013173303-3631a8920d27 h1:BSLKyqLNEj1v7ekJJyDNgoeOt8/KmSPOIxuO8vMkj90=
+github.com/naveenku-jfrog/jfrog-client-go v1.54.2-0.20251013173303-3631a8920d27/go.mod h1:jrODQbAbCt97F24d/0bYpqpdc0PFMuBxNJOTfTdW+Fk=
 github.com/nwaples/rardecode v1.1.3 h1:cWCaZwfM5H7nAD6PyEdcVnczzV8i/JtotnyW/dD9lEc=
 github.com/nwaples/rardecode v1.1.3/go.mod h1:5DzqNKiOdpKKBH87u8VlvAnPZMXcGRhxWkRpHbbfGS0=
 github.com/oklog/ulid v1.3.1 h1:EGfNDEx6MqHz8B3uNV6QAib1UR2Lm97sHi3ocA6ESJ4=
