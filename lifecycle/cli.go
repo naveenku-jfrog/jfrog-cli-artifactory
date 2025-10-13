@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	rbsearch "github.com/jfrog/jfrog-cli-artifactory/lifecycle/docs/rbsearch"
+	"github.com/jfrog/jfrog-client-go/utils/log"
 	"os"
 	"strconv"
 	"strings"
@@ -615,17 +616,28 @@ func search(c *components.Context) error {
 	subCmdName := c.Arguments[0]
 	offset, _ := c.GetDefaultIntFlagValueIfNotSet(flagkit.Offset, 0)
 	limit, _ := c.GetDefaultIntFlagValueIfNotSet(flagkit.Limit, 0)
+	if offset < 0 {
+		return errors.New("The '--offset' option should have a positive numeric value.")
+	}
+	if limit < 0 {
+		return errors.New("The '--limit' option should have a positive numeric value.")
+	}
+	log.Output("SubCmdName:", subCmdName)
+	log.Output("Offset:", offset, "Limit:", limit)
 	switch subCmdName {
 	case "names":
 		return GetReleaseBundleGroupCmd(c, lcDetails, offset, limit)
 	case "versions":
 		return GetReleaseBundleVersionsCmd(c, lcDetails, offset, limit)
 	default:
-		return errors.New("Unsupported sub-command : " + subCmdName)
+		return errors.New("SubCommand '" + subCmdName + "' is not supported.")
 	}
 }
 
 func GetReleaseBundleGroupCmd(c *components.Context, lcDetails *config.ServerDetails, offset, limit int) (err error) {
+	if len(c.Arguments) != 1 {
+		return pluginsCommon.WrongNumberOfArgumentsHandler(c)
+	}
 	rbSearchCmd := lifecycle.NewSearchGroupCommand().
 		SetServerDetails(lcDetails).SetOffset(offset).SetLimit(limit).
 		SetFilterBy(c.GetStringFlagValue(flagkit.FilterBy)).
