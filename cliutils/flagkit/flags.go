@@ -94,14 +94,16 @@ const (
 	GroupAddUsers                = "group-add-users"
 	GroupDelete                  = "group-delete"
 	passphrase                   = "passphrase"
-	ReleaseBundleSearch          = "release-bundle-search"
-	FilterBy                     = "filter-by"
-	OrderAsc                     = "order-asc"
-	OrderBy                      = "order-by"
-	Includes                     = "includes"
-	Offset                       = "offset"
-	Limit                        = "limit"
-	Format                       = "format"
+
+	// ReleaseBundleSearch command flags
+	ReleaseBundleSearch = "release-bundle-search"
+	FilterBy            = "filter-by"
+	OrderAsc            = "order-asc"
+	OrderBy             = "order-by"
+	Includes            = "includes"
+	Format              = "format"
+	Limit               = "limit"
+	Offset              = "offset"
 
 	// Config commands keys
 	AddConfig    = "config-add"
@@ -795,7 +797,7 @@ var commandFlags = map[string][]string{
 		url, user, password, accessToken, sshPassphrase, sshKeyPath, serverId, deleteQuiet,
 	},
 	ReleaseBundleSearch: {
-		xrOutput, OrderBy, FilterBy, OrderAsc, limit, Includes,
+		Format, OrderBy, FilterBy, OrderAsc, Limit, Offset, Includes,
 	},
 }
 
