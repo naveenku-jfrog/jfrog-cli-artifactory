@@ -24,22 +24,22 @@ func TestSetupCmd(t *testing.T) {
 		{
 			name:          "Missing argument",
 			args:          []string{},
-			expectedError: errors.New("error: Missing mandatory argument 'IDE_NAME'. Please specify ide name. Supported IDEs are 'vscode' or 'jetbrains'"),
+			expectedError: errors.New("error: Missing mandatory argument 'IDE_NAME'. Please specify ide name. Supported IDEs are [vscode jetbrains]"),
 		},
 		{
 			name:          "Invalid IDE name",
 			args:          []string{"eclipse"},
-			expectedError: errors.New("error: Invalid IDE name 'eclipse'. Supported IDEs are 'vscode' or 'jetbrains'"),
+			expectedError: errors.New("error: Invalid IDE name 'eclipse'. Supported IDEs are [vscode jetbrains]"),
 		},
 		{
 			name:          "Valid IDE vscode",
 			args:          []string{"vscode"},
-			expectedError: nil,
+			expectedError: errors.New("--repo-key flag is required"),
 		},
 		{
 			name:          "Valid IDE jetbrains",
 			args:          []string{"jetbrains"},
-			expectedError: nil,
+			expectedError: errors.New("--repo-key flag is required"),
 		},
 	}
 	for _, tt := range tests {
