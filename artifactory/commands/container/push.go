@@ -97,6 +97,12 @@ func (pc *PushCommand) Run() error {
 		return err
 	}
 	if !toCollect {
+		result := new(commandsutils.Result)
+		if pc.detailedSummary {
+			result.SetReader(content.NewContentReader("", "files"))
+		}
+		result.SetSuccessCount(0)
+		pc.SetResult(result)
 		return nil
 	}
 	buildName, err := pc.buildConfiguration.GetBuildName()
