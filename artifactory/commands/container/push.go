@@ -101,7 +101,6 @@ func (pc *PushCommand) Run() error {
 		if pc.detailedSummary {
 			result.SetReader(content.NewContentReader("", "files"))
 		}
-		result.SetSuccessCount(0)
 		pc.SetResult(result)
 		return nil
 	}
