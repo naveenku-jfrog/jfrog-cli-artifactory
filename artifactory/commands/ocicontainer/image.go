@@ -2,6 +2,7 @@ package ocicontainer
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"path"
 	"strconv"
@@ -189,13 +190,7 @@ func (image *Image) ExtractArtifactoryRepoKey() (string, error) {
 	}
 	parts := strings.SplitN(imageName, "/", 2)
 	if len(parts) < 2 {
-		return "", errors.New("invalid image tag format: missing registry host or repository key. Expected at least two segments separated by '/'")
+		return "", fmt.Errorf("invalid image name format: %q. Expected <repo-key>/<image-name>:<image-tag>", imageName)
 	}
-	remainingPath := parts[1]
-	repoKeyParts := strings.SplitN(remainingPath, "/", 2)
-
-	if len(repoKeyParts) < 1 {
-		return "", errors.New("could not extract repository key from remaining path")
-	}
-	return repoKeyParts[0], nil
+	return parts[0], nil
 }
