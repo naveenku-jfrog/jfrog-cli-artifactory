@@ -1,6 +1,7 @@
 package ocicontainer
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -204,5 +205,70 @@ func TestBuildRemoteRepoUrl(t *testing.T) {
 
 		actualRepo := buildRequestUrl(longImageName, imageTag, containerRegistryUrl, v.isSecure)
 		assert.Equal(t, v.expectedRepo, actualRepo)
+	}
+}
+
+func TestExtractArtifactoryRepoKey(t *testing.T) {
+	testCases := []struct {
+		name        string
+		image       *Image
+		wantKey     string
+		wantErr     bool
+		errContains string
+	}{
+		{
+			name:    "valid image name",
+			image:   &Image{name: "my-repo/my-image:latest"},
+			wantKey: "my-repo",
+			wantErr: false,
+		},
+		{
+			name:    "valid image with multiple slashes",
+			image:   &Image{name: "my-repo/sub-path/my-image:1.2.3"},
+			wantKey: "my-repo",
+			wantErr: false,
+		},
+		{
+			name:        "invalid format with no slash",
+			image:       &Image{name: "my-image-no-repo:latest"},
+			wantKey:     "",
+			wantErr:     true,
+			errContains: "invalid image name format",
+		},
+		{
+			name:        "error from GetImageLongName (empty)",
+			image:       &Image{name: ""},
+			wantKey:     "",
+			wantErr:     true,
+			errContains: "imageName field is empty",
+		},
+		{
+			name:    "valid name with no tag",
+			image:   &Image{name: "my-repo/my-image"},
+			wantKey: "my-repo",
+			wantErr: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			gotKey, err := tc.image.ExtractArtifactoryRepoKey()
+			if tc.wantErr {
+				if err == nil {
+					t.Errorf("ExtractArtifactoryRepoKey() expected an error, but got nil")
+					return
+				}
+				if tc.errContains != "" && !strings.Contains(err.Error(), tc.errContains) {
+					t.Errorf("ExtractArtifactoryRepoKey() error = %q, want error containing %q", err, tc.errContains)
+				}
+			} else {
+				if err != nil {
+					t.Errorf("ExtractArtifactoryRepoKey() returned unexpected error: %v", err)
+				}
+				if gotKey != tc.wantKey {
+					t.Errorf("ExtractArtifactoryRepoKey() = %q, want %q", gotKey, tc.wantKey)
+				}
+			}
+		})
 	}
 }
