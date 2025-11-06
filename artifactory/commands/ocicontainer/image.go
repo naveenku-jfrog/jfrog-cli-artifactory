@@ -186,12 +186,13 @@ func getStatusForbiddenErrorMessage() string {
 // ExtractArtifactoryRepoKey parses the repository key from the image's long name,
 // which is expected to be in the format "<repo-key>/<image-name>:<image-tag>".
 func (image *Image) ExtractArtifactoryRepoKey() (string, error) {
-	if image.name == "" {
-		return "", fmt.Errorf("imageName field is empty")
+	imageName, err := image.GetImageLongName()
+	if err != nil {
+		return "", err
 	}
-	parts := strings.SplitN(image.name, "/", 2)
+	parts := strings.SplitN(imageName, "/", 2)
 	if len(parts) < 2 {
-		return "", fmt.Errorf("invalid image name format: %q. Expected <repo-key>/<image-name>:<image-tag>", image.name)
+		return "", fmt.Errorf("invalid image name format: %q. Expected <repo-key>/<image-name>:<image-tag>", imageName)
 	}
 	return parts[0], nil
 }

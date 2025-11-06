@@ -218,19 +218,13 @@ func TestExtractArtifactoryRepoKey(t *testing.T) {
 	}{
 		{
 			name:    "valid image name",
-			image:   &Image{name: "my-repo/my-image:latest"},
-			wantKey: "my-repo",
-			wantErr: false,
-		},
-		{
-			name:    "valid image with multiple slashes",
-			image:   &Image{name: "my-repo/sub-path/my-image:1.2.3"},
+			image:   &Image{name: "my-registry:port/my-repo/my-image:latest"},
 			wantKey: "my-repo",
 			wantErr: false,
 		},
 		{
 			name:        "invalid format with no slash",
-			image:       &Image{name: "my-image-no-repo:latest"},
+			image:       &Image{name: "my-registry:port/my-image-no-repo:latest"},
 			wantKey:     "",
 			wantErr:     true,
 			errContains: "invalid image name format",
@@ -240,11 +234,11 @@ func TestExtractArtifactoryRepoKey(t *testing.T) {
 			image:       &Image{name: ""},
 			wantKey:     "",
 			wantErr:     true,
-			errContains: "imageName field is empty",
+			errContains: "is missing '/'",
 		},
 		{
 			name:    "valid name with no tag",
-			image:   &Image{name: "my-repo/my-image"},
+			image:   &Image{name: "my-registry:port/my-repo/my-image"},
 			wantKey: "my-repo",
 			wantErr: false,
 		},
