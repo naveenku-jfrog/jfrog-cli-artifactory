@@ -83,7 +83,7 @@ func (npc *NpmPublishCommand) SetConfigFilePath(configFilePath string) *NpmPubli
 }
 
 func (npc *NpmPublishCommand) SetArgs(args []string) *NpmPublishCommand {
-	npc.NpmPublishCommandArgs.npmArgs = args
+	npc.npmArgs = args
 	return npc
 }
 
@@ -125,7 +125,7 @@ func (npc *NpmPublishCommand) Init() error {
 	if err != nil {
 		return err
 	}
-	detailedSummary, xrayScan, scanOutputFormat, filteredNpmArgs, buildConfiguration, err := commandsutils.ExtractNpmOptionsFromArgs(npc.NpmPublishCommandArgs.npmArgs)
+	detailedSummary, xrayScan, scanOutputFormat, filteredNpmArgs, buildConfiguration, err := commandsutils.ExtractNpmOptionsFromArgs(npc.npmArgs)
 	if err != nil {
 		return err
 	}
@@ -296,7 +296,7 @@ func (npc *NpmPublishCommand) getTarballDir() (string, error) {
 	}
 
 	// Extract pack destination argument from the args.
-	flagIndex, _, dest, err := coreutils.FindFlag("--pack-destination", npc.NpmPublishCommandArgs.npmArgs)
+	flagIndex, _, dest, err := coreutils.FindFlag("--pack-destination", npc.npmArgs)
 	if err != nil || flagIndex == -1 {
 		return npc.workingDirectory, err
 	}

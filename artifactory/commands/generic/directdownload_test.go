@@ -32,8 +32,8 @@ func TestGetDirectDownloadParams_BasicPattern(t *testing.T) {
 	assert.NotNil(t, params)
 
 	// Check CommonParams was set
-	assert.Equal(t, "repo/path/*.bin", params.CommonParams.Pattern)
-	assert.Equal(t, "downloads/", params.CommonParams.Target)
+	assert.Equal(t, "repo/path/*.bin", params.Pattern)
+	assert.Equal(t, "downloads/", params.Target)
 
 	assert.Equal(t, int64(5120), params.MinSplitSize)
 	assert.Equal(t, 3, params.SplitCount)
@@ -118,14 +118,14 @@ func TestGetDirectDownloadParams_CombinedFlags(t *testing.T) {
 	params, err := getDirectDownloadParams(file, configuration)
 	assert.NoError(t, err)
 
-	assert.Equal(t, "repo/path/**/*.jar", params.CommonParams.Pattern)
-	assert.Equal(t, "downloads/libs/", params.CommonParams.Target)
+	assert.Equal(t, "repo/path/**/*.jar", params.Pattern)
+	assert.Equal(t, "downloads/libs/", params.Target)
 	assert.True(t, params.Recursive)
 	assert.True(t, params.Flat)
 	assert.Equal(t, int64(10485760), params.MinSplitSize)
 	assert.Equal(t, 5, params.SplitCount)
 	assert.False(t, params.SkipChecksum)
-	assert.Len(t, params.CommonParams.Exclusions, 2)
+	assert.Len(t, params.Exclusions, 2)
 }
 
 func TestGetDirectDownloadParams_WithExclusions(t *testing.T) {
@@ -142,10 +142,10 @@ func TestGetDirectDownloadParams_WithExclusions(t *testing.T) {
 	params, err := getDirectDownloadParams(file, configuration)
 
 	assert.NoError(t, err)
-	assert.Len(t, params.CommonParams.Exclusions, 3)
-	assert.Contains(t, params.CommonParams.Exclusions, "*-test.bin")
-	assert.Contains(t, params.CommonParams.Exclusions, "*-debug.bin")
-	assert.Contains(t, params.CommonParams.Exclusions, "temp/*")
+	assert.Len(t, params.Exclusions, 3)
+	assert.Contains(t, params.Exclusions, "*-test.bin")
+	assert.Contains(t, params.Exclusions, "*-debug.bin")
+	assert.Contains(t, params.Exclusions, "temp/*")
 }
 
 func TestGetDirectDownloadParams_WithBuildInfo(t *testing.T) {
@@ -158,7 +158,7 @@ func TestGetDirectDownloadParams_WithBuildInfo(t *testing.T) {
 	params, err := getDirectDownloadParams(file, configuration)
 
 	assert.NoError(t, err)
-	assert.Equal(t, "my-build/123", params.CommonParams.Build)
+	assert.Equal(t, "my-build/123", params.Build)
 }
 
 func TestGetDirectDownloadParams_EmptyPattern(t *testing.T) {
@@ -171,7 +171,7 @@ func TestGetDirectDownloadParams_EmptyPattern(t *testing.T) {
 	params, err := getDirectDownloadParams(file, configuration)
 
 	assert.NoError(t, err)
-	assert.Equal(t, "", params.CommonParams.Pattern)
+	assert.Equal(t, "", params.Pattern)
 }
 
 func TestGetDirectDownloadParams_AllBooleanFlags(t *testing.T) {

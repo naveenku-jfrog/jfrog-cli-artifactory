@@ -2,6 +2,7 @@ package generic
 
 import (
 	"errors"
+
 	"github.com/jfrog/jfrog-client-go/utils/errorutils"
 )
 
@@ -19,7 +20,7 @@ func (setProps *SetPropsCommand) SetPropsCommand(command PropsCommand) *SetProps
 }
 
 func (setProps *SetPropsCommand) SetRepoOnly(repoOnly bool) *SetPropsCommand {
-	setProps.PropsCommand.repoOnly = repoOnly
+	setProps.repoOnly = repoOnly
 	return setProps
 }
 

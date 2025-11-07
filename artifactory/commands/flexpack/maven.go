@@ -190,7 +190,11 @@ func setMavenBuildPropertiesOnArtifacts(workingDir, buildName, buildNumber strin
 	if err != nil {
 		return fmt.Errorf("failed to search for deployed artifacts: %w", err)
 	}
-	defer searchReader.Close()
+	defer func() {
+		if closeErr := searchReader.Close(); closeErr != nil {
+			log.Debug(fmt.Sprintf("Failed to close search reader: %s", closeErr))
+		}
+	}()
 
 	// Filter to only artifacts modified in the last 2 minutes (just deployed)
 	cutoffTime := time.Now().Add(-2 * time.Minute)

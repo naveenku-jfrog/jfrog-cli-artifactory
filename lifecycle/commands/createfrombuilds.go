@@ -2,6 +2,7 @@ package commands
 
 import (
 	"encoding/json"
+
 	rtUtils "github.com/jfrog/jfrog-cli-core/v2/artifactory/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/common/spec"
 	rtServices "github.com/jfrog/jfrog-client-go/artifactory/services"
@@ -15,7 +16,7 @@ import (
 func (rbc *ReleaseBundleCreateCommand) createFromBuilds(servicesManager *lifecycle.LifecycleServicesManager,
 	rbDetails services.ReleaseBundleDetails, queryParams services.CommonOptionalQueryParams) error {
 
-	err, buildsSource := rbc.createBuildSourceFromSpec()
+	buildsSource, err := rbc.createBuildSourceFromSpec()
 	if err != nil {
 		return err
 	}
@@ -27,13 +28,13 @@ func (rbc *ReleaseBundleCreateCommand) createFromBuilds(servicesManager *lifecyc
 	return servicesManager.CreateReleaseBundleFromBuilds(rbDetails, queryParams, rbc.signingKeyName, buildsSource)
 }
 
-func (rbc *ReleaseBundleCreateCommand) createBuildSourceFromSpec() (err error, buildsSource services.CreateFromBuildsSource) {
+func (rbc *ReleaseBundleCreateCommand) createBuildSourceFromSpec() (buildsSource services.CreateFromBuildsSource, err error) {
 	if rbc.buildsSpecPath != "" {
 		buildsSource, err = rbc.getBuildSourceFromBuildsSpec()
 	} else {
 		buildsSource, err = rbc.convertSpecToBuildsSource(rbc.spec.Files)
 	}
-	return err, buildsSource
+	return buildsSource, err
 }
 
 func (rbc *ReleaseBundleCreateCommand) getBuildSourceFromBuildsSpec() (buildsSource services.CreateFromBuildsSource, err error) {
