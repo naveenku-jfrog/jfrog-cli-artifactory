@@ -3,6 +3,9 @@ package commands
 import (
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
+
 	"github.com/jfrog/jfrog-cli-core/v2/common/spec"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
@@ -11,8 +14,6 @@ import (
 	"github.com/jfrog/jfrog-client-go/lifecycle/services"
 	"github.com/jfrog/jfrog-client-go/utils/errorutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
-	"strconv"
-	"strings"
 )
 
 const (
@@ -93,12 +94,12 @@ func (rbc *ReleaseBundleCreateCommand) SetReleaseBundlesSpecPath(releaseBundlesS
 }
 
 func (rbc *ReleaseBundleCreateCommand) SetBuildsSources(sourcesBuilds string) *ReleaseBundleCreateCommand {
-	rbc.ReleaseBundleSources.sourcesBuilds = sourcesBuilds
+	rbc.sourcesBuilds = sourcesBuilds
 	return rbc
 }
 
 func (rbc *ReleaseBundleCreateCommand) SetReleaseBundlesSources(sourcesReleaseBundles string) *ReleaseBundleCreateCommand {
-	rbc.ReleaseBundleSources.sourcesReleaseBundles = sourcesReleaseBundles
+	rbc.sourcesReleaseBundles = sourcesReleaseBundles
 	return rbc
 }
 
@@ -289,7 +290,7 @@ func buildReleaseBundleSourcesParamsFromSpec(rbc *ReleaseBundleCreateCommand, de
 }
 
 func appendReleaseBundlesSource(rbc *ReleaseBundleCreateCommand, sources []services.RbSource) ([]services.RbSource, error) {
-	err, releaseBundleSources := rbc.createReleaseBundleSourceFromSpec()
+	releaseBundleSources, err := rbc.createReleaseBundleSourceFromSpec()
 	if err != nil {
 		return nil, err
 	}
@@ -303,7 +304,7 @@ func appendReleaseBundlesSource(rbc *ReleaseBundleCreateCommand, sources []servi
 }
 
 func appendBuildsSource(rbc *ReleaseBundleCreateCommand, sources []services.RbSource) ([]services.RbSource, error) {
-	err, buildsSource := rbc.createBuildSourceFromSpec()
+	buildsSource, err := rbc.createBuildSourceFromSpec()
 	if err != nil {
 		return nil, err
 	}
@@ -367,7 +368,7 @@ func (rbc *ReleaseBundleCreateCommand) identifySourceTypeBySpecOrByLegacyCommand
 }
 
 func (rbc *ReleaseBundleCreateCommand) atLeastASingleMultiSourceRBDefinedFromCommand() bool {
-	return rbc.ReleaseBundleSources.sourcesReleaseBundles != "" || rbc.ReleaseBundleSources.sourcesBuilds != ""
+	return rbc.sourcesReleaseBundles != "" || rbc.sourcesBuilds != ""
 }
 
 func (rbc *ReleaseBundleCreateCommand) multiSourcesDefinedFromSpec() ([]services.SourceType, error) {

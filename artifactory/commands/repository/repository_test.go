@@ -278,7 +278,11 @@ func Test_PerformRepoCmd_ErrorCases(t *testing.T) {
 func createTempTemplate(t *testing.T, content string) string {
 	tmpFile, err := os.CreateTemp("", "repo-template-*.json")
 	require.NoError(t, err)
-	defer tmpFile.Close()
+	defer func() {
+		if closeErr := tmpFile.Close(); closeErr != nil {
+			t.Logf("Failed to close tmpFile: %v", closeErr)
+		}
+	}()
 
 	_, err = tmpFile.WriteString(content)
 	require.NoError(t, err)

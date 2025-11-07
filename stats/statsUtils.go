@@ -3,6 +3,8 @@ package stats
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
+
 	"github.com/jfrog/jfrog-cli-core/v2/artifactory/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-client-go/access"
@@ -11,7 +13,6 @@ import (
 	"github.com/jfrog/jfrog-client-go/jpd"
 	"github.com/jfrog/jfrog-client-go/lifecycle"
 	"github.com/jfrog/jfrog-client-go/utils/log"
-	"strings"
 )
 
 type APIError struct {
@@ -199,7 +200,7 @@ func (sa *ArtifactoryStats) GetProjectsStats() interface{} {
 	projects, err := sa.AccessManager.GetAllProjects()
 	if err != nil {
 		if strings.Contains(err.Error(), "401") {
-			wrappedError := fmt.Errorf("Need Admin privileges")
+			wrappedError := fmt.Errorf("need admin privileges")
 			return jpd.NewGenericError("PROJECTS", wrappedError)
 		}
 		wrappedError := fmt.Errorf("failed to call PROJECTS API: %w", err)
@@ -213,7 +214,7 @@ func (sa *ArtifactoryStats) GetJPDsStats() interface{} {
 	body, err := sa.JPDServicesManager.GetJPDsStats(sa.ServerUrl)
 	if err != nil {
 		if strings.Contains(err.Error(), "401") {
-			wrappedError := fmt.Errorf("Need Admin privileges")
+			wrappedError := fmt.Errorf("need admin privileges")
 			return jpd.NewGenericError("JPDs", wrappedError)
 		}
 		wrappedError := fmt.Errorf("failed to call JPDs API: %w", err)

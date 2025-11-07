@@ -143,7 +143,11 @@ func (vc *VSCodeForkCommand) checkWritePermissions() error {
 		}
 		return err
 	}
-	defer file.Close()
+	defer func() {
+		if closeErr := file.Close(); closeErr != nil {
+			log.Debug(fmt.Sprintf("Failed to close file: %s", closeErr))
+		}
+	}()
 	return nil
 }
 
@@ -157,14 +161,22 @@ func (vc *VSCodeForkCommand) createBackup() error {
 	if err != nil {
 		return fmt.Errorf("failed to open source file: %w", err)
 	}
-	defer sourceFile.Close()
+	defer func() {
+		if closeErr := sourceFile.Close(); closeErr != nil {
+			log.Debug(fmt.Sprintf("Failed to close sourceFile: %s", closeErr))
+		}
+	}()
 
 	// Create backup file
 	backupFile, err := os.Create(vc.backupPath)
 	if err != nil {
 		return fmt.Errorf("failed to create backup file: %w", err)
 	}
-	defer backupFile.Close()
+	defer func() {
+		if closeErr := backupFile.Close(); closeErr != nil {
+			log.Debug(fmt.Sprintf("Failed to close backupFile: %s", closeErr))
+		}
+	}()
 
 	// Copy content
 	if _, err := io.Copy(backupFile, sourceFile); err != nil {
@@ -186,14 +198,22 @@ func (vc *VSCodeForkCommand) restoreBackup() error {
 	if err != nil {
 		return fmt.Errorf("failed to open backup file: %w", err)
 	}
-	defer backupFile.Close()
+	defer func() {
+		if closeErr := backupFile.Close(); closeErr != nil {
+			log.Debug(fmt.Sprintf("Failed to close backupFile: %s", closeErr))
+		}
+	}()
 
 	// Create/overwrite target file
 	targetFile, err := os.Create(vc.productPath)
 	if err != nil {
 		return fmt.Errorf("failed to create target file: %w", err)
 	}
-	defer targetFile.Close()
+	defer func() {
+		if closeErr := targetFile.Close(); closeErr != nil {
+			log.Debug(fmt.Sprintf("Failed to close targetFile: %s", closeErr))
+		}
+	}()
 
 	// Copy content
 	if _, err := io.Copy(targetFile, backupFile); err != nil {

@@ -1,7 +1,10 @@
 package generic
 
 import (
+	"fmt"
+
 	"github.com/jfrog/jfrog-client-go/utils/errorutils"
+	"github.com/jfrog/jfrog-client-go/utils/log"
 )
 
 type DeletePropsCommand struct {
@@ -18,7 +21,7 @@ func (dp *DeletePropsCommand) DeletePropsCommand(command PropsCommand) *DeletePr
 }
 
 func (dp *DeletePropsCommand) SetRepoOnly(repoOnly bool) *DeletePropsCommand {
-	dp.PropsCommand.repoOnly = repoOnly
+	dp.repoOnly = repoOnly
 	return dp
 }
 
@@ -39,7 +42,11 @@ func (dp *DeletePropsCommand) Run() error {
 	if err != nil {
 		return err
 	}
-	defer reader.Close()
+	defer func() {
+		if closeErr := reader.Close(); closeErr != nil {
+			log.Debug(fmt.Sprintf("Failed to close reader: %s", closeErr))
+		}
+	}()
 	propsParams := GetPropsParams(reader, dp.props, dp.repoOnly)
 	success, err := servicesManager.DeleteProps(propsParams)
 	result := dp.Result()
