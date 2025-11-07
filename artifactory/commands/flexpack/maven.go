@@ -285,7 +285,19 @@ func getSettingsXmlPath() string {
 
 // parseSettingsXml reads and parses Maven settings.xml
 func parseSettingsXml(settingsPath string) (*SettingsXml, error) {
-	data, err := os.ReadFile(settingsPath)
+	wd, err := os.Getwd()
+	if err != nil {
+		return nil, fmt.Errorf("could not get working directory: %w", err)
+	}
+	safePath := filepath.Join(wd, settingsPath)
+	absPath, err := filepath.Abs(safePath)
+	if err != nil {
+		return nil, fmt.Errorf("could not resolve path: %w", err)
+	}
+	if !strings.HasPrefix(absPath, wd) {
+		return nil, fmt.Errorf("invalid settings path: %q. Path traversal is not allowed", settingsPath)
+	}
+	data, err := os.ReadFile(absPath)
 	if err != nil {
 		return nil, err
 	}
