@@ -2,6 +2,13 @@ package terraform
 
 import (
 	"errors"
+	"io"
+	"io/fs"
+	"os"
+	"path"
+	"path/filepath"
+	"strings"
+
 	buildInfo "github.com/jfrog/build-info-go/entities"
 	ioutils "github.com/jfrog/gofrog/io"
 	"github.com/jfrog/gofrog/parallel"
@@ -18,12 +25,6 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/errorutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"golang.org/x/exp/slices"
-	"io"
-	"io/fs"
-	"os"
-	"path"
-	"path/filepath"
-	"strings"
 )
 
 const threads = 3
@@ -319,8 +320,8 @@ func (tpc *TerraformPublishCommand) uploadParamsForTerraformPublish(moduleName, 
 	uploadParams.TargetPathInArchive = "{1}"
 	uploadParams.Archive = "zip"
 	uploadParams.Recursive = true
-	uploadParams.CommonParams.TargetProps = servicesUtils.NewProperties()
-	uploadParams.CommonParams.Exclusions = append(slices.Clone(tpc.exclusions), "*.git", "*.DS_Store")
+	uploadParams.TargetProps = servicesUtils.NewProperties()
+	uploadParams.Exclusions = append(slices.Clone(tpc.exclusions), "*.git", "*.DS_Store")
 	uploadParams.BuildProps = tpc.buildProps
 	return &uploadParams
 }

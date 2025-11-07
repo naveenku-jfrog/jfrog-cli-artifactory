@@ -948,7 +948,7 @@ func prepareCopyMoveCommand(c *components.Context) (*spec.SpecFiles, error) {
 	if c.GetNumberOfArgs() > 0 && c.IsFlagSet("spec") {
 		return nil, common.PrintHelpAndReturnError("No arguments should be sent when the spec option is used.", c)
 	}
-	if !(c.GetNumberOfArgs() == 2 || (c.GetNumberOfArgs() == 0 && (c.IsFlagSet("spec")))) {
+	if c.GetNumberOfArgs() != 2 && (c.GetNumberOfArgs() != 0 || !c.IsFlagSet("spec")) {
 		return nil, common.WrongNumberOfArgumentsHandler(c)
 	}
 
@@ -1036,7 +1036,7 @@ func prepareDeleteCommand(c *components.Context) (*spec.SpecFiles, error) {
 	if c.GetNumberOfArgs() > 0 && c.IsFlagSet("spec") {
 		return nil, common.PrintHelpAndReturnError("No arguments should be sent when the spec option is used.", c)
 	}
-	if !(c.GetNumberOfArgs() == 1 || (c.GetNumberOfArgs() == 0 && (c.IsFlagSet("spec") || c.IsFlagSet("build") || c.IsFlagSet("bundle")))) {
+	if c.GetNumberOfArgs() != 1 && (c.GetNumberOfArgs() != 0 || (!c.IsFlagSet("spec") && !c.IsFlagSet("build") && !c.IsFlagSet("bundle"))) {
 		return nil, common.WrongNumberOfArgumentsHandler(c)
 	}
 
@@ -1091,7 +1091,7 @@ func prepareSearchCommand(c *components.Context) (*spec.SpecFiles, error) {
 	if c.GetNumberOfArgs() > 0 && c.IsFlagSet("spec") {
 		return nil, common.PrintHelpAndReturnError("No arguments should be sent when the spec option is used.", c)
 	}
-	if !(c.GetNumberOfArgs() == 1 || (c.GetNumberOfArgs() == 0 && (c.IsFlagSet("spec") || c.IsFlagSet("build") || c.IsFlagSet("bundle")))) {
+	if c.GetNumberOfArgs() != 1 && (c.GetNumberOfArgs() != 0 || (!c.IsFlagSet("spec") && !c.IsFlagSet("build") && !c.IsFlagSet("bundle"))) {
 		return nil, common.WrongNumberOfArgumentsHandler(c)
 	}
 
