@@ -79,7 +79,7 @@ func GetCommands() []components.Command {
 }
 
 func releaseBundleCreateCmd(c *components.Context) error {
-	if !(len(c.Arguments) == 2 && c.IsFlagSet("spec") || (len(c.Arguments) == 3 && !c.IsFlagSet("spec"))) {
+	if (len(c.Arguments) != 2 || !c.IsFlagSet("spec")) && (len(c.Arguments) != 3 || c.IsFlagSet("spec")) {
 		return pluginsCommon.WrongNumberOfArgumentsHandler(c)
 	}
 	if c.GetBoolFlagValue("detailed-summary") && !c.GetBoolFlagValue("sign") {

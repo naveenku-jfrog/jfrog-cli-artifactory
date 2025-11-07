@@ -1156,7 +1156,7 @@ func preparePropsCmd(c *components.Context) (*generic.PropsCommand, error) {
 	if c.GetNumberOfArgs() > 1 && c.IsFlagSet("spec") {
 		return nil, common.PrintHelpAndReturnError("Only the 'artifact properties' argument should be sent when the spec option is used.", c)
 	}
-	if !(c.GetNumberOfArgs() == 2 || (c.GetNumberOfArgs() == 1 && (c.IsFlagSet("spec") || c.IsFlagSet("build") || c.IsFlagSet("bundle")))) {
+	if c.GetNumberOfArgs() != 2 && (c.GetNumberOfArgs() != 1 || (!c.IsFlagSet("spec") && !c.IsFlagSet("build") && !c.IsFlagSet("bundle"))) {
 		return nil, common.WrongNumberOfArgumentsHandler(c)
 	}
 
@@ -1296,7 +1296,7 @@ func buildAddDependenciesCmd(c *components.Context) error {
 	}
 	// Odd number of args - Use pattern arg
 	// Even number of args - Use spec flag
-	if c.GetNumberOfArgs() > 3 || !(c.GetNumberOfArgs()%2 == 1 || (c.GetNumberOfArgs()%2 == 0 && c.IsFlagSet("spec"))) {
+	if c.GetNumberOfArgs() > 3 || (c.GetNumberOfArgs()%2 != 1 && (c.GetNumberOfArgs()%2 != 0 || !c.IsFlagSet("spec"))) {
 		return common.WrongNumberOfArgumentsHandler(c)
 	}
 
