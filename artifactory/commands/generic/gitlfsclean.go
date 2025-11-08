@@ -1,6 +1,8 @@
 package generic
 
 import (
+	"fmt"
+
 	"github.com/jfrog/jfrog-cli-core/v2/artifactory/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-client-go/artifactory/services"
@@ -44,7 +46,11 @@ func (glc *GitLfsCommand) Run() error {
 	if err != nil {
 		return err
 	}
-	defer filesToDeleteReader.Close()
+	defer func() {
+		if closeErr := filesToDeleteReader.Close(); closeErr != nil {
+			log.Debug(fmt.Sprintf("Failed to close filesToDeleteReader: %s", closeErr))
+		}
+	}()
 	length, err := filesToDeleteReader.Length()
 	if err != nil || length < 1 {
 		return err

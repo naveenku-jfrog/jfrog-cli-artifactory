@@ -650,7 +650,7 @@ func prepareDownloadCommand(c *components.Context) (*spec.SpecFiles, error) {
 	if c.GetNumberOfArgs() > 0 && c.IsFlagSet("spec") {
 		return nil, common.PrintHelpAndReturnError("No arguments should be sent when the spec option is used.", c)
 	}
-	if !(c.GetNumberOfArgs() == 1 || c.GetNumberOfArgs() == 2 || (c.GetNumberOfArgs() == 0 && (c.IsFlagSet("spec") || c.IsFlagSet("build") || c.IsFlagSet("bundle")))) {
+	if c.GetNumberOfArgs() != 1 && c.GetNumberOfArgs() != 2 && (c.GetNumberOfArgs() != 0 || (!c.IsFlagSet("spec") && !c.IsFlagSet("build") && !c.IsFlagSet("bundle"))) {
 		return nil, common.WrongNumberOfArgumentsHandler(c)
 	}
 
@@ -679,7 +679,7 @@ func prepareDirectDownloadCommand(c *components.Context) (*spec.SpecFiles, error
 	if c.GetNumberOfArgs() > 0 && c.IsFlagSet("spec") {
 		return nil, common.PrintHelpAndReturnError("No arguments should be sent when the spec option is used.", c)
 	}
-	if !(c.GetNumberOfArgs() == 1 || c.GetNumberOfArgs() == 2 || (c.GetNumberOfArgs() == 0 && (c.IsFlagSet("spec") || c.IsFlagSet("build")))) {
+	if c.GetNumberOfArgs() != 1 && c.GetNumberOfArgs() != 2 && (c.GetNumberOfArgs() != 0 || (!c.IsFlagSet("spec") && !c.IsFlagSet("build"))) {
 		return nil, common.PrintHelpAndReturnError("Wrong number of arguments. Expected: <source-pattern> [target-path] OR --spec=<spec-file> OR --build=<build-name>/<build-number>", c)
 	}
 
@@ -890,7 +890,7 @@ func uploadCmd(c *components.Context) (err error) {
 	if c.GetNumberOfArgs() > 0 && c.IsFlagSet("spec") {
 		return common.PrintHelpAndReturnError("No arguments should be sent when the spec option is used.", c)
 	}
-	if !(c.GetNumberOfArgs() == 2 || (c.GetNumberOfArgs() == 0 && c.IsFlagSet("spec"))) {
+	if c.GetNumberOfArgs() != 2 && (c.GetNumberOfArgs() != 0 || !c.IsFlagSet("spec")) {
 		return common.WrongNumberOfArgumentsHandler(c)
 	}
 
@@ -948,7 +948,7 @@ func prepareCopyMoveCommand(c *components.Context) (*spec.SpecFiles, error) {
 	if c.GetNumberOfArgs() > 0 && c.IsFlagSet("spec") {
 		return nil, common.PrintHelpAndReturnError("No arguments should be sent when the spec option is used.", c)
 	}
-	if !(c.GetNumberOfArgs() == 2 || (c.GetNumberOfArgs() == 0 && (c.IsFlagSet("spec")))) {
+	if c.GetNumberOfArgs() != 2 && (c.GetNumberOfArgs() != 0 || !c.IsFlagSet("spec")) {
 		return nil, common.WrongNumberOfArgumentsHandler(c)
 	}
 
@@ -1036,7 +1036,7 @@ func prepareDeleteCommand(c *components.Context) (*spec.SpecFiles, error) {
 	if c.GetNumberOfArgs() > 0 && c.IsFlagSet("spec") {
 		return nil, common.PrintHelpAndReturnError("No arguments should be sent when the spec option is used.", c)
 	}
-	if !(c.GetNumberOfArgs() == 1 || (c.GetNumberOfArgs() == 0 && (c.IsFlagSet("spec") || c.IsFlagSet("build") || c.IsFlagSet("bundle")))) {
+	if c.GetNumberOfArgs() != 1 && (c.GetNumberOfArgs() != 0 || (!c.IsFlagSet("spec") && !c.IsFlagSet("build") && !c.IsFlagSet("bundle"))) {
 		return nil, common.WrongNumberOfArgumentsHandler(c)
 	}
 
@@ -1091,7 +1091,7 @@ func prepareSearchCommand(c *components.Context) (*spec.SpecFiles, error) {
 	if c.GetNumberOfArgs() > 0 && c.IsFlagSet("spec") {
 		return nil, common.PrintHelpAndReturnError("No arguments should be sent when the spec option is used.", c)
 	}
-	if !(c.GetNumberOfArgs() == 1 || (c.GetNumberOfArgs() == 0 && (c.IsFlagSet("spec") || c.IsFlagSet("build") || c.IsFlagSet("bundle")))) {
+	if c.GetNumberOfArgs() != 1 && (c.GetNumberOfArgs() != 0 || (!c.IsFlagSet("spec") && !c.IsFlagSet("build") && !c.IsFlagSet("bundle"))) {
 		return nil, common.WrongNumberOfArgumentsHandler(c)
 	}
 
@@ -1156,7 +1156,7 @@ func preparePropsCmd(c *components.Context) (*generic.PropsCommand, error) {
 	if c.GetNumberOfArgs() > 1 && c.IsFlagSet("spec") {
 		return nil, common.PrintHelpAndReturnError("Only the 'artifact properties' argument should be sent when the spec option is used.", c)
 	}
-	if !(c.GetNumberOfArgs() == 2 || (c.GetNumberOfArgs() == 1 && (c.IsFlagSet("spec") || c.IsFlagSet("build") || c.IsFlagSet("bundle")))) {
+	if c.GetNumberOfArgs() != 2 && (c.GetNumberOfArgs() != 1 || (!c.IsFlagSet("spec") && !c.IsFlagSet("build") && !c.IsFlagSet("bundle"))) {
 		return nil, common.WrongNumberOfArgumentsHandler(c)
 	}
 
@@ -1296,7 +1296,7 @@ func buildAddDependenciesCmd(c *components.Context) error {
 	}
 	// Odd number of args - Use pattern arg
 	// Even number of args - Use spec flag
-	if c.GetNumberOfArgs() > 3 || !(c.GetNumberOfArgs()%2 == 1 || (c.GetNumberOfArgs()%2 == 0 && c.IsFlagSet("spec"))) {
+	if c.GetNumberOfArgs() > 3 || (c.GetNumberOfArgs()%2 != 1 && (c.GetNumberOfArgs()%2 != 0 || !c.IsFlagSet("spec"))) {
 		return common.WrongNumberOfArgumentsHandler(c)
 	}
 

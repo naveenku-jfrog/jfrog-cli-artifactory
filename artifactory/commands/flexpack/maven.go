@@ -190,7 +190,11 @@ func setMavenBuildPropertiesOnArtifacts(workingDir, buildName, buildNumber strin
 	if err != nil {
 		return fmt.Errorf("failed to search for deployed artifacts: %w", err)
 	}
-	defer searchReader.Close()
+	defer func() {
+		if closeErr := searchReader.Close(); closeErr != nil {
+			log.Debug(fmt.Sprintf("Failed to close search reader: %s", closeErr))
+		}
+	}()
 
 	// Filter to only artifacts modified in the last 2 minutes (just deployed)
 	cutoffTime := time.Now().Add(-2 * time.Minute)
@@ -281,7 +285,22 @@ func getSettingsXmlPath() string {
 
 // parseSettingsXml reads and parses Maven settings.xml
 func parseSettingsXml(settingsPath string) (*SettingsXml, error) {
-	data, err := os.ReadFile(settingsPath)
+	if settingsPath == "" {
+		return nil, fmt.Errorf("settings.xml path cannot be empty")
+	}
+	if strings.Contains(settingsPath, "..") {
+		return nil, fmt.Errorf("path traversal detected in settings.xml path: %s", settingsPath)
+	}
+	absPath, err := filepath.Abs(settingsPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve absolute path for settings.xml: %w", err)
+	}
+	cleanedPath := filepath.Clean(absPath)
+	if cleanedPath != absPath {
+		return nil, fmt.Errorf("invalid path detected: %s", settingsPath)
+	}
+
+	data, err := os.ReadFile(absPath)
 	if err != nil {
 		return nil, err
 	}

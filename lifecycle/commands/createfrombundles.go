@@ -2,6 +2,7 @@ package commands
 
 import (
 	"encoding/json"
+
 	"github.com/jfrog/jfrog-cli-core/v2/common/spec"
 	"github.com/jfrog/jfrog-client-go/artifactory/services/utils"
 	"github.com/jfrog/jfrog-client-go/lifecycle"
@@ -13,7 +14,7 @@ import (
 func (rbc *ReleaseBundleCreateCommand) createFromReleaseBundles(servicesManager *lifecycle.LifecycleServicesManager,
 	rbDetails services.ReleaseBundleDetails, queryParams services.CommonOptionalQueryParams) error {
 
-	err, releaseBundlesSource := rbc.createReleaseBundleSourceFromSpec()
+	releaseBundlesSource, err := rbc.createReleaseBundleSourceFromSpec()
 	if err != nil {
 		return err
 	}
@@ -25,7 +26,7 @@ func (rbc *ReleaseBundleCreateCommand) createFromReleaseBundles(servicesManager 
 	return servicesManager.CreateReleaseBundleFromBundles(rbDetails, queryParams, rbc.signingKeyName, releaseBundlesSource)
 }
 
-func (rbc *ReleaseBundleCreateCommand) createReleaseBundleSourceFromSpec() (error, services.CreateFromReleaseBundlesSource) {
+func (rbc *ReleaseBundleCreateCommand) createReleaseBundleSourceFromSpec() (services.CreateFromReleaseBundlesSource, error) {
 	var releaseBundlesSource services.CreateFromReleaseBundlesSource
 	var err error
 	if rbc.releaseBundlesSpecPath != "" {
@@ -34,9 +35,9 @@ func (rbc *ReleaseBundleCreateCommand) createReleaseBundleSourceFromSpec() (erro
 		releaseBundlesSource, err = rbc.convertSpecToReleaseBundlesSource(rbc.spec.Files)
 	}
 	if err != nil {
-		return err, releaseBundlesSource
+		return releaseBundlesSource, err
 	}
-	return nil, releaseBundlesSource
+	return releaseBundlesSource, nil
 }
 
 func (rbc *ReleaseBundleCreateCommand) convertToReleaseBundlesSource(bundles CreateFromReleaseBundlesSpec) services.CreateFromReleaseBundlesSource {
