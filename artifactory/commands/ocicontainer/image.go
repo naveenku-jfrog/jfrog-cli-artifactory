@@ -143,12 +143,8 @@ func (image *Image) GetRemoteRepo(serviceManager artifactory.ArtifactoryServices
 	if err != nil {
 		return "", err
 	}
-	var isSecure bool
-	if rtUrl := serviceManager.GetConfig().GetServiceDetails().GetUrl(); strings.HasPrefix(rtUrl, "https") {
-		isSecure = true
-	}
 	// Build the request URL.
-	endpoint := buildRequestUrl(longImageName, imageTag, containerRegistryUrl, isSecure)
+	endpoint := buildRequestUrl(longImageName, imageTag, containerRegistryUrl)
 	artHttpDetails := serviceManager.GetConfig().GetServiceDetails().CreateHttpClientDetails()
 	artHttpDetails.Headers["accept"] = "application/vnd.docker.distribution.manifest.v1+prettyjws, application/json, application/vnd.oci.image.manifest.v1+json, application/vnd.docker.distribution.manifest.v2+json, application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.oci.image.index.v1+json"
 	resp, _, err := serviceManager.Client().SendHead(endpoint, &artHttpDetails)
@@ -168,12 +164,9 @@ func (image *Image) GetRemoteRepo(serviceManager artifactory.ArtifactoryServices
 }
 
 // Returns the name of the repository containing the image in Artifactory.
-func buildRequestUrl(longImageName, imageTag, containerRegistryUrl string, https bool) string {
+func buildRequestUrl(longImageName, imageTag, containerRegistryUrl string) string {
 	endpoint := path.Join(containerRegistryUrl, "v2", longImageName, "manifests", imageTag)
-	if https {
-		return "https://" + endpoint
-	}
-	return "http://" + endpoint
+	return "https://" + endpoint
 }
 
 func getStatusForbiddenErrorMessage() string {
