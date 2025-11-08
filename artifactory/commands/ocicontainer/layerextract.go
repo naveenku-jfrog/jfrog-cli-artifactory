@@ -1,6 +1,7 @@
 package ocicontainer
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/jfrog/jfrog-client-go/artifactory"
@@ -92,9 +93,25 @@ func SearchLayersForDetailedSummary(image *Image, repo string, serviceManager ar
 			continue
 		}
 
-		// Try to get manifest
 		imageManifest, err = getManifest(resultMap, serviceManager, repo)
 		if err != nil {
+			// Check if error is 403 Forbidden (download blocked by Xray policy)
+			if strings.Contains(err.Error(), "403") || strings.Contains(err.Error(), "Forbidden") {
+				log.Info("Artifact download blocked by Xray policy. Returning basic summary with available files.")
+				// Return all found files as basic summary (excluding manifest.json since we can't download it)
+				var basicSummary []utils.ResultItem
+				for fileName, item := range resultMap {
+					if fileName != ManifestJsonFile {
+						basicSummary = append(basicSummary, *item)
+					}
+				}
+				if len(basicSummary) > 0 {
+					log.Info(fmt.Sprintf("Found %d file(s) in repository.", len(basicSummary)))
+					return &basicSummary, nil
+				}
+				// If no files found, return empty result without error
+				return &[]utils.ResultItem{}, nil
+			}
 			log.Debug("Failed to get manifest. Error:", err.Error())
 			continue
 		}
