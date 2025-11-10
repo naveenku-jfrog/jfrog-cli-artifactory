@@ -166,7 +166,7 @@ func (image *Image) GetRemoteRepo(serviceManager artifactory.ArtifactoryServices
 func buildRequestUrl(longImageName, imageTag, containerRegistryUrl string) string {
 	log.Info("container registry url: " + containerRegistryUrl)
 	endpoint := path.Join(containerRegistryUrl, "v2", longImageName, "manifests", imageTag)
-	if containerRegistryUrl == "localhost" {
+	if strings.Contains(containerRegistryUrl, "localhost:") {
 		return "http://" + endpoint
 	}
 	return "https://" + endpoint
