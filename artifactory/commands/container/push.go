@@ -97,6 +97,8 @@ func (pc *PushCommand) Run() error {
 	if err != nil {
 		return err
 	}
+	log.Info("toCollect:", toCollect)
+	log.Info("isDetailedSummary:", pc.IsDetailedSummary())
 	if !toCollect && !pc.IsDetailedSummary() {
 		return nil
 	}
