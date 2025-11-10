@@ -164,7 +164,11 @@ func (image *Image) GetRemoteRepo(serviceManager artifactory.ArtifactoryServices
 
 // Returns the name of the repository containing the image in Artifactory.
 func buildRequestUrl(longImageName, imageTag, containerRegistryUrl string) string {
+	log.Info("container registry url: " + containerRegistryUrl)
 	endpoint := path.Join(containerRegistryUrl, "v2", longImageName, "manifests", imageTag)
+	if containerRegistryUrl == "localhost" {
+		return "http://" + endpoint
+	}
 	return "https://" + endpoint
 }
 
