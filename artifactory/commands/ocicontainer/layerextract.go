@@ -12,7 +12,6 @@ import (
 )
 
 // ExtractLayersFromManifestData extracts image layers using manifest layer data.
-// This exported function can be called from other packages.
 // configDigest is the config layer digest (from manifest.Config.Digest).
 // layerDigests is a slice of layer digests with their media types: []struct{Digest, MediaType string}
 func ExtractLayersFromManifestData(candidateLayers map[string]*utils.ResultItem, configDigest string, layerDigests []struct{ Digest, MediaType string }) ([]utils.ResultItem, error) {
@@ -96,7 +95,7 @@ func SearchLayersForDetailedSummary(image *Image, repo string, serviceManager ar
 		imageManifest, err = getManifest(resultMap, serviceManager, repo)
 		if err != nil {
 			// Check if error is 403 Forbidden (download blocked by Xray policy)
-			if strings.Contains(err.Error(), "403") || strings.Contains(err.Error(), "Forbidden") {
+			if strings.Contains(err.Error(), "download blocking policy configured in Xray") {
 				log.Info("Artifact download blocked by Xray policy. Returning basic summary with available files.")
 				// Return all found files as basic summary (excluding manifest.json since we can't download it)
 				var basicSummary []utils.ResultItem
@@ -112,7 +111,7 @@ func SearchLayersForDetailedSummary(image *Image, repo string, serviceManager ar
 				// If no files found, return empty result without error
 				return &[]utils.ResultItem{}, nil
 			}
-			log.Debug("Failed to get manifest. Error:", err.Error())
+			log.Debug("Failed to get manifest")
 			continue
 		}
 		if imageManifest != nil {

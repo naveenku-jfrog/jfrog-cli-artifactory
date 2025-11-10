@@ -2,7 +2,6 @@ package ocicontainer
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"path"
 	"strconv"
@@ -183,9 +182,9 @@ func (image *Image) ExtractArtifactoryRepoKey() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	parts := strings.SplitN(imageName, "/", 2)
-	if len(parts) < 2 {
-		return "", fmt.Errorf("invalid image name format: %q. Expected <repo-key>/<image-name>:<image-tag>", imageName)
+	repoName, _, ok := strings.Cut(imageName, "/")
+	if ok {
+		return repoName, nil
 	}
-	return parts[0], nil
+	return "", errorutils.CheckErrorf("invalid image name format. Got '%s'", imageName)
 }
