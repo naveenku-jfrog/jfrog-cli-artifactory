@@ -34,7 +34,8 @@ func CollectHelmBuildInfoWithFlexPack(workingDir, buildName, buildNumber string,
 	var err error
 
 	// Check if this is a command we handle with full build info collection
-	if wasHelmPushCommand() {
+	switch {
+	case wasHelmPushCommand():
 		// For push commands: create build info with only module and artifacts (no dependencies)
 		log.Debug(fmt.Sprintf("Creating build info for %s/%s (push command - artifacts only, no dependencies)", buildName, buildNumber))
 		buildInfo = createHelmBuildInfoWithoutDependencies(buildName, buildNumber, workingDir)
@@ -45,7 +46,7 @@ func CollectHelmBuildInfoWithFlexPack(workingDir, buildName, buildNumber string,
 			log.Warn("Failed to add deployed artifacts to build info: " + err.Error())
 		}
 		// Note: We don't add dependency OCI artifacts for push commands
-	} else if wasHelmPackageCommand() {
+	case wasHelmPackageCommand():
 		// For package commands: collect build info with dependencies (dependencies are packaged in .tgz)
 		// Create Helm FlexPack configuration
 		config := flexpack.HelmConfig{
@@ -86,7 +87,7 @@ func CollectHelmBuildInfoWithFlexPack(workingDir, buildName, buildNumber string,
 		if err != nil {
 			log.Debug("Failed to add dependency OCI artifacts from local checksums: " + err.Error())
 		}
-	} else if wasHelmDependencyCommand() || wasHelmInstallOrUpgradeCommand() {
+	case wasHelmDependencyCommand() || wasHelmInstallOrUpgradeCommand():
 		// Create Helm FlexPack configuration
 		config := flexpack.HelmConfig{
 			WorkingDirectory: workingDir,
@@ -108,24 +109,15 @@ func CollectHelmBuildInfoWithFlexPack(workingDir, buildName, buildNumber string,
 		for i, module := range buildInfo.Modules {
 			log.Debug(fmt.Sprintf("Module[%d] ID: %s, Dependencies: %d", i, module.Id, len(module.Dependencies)))
 		}
-	} else {
+	default:
 		// For other commands, create empty build info
 		log.Debug(fmt.Sprintf("Creating empty build info for %s/%s (command not requiring full build info)", buildName, buildNumber))
 		buildInfo = createEmptyHelmBuildInfo(buildName, buildNumber)
 	}
 
 	// Handle different command types
-	if wasHelmPushCommand() {
-		// Already handled above - artifacts added, no dependencies
-		// No additional processing needed
-	} else if wasHelmPackageCommand() {
-		// Already handled above - artifacts and dependencies added
-		// No additional processing needed
-	} else if wasHelmDependencyCommand() {
-		// For dependency update/build commands: add dependency OCI artifacts using local checksums
-		// No artifacts are added (only dependencies)
-		// Dependencies are already collected by helmFlex.CollectBuildInfo above
-		// First, resolve version ranges to actual versions from Chart.lock
+	switch {
+	case wasHelmDependencyCommand():
 		err = resolveDependencyVersionsFromChartLock(buildInfo, workingDir)
 		if err != nil {
 			log.Debug("Failed to resolve dependency versions from Chart.lock: " + err.Error())
@@ -135,7 +127,7 @@ func CollectHelmBuildInfoWithFlexPack(workingDir, buildName, buildNumber string,
 		if err != nil {
 			log.Debug("Failed to add dependency OCI artifacts from local checksums: " + err.Error())
 		}
-	} else if wasHelmInstallOrUpgradeCommand() {
+	case wasHelmInstallOrUpgradeCommand():
 		// For install/upgrade commands: get dependencies from helm template and add them
 		err = addDependenciesFromHelmTemplate(buildInfo, workingDir)
 		if err != nil {
@@ -164,34 +156,22 @@ func CollectHelmBuildInfoWithFlexPack(workingDir, buildName, buildNumber string,
 }
 
 // createEmptyHelmBuildInfo creates an empty build info structure with only basic fields
-// This is used for Helm commands that don't require full build info collection
 func createEmptyHelmBuildInfo(buildName, buildNumber string) *entities.BuildInfo {
 	buildInfo := entities.New()
 	buildInfo.Name = buildName
 	buildInfo.Number = buildNumber
-
-	// Set agent information
 	buildInfo.SetAgentName(coreutils.GetCliUserAgentName())
 	buildInfo.SetAgentVersion(coreutils.GetCliUserAgentVersion())
 	buildInfo.SetBuildAgentVersion(coreutils.GetClientAgentVersion())
-
-	// Set started time (current time)
 	buildInfo.Started = time.Now().Format(entities.TimeFormat)
-
-	// Set principal from server config if available
 	serverDetails, err := config.GetDefaultServerConf()
 	if err == nil && serverDetails != nil && serverDetails.User != "" {
 		buildInfo.Principal = serverDetails.User
 	}
-
-	// Modules should be empty (already initialized as empty slice in New())
-	// DurationMillis will be 0 by default (not set)
-
 	return buildInfo
 }
 
 // createHelmBuildInfoWithoutDependencies creates a build info structure with only module and properties (no dependencies)
-// This is used for helm push/package commands where we only want artifacts, not dependencies
 func createHelmBuildInfoWithoutDependencies(buildName, buildNumber, workingDir string) *entities.BuildInfo {
 	buildInfo := entities.New()
 	buildInfo.Name = buildName
@@ -245,7 +225,7 @@ func createHelmBuildInfoWithoutDependencies(buildName, buildNumber, workingDir s
 		Id:           fmt.Sprintf("%s:%s", chartName, chartVersion),
 		Type:         entities.Helm,
 		Properties:   properties,
-		Artifacts:    []entities.Artifact{}, // Will be populated by addDeployedHelmArtifactsToBuildInfo
+		Artifacts:    []entities.Artifact{},   // Will be populated by addDeployedHelmArtifactsToBuildInfo
 		Dependencies: []entities.Dependency{}, // Empty - no dependencies for push commands
 	}
 
@@ -255,97 +235,87 @@ func createHelmBuildInfoWithoutDependencies(buildName, buildNumber, workingDir s
 
 // saveHelmFlexPackBuildInfo saves Helm FlexPack build info for jfrog-cli rt bp compatibility
 func saveHelmFlexPackBuildInfo(buildInfo *entities.BuildInfo) error {
-	// Create build-info service
 	service := build.NewBuildInfoService()
-
-	// Create or get build
 	buildInstance, err := service.GetOrCreateBuildWithProject(buildInfo.Name, buildInfo.Number, "")
 	if err != nil {
 		return fmt.Errorf("failed to create build: %w", err)
 	}
-
-	// Save the complete build info (this will be loaded by rt bp)
 	return buildInstance.SaveBuildInfo(buildInfo)
 }
 
-// wasHelmDeployCommand checks if the current command was a Helm push or package command
-func wasHelmDeployCommand() bool {
+// getHelmCommandPosition finds the position of "helm" in os.Args and returns the index of the command after it
+// Returns -1 if "helm" is not found or if there's no command after it
+func getHelmCommandPosition() int {
 	args := os.Args
-	for _, arg := range args {
-		if arg == "push" || arg == "package" {
-			return true
+	for i, arg := range args {
+		if arg == "helm" && i+1 < len(args) {
+			return i + 1
 		}
 	}
-	return false
+	return -1
 }
 
 // wasHelmPushCommand checks if the current command was a Helm push command
 // This is used to determine if we should set build properties (only for push, not package)
 func wasHelmPushCommand() bool {
+	cmdPos := getHelmCommandPosition()
+	if cmdPos == -1 {
+		return false
+	}
 	args := os.Args
-	for _, arg := range args {
-		if arg == "push" {
-			return true
-		}
+	if cmdPos < len(args) && args[cmdPos] == "push" {
+		return true
 	}
 	return false
 }
 
 // wasHelmPackageCommand checks if the current command was a Helm package command
 func wasHelmPackageCommand() bool {
+	cmdPos := getHelmCommandPosition()
+	if cmdPos == -1 {
+		return false
+	}
 	args := os.Args
-	for _, arg := range args {
-		if arg == "package" {
-			return true
-		}
+	if cmdPos < len(args) && args[cmdPos] == "package" {
+		return true
 	}
 	return false
 }
 
 // wasHelmDependencyCommand checks if the current command was a Helm dependency update or build command
 func wasHelmDependencyCommand() bool {
+	cmdPos := getHelmCommandPosition()
+	if cmdPos == -1 {
+		return false
+	}
 	args := os.Args
-	hasDependency := false
-	hasUpdate := false
-	hasBuild := false
-	for i, arg := range args {
-		if arg == "dependency" && i+1 < len(args) {
-			hasDependency = true
-			nextArg := args[i+1]
-			if nextArg == "update" {
-				hasUpdate = true
-			}
-			if nextArg == "build" {
-				hasBuild = true
-			}
+	// Check if command is "dependency" and next arg is "update" or "build"
+	if cmdPos < len(args) && args[cmdPos] == "dependency" {
+		if cmdPos+1 < len(args) {
+			subCmd := args[cmdPos+1]
+			return subCmd == "update" || subCmd == "build"
 		}
 	}
-	return hasDependency && (hasUpdate || hasBuild)
+	return false
 }
 
 // wasHelmInstallOrUpgradeCommand checks if the current command was a Helm install, upgrade, or template command
 func wasHelmInstallOrUpgradeCommand() bool {
+	cmdPos := getHelmCommandPosition()
+	if cmdPos == -1 {
+		return false
+	}
 	args := os.Args
-	hasInstall := false
-	hasUpgrade := false
-	hasTemplate := false
-	for _, arg := range args {
-		if arg == "install" {
-			hasInstall = true
-		}
-		if arg == "upgrade" {
-			hasUpgrade = true
-		}
-		if arg == "template" {
-			hasTemplate = true
+	if cmdPos < len(args) {
+		cmd := args[cmdPos]
+		if cmd == "install" || cmd == "upgrade" || cmd == "template" {
+			return true
 		}
 	}
-	// Handle "upgrade --install" case and template command
-	return hasInstall || hasUpgrade || hasTemplate
+	return false
 }
 
 // addDeployedHelmArtifactsToBuildInfo adds deployed Helm chart artifacts to build info
-// This searches Artifactory for the pushed chart and retrieves checksums from Artifactory API
 func addDeployedHelmArtifactsToBuildInfo(buildInfo *entities.BuildInfo, workingDir string) error {
 	// Get server details from configuration
 	serverDetails, err := config.GetDefaultServerConf()
@@ -368,14 +338,14 @@ func addDeployedHelmArtifactsToBuildInfo(buildInfo *entities.BuildInfo, workingD
 	chartName, chartVersion, err := getHelmChartInfo(workingDir)
 	if err != nil {
 		log.Debug("Could not get chart info, skipping artifact collection: " + err.Error())
-		return nil
+		return err
 	}
 
 	// Try to extract repository from helm args or use default
 	repoName, err := getHelmRepositoryFromArgs(serviceManager)
 	if err != nil {
 		log.Debug("Could not determine Helm repository, skipping artifact collection: " + err.Error())
-		return nil
+		return err
 	}
 
 	// Search for the chart in Artifactory (following Docker pattern)
@@ -389,8 +359,6 @@ func addDeployedHelmArtifactsToBuildInfo(buildInfo *entities.BuildInfo, workingD
 		return nil
 	}
 
-	// Add artifacts to all modules (Helm projects typically have one module, but we support multiple)
-	// Append to existing artifacts (which may include dependency OCI artifacts) instead of replacing
 	if len(buildInfo.Modules) > 0 {
 		for moduleIdx := range buildInfo.Modules {
 			buildInfo.Modules[moduleIdx].Artifacts = append(buildInfo.Modules[moduleIdx].Artifacts, artifacts...)
@@ -406,7 +374,6 @@ func addDeployedHelmArtifactsToBuildInfo(buildInfo *entities.BuildInfo, workingD
 
 // searchHelmChartArtifacts searches Artifactory for Helm chart artifacts and retrieves checksums
 func searchHelmChartArtifacts(chartName, chartVersion, repoName string, serviceManager artifactory.ArtifactoryServicesManager) ([]entities.Artifact, error) {
-	// Build search pattern for Helm chart
 	searchPattern := fmt.Sprintf("%s/%s/%s/*", repoName, chartName, chartVersion)
 
 	log.Debug(fmt.Sprintf("Searching for Helm chart artifacts with pattern: %s", searchPattern))
@@ -423,11 +390,9 @@ func searchHelmChartArtifacts(chartName, chartVersion, repoName string, serviceM
 
 	var artifacts []entities.Artifact
 	for resultItem := new(servicesUtils.ResultItem); reader.NextRecord(resultItem) == nil; resultItem = new(servicesUtils.ResultItem) {
-		// Skip folders
 		if resultItem.Type == "folder" {
 			continue
 		}
-
 		artifact := convertHelmResultItemToArtifact(resultItem)
 		artifacts = append(artifacts, artifact)
 		log.Debug(fmt.Sprintf("Including artifact: %s (path: %s/%s, modified: %s)",
@@ -445,7 +410,6 @@ func searchHelmChartArtifacts(chartName, chartVersion, repoName string, serviceM
 }
 
 // convertHelmResultItemToArtifact converts a ResultItem to entities.Artifact with proper type field
-// Similar to Docker's getManifestArtifact, but handles all Helm chart artifacts
 func convertHelmResultItemToArtifact(item *servicesUtils.ResultItem) entities.Artifact {
 	artifact := item.ToArtifact()
 
@@ -476,7 +440,7 @@ func getHelmChartInfo(workingDir string) (string, string, error) {
 }
 
 // getHelmRepositoryFromArgs tries to extract repository name from helm command arguments
-func getHelmRepositoryFromArgs(serviceManager artifactory.ArtifactoryServicesManager) (string, error) {
+func getHelmRepositoryFromArgs(_ artifactory.ArtifactoryServicesManager) (string, error) {
 	args := os.Args
 	for i, arg := range args {
 		// Look for registry URL in helm push command: helm push <chart> <registry-url>
@@ -504,9 +468,6 @@ func getHelmRepositoryFromArgs(serviceManager artifactory.ArtifactoryServicesMan
 			}
 		}
 	}
-
-	// Fallback: try to get default repo from configuration
-	// This is a simplified approach - in practice, you might need more sophisticated logic
 	return "", fmt.Errorf("could not extract repository from helm command arguments")
 }
 
@@ -535,7 +496,7 @@ func setHelmBuildPropertiesOnArtifacts(buildInfo *entities.BuildInfo, buildName,
 	repoName, err := getHelmRepositoryFromArgs(serviceManager)
 	if err != nil {
 		log.Warn("Could not determine Helm repository, skipping build properties: " + err.Error())
-		return nil
+		return err
 	}
 
 	// Extract artifacts from buildInfo and convert to ResultItem format
@@ -561,14 +522,10 @@ func extractArtifactsFromBuildInfo(buildInfo *entities.BuildInfo, defaultRepo st
 				repo = artifact.OriginalDeploymentRepo
 			}
 
-			// Convert entities.Artifact to servicesUtils.ResultItem
-			// Note: Path in entities.Artifact (from ToArtifact()) includes the filename as path.Join(item.Path, item.Name)
-			// So we need to extract just the directory path
 			path := artifact.Path
 			name := artifact.Name
-			
+
 			// Remove the filename from the path if it's at the end
-			// Handle both "/name" and "name" cases
 			if name != "" && strings.HasSuffix(path, name) {
 				path = strings.TrimSuffix(path, name)
 				path = strings.TrimSuffix(path, "/")
@@ -593,14 +550,11 @@ func createBuildPropertiesString(buildName, buildNumber string) string {
 }
 
 // setPropertiesOnArtifactsList sets build properties on all artifacts in a single batch call
-// This is more efficient than setting properties on each artifact individually
 func setPropertiesOnArtifactsList(serviceManager artifactory.ArtifactoryServicesManager, artifacts []servicesUtils.ResultItem, buildProps string) error {
 	if len(artifacts) == 0 {
 		return nil
 	}
 
-	// Write all artifacts to a temporary file and create a ContentReader
-	// This allows us to set properties on all artifacts in one API call instead of one per artifact
 	filePath, err := writeResultItemsToFile(artifacts)
 	if err != nil {
 		return fmt.Errorf("failed to write artifacts to file: %w", err)
@@ -628,8 +582,6 @@ func setPropertiesOnArtifactsList(serviceManager artifactory.ArtifactoryServices
 }
 
 // writeResultItemsToFile writes ResultItems to a temporary file and returns the file path
-// This follows the same pattern as writeLayersToFile in ocicontainer/buildinfo.go
-// The writer must be closed to ensure all data is written before reading the file
 func writeResultItemsToFile(items []servicesUtils.ResultItem) (filePath string, err error) {
 	writer, err := content.NewContentWriter("results", true, false)
 	if err != nil {
@@ -651,11 +603,6 @@ func writeResultItemsToFile(items []servicesUtils.ResultItem) (filePath string, 
 }
 
 // addDependencyOCIArtifactsFromLocalChecksums adds OCI artifacts (manifest.json, config) for dependencies
-// using their local .tar file checksums from build-info-go
-// This function:
-// 1. Gets dependencies from build info (which have .tar file checksums from build-info-go)
-// 2. For each dependency with a .tar SHA256 checksum, searches Artifactory for manifest.json and config
-// 3. Adds those artifacts as separate dependencies to the build info
 func addDependencyOCIArtifactsFromLocalChecksums(buildInfo *entities.BuildInfo, workingDir string) error {
 	if buildInfo == nil || len(buildInfo.Modules) == 0 {
 		return nil
@@ -670,9 +617,7 @@ func addDependencyOCIArtifactsFromLocalChecksums(buildInfo *entities.BuildInfo, 
 
 	for moduleIdx := range buildInfo.Modules {
 		module := &buildInfo.Modules[moduleIdx]
-		if err := processModuleDependenciesForOCI(module, moduleIdx, buildInfo, serviceManager, workingDir); err != nil {
-			log.Debug(fmt.Sprintf("Failed to process dependencies for module[%d]: %v", moduleIdx, err))
-		}
+		processModuleDependenciesForOCI(module, moduleIdx, buildInfo, serviceManager, workingDir)
 	}
 	return nil
 }
@@ -695,13 +640,13 @@ func createServiceManagerForDependencies() (artifactory.ArtifactoryServicesManag
 }
 
 // processModuleDependenciesForOCI processes dependencies for a module and adds OCI artifacts
-func processModuleDependenciesForOCI(module *entities.Module, moduleIdx int, buildInfo *entities.BuildInfo, serviceManager artifactory.ArtifactoryServicesManager, workingDir string) error {
+func processModuleDependenciesForOCI(module *entities.Module, moduleIdx int, buildInfo *entities.BuildInfo, serviceManager artifactory.ArtifactoryServicesManager, workingDir string) {
 	log.Debug(fmt.Sprintf("Processing module[%d]: %s with %d dependencies", moduleIdx, module.Id, len(module.Dependencies)))
 	processedDeps := make(map[string]bool)
 	for i := range module.Dependencies {
 		dep := &module.Dependencies[i]
-		if processedDeps[dep.Id] || dep.Checksum.Sha256 == "" {
-			if dep.Checksum.Sha256 == "" {
+		if processedDeps[dep.Id] || dep.Sha256 == "" {
+			if dep.Sha256 == "" {
 				log.Debug(fmt.Sprintf("Dependency %s has no SHA256 checksum, skipping OCI artifact search", dep.Id))
 			}
 			continue
@@ -713,12 +658,11 @@ func processModuleDependenciesForOCI(module *entities.Module, moduleIdx int, bui
 		}
 	}
 	log.Debug(fmt.Sprintf("Module[%d] %s: Processed %d dependencies", moduleIdx, module.Id, len(module.Dependencies)))
-	return nil
 }
 
 // processDependencyOCIArtifacts processes OCI artifacts for a single dependency
 func processDependencyOCIArtifacts(dep *entities.Dependency, depIdx int, module *entities.Module, moduleIdx int, buildInfo *entities.BuildInfo, serviceManager artifactory.ArtifactoryServicesManager, workingDir string) error {
-	layerSha256 := dep.Checksum.Sha256
+	layerSha256 := dep.Sha256
 	log.Debug(fmt.Sprintf("Searching for OCI artifacts for dependency %s", dep.Id))
 
 	versionPath, depRepo := extractDependencyPathAndRepo(dep.Id, workingDir, serviceManager)
@@ -733,16 +677,9 @@ func processDependencyOCIArtifacts(dep *entities.Dependency, depIdx int, module 
 		return addOCIArtifactsToDependencies(dep, depIdx, module, moduleIdx, buildInfo, ociArtifacts, layerSha256)
 	}
 
-	// Extract dependency name from ID
-	parts := strings.Split(dep.Id, ":")
-	depName := parts[0]
-	if len(parts) != 2 {
-		depName = ""
-	}
-
 	// Search directly by name/version path (more efficient than SHA256 search)
 	log.Debug(fmt.Sprintf("Searching for OCI artifacts for dependency %s in repository %s, path: %s", dep.Id, depRepo, versionPath))
-	ociArtifacts, dirPath, err := searchDependencyOCIFilesByPath(serviceManager, depRepo, versionPath, depName, layerSha256)
+	ociArtifacts, dirPath, err := searchDependencyOCIFilesByPath(serviceManager, depRepo, versionPath, "", layerSha256)
 	if err != nil {
 		log.Warn(fmt.Sprintf("Failed to search OCI artifacts for dependency %s in path %s/%s: %v", dep.Id, depRepo, versionPath, err))
 		// Try fallback to SHA256 search
@@ -817,12 +754,6 @@ func addOCIDependency(module *entities.Module, resultItem *servicesUtils.ResultI
 }
 
 // searchDependencyOCIFilesByLayerSha256 searches for OCI artifacts (manifest.json, config) using AQL query with the layer SHA256
-// The layer SHA256 is the SHA256 of the .tar file. OCI artifacts may be stored in multiple locations:
-// 1. Same directory as the layer (e.g., postgresql/_uploads/)
-// 2. Version-specific directory (e.g., postgresql/14.3.3/)
-// versionPath is optional and should be in format "name/version" (e.g., "postgresql/14.3.3")
-// repository is the Artifactory repository name to search in (if empty, searches all repositories)
-// Returns: map of artifact name -> ResultItem, directory path, error
 func searchDependencyOCIFilesByLayerSha256(layerSha256 string, serviceManager artifactory.ArtifactoryServicesManager, versionPath string, repository string) (map[string]*servicesUtils.ResultItem, string, error) {
 	layerFile, err := findLayerFileBySha256(layerSha256, serviceManager, repository)
 	if err != nil {
@@ -949,12 +880,8 @@ func searchOCIFilesInPath(serviceManager artifactory.ArtifactoryServicesManager,
 }
 
 // createAqlQueryForLayerFile creates an AQL query to find the OCI layer file by its SHA256 checksum
-// repository is optional - if provided, searches only in that repository; if empty, searches all repositories
 func createAqlQueryForLayerFile(layerSha256 string, repository string) string {
-	// Remove "sha256:" prefix if present (AQL uses just the hex string)
 	sha256Hex := strings.TrimPrefix(layerSha256, "sha256:")
-	// AQL query to find file with matching SHA256
-	// Note: In Artifactory AQL, checksum fields are: sha256 (correct), actual_sha1, actual_md5
 	var query string
 	if repository != "" {
 		query = fmt.Sprintf(`items.find({
@@ -970,8 +897,7 @@ func createAqlQueryForLayerFile(layerSha256 string, repository string) string {
 }
 
 // searchDependencyOCIFilesByPath searches for OCI artifacts directly by chart name/version path
-// This is more efficient than searching by SHA256 first, as we already know the path from Chart.yaml/Chart.lock
-func searchDependencyOCIFilesByPath(serviceManager artifactory.ArtifactoryServicesManager, repo, versionPath, depName, layerSha256 string) (map[string]*servicesUtils.ResultItem, string, error) {
+func searchDependencyOCIFilesByPath(serviceManager artifactory.ArtifactoryServicesManager, repo, versionPath, _ string, layerSha256 string) (map[string]*servicesUtils.ResultItem, string, error) {
 	log.Debug(fmt.Sprintf("Searching for OCI artifacts in path: %s/%s", repo, versionPath))
 
 	// Search for OCI artifacts directly in the version-specific directory
@@ -1001,7 +927,7 @@ func searchDependencyOCIFilesByPath(serviceManager artifactory.ArtifactoryServic
 		if len(pathParts) > 1 {
 			parentPath := pathParts[0]
 			log.Debug(fmt.Sprintf("Trying parent path: %s/%s", repo, parentPath))
-			return searchDependencyOCIFilesByPath(serviceManager, repo, parentPath, depName, layerSha256)
+			return searchDependencyOCIFilesByPath(serviceManager, repo, parentPath, "", layerSha256)
 		}
 		log.Debug(fmt.Sprintf("No OCI artifacts found for dependency in path: %s/%s (no parent directory to try)", repo, versionPath))
 		return nil, "", fmt.Errorf("no OCI artifacts found for dependency in path: %s/%s", repo, versionPath)
@@ -1044,7 +970,19 @@ func resolveHelmRepositoryAlias(alias string) (string, error) {
 	// Find the repositories.yaml file path
 	var configPath string
 	if envPath := os.Getenv("HELM_REPOSITORY_CONFIG"); envPath != "" {
-		configPath = envPath
+		// Validate path to prevent path traversal attacks
+		if strings.Contains(envPath, "..") {
+			return "", fmt.Errorf("path traversal detected in HELM_REPOSITORY_CONFIG: %s", envPath)
+		}
+		absPath, err := filepath.Abs(envPath)
+		if err != nil {
+			return "", fmt.Errorf("failed to resolve absolute path for HELM_REPOSITORY_CONFIG: %w", err)
+		}
+		cleanedPath := filepath.Clean(absPath)
+		if cleanedPath != absPath {
+			return "", fmt.Errorf("invalid path detected in HELM_REPOSITORY_CONFIG: %s", envPath)
+		}
+		configPath = cleanedPath
 	} else {
 		home, err := os.UserHomeDir()
 		if err != nil {
@@ -1115,60 +1053,53 @@ func getRepositoryForDependency(depName, workingDir string) string {
 		return ""
 	}
 
-		// Find the dependency and extract repository
-		for _, dep := range chartYAML.Dependencies {
-			if dep.Name == depName {
-				if dep.Repository == "" {
-					return ""
-				}
-
-				repoURL := dep.Repository
-
-				// Check if repository is an alias (starts with "@")
-				if strings.HasPrefix(repoURL, "@") {
-					resolvedURL, err := resolveHelmRepositoryAlias(repoURL)
-					if err != nil {
-						log.Debug(fmt.Sprintf("Failed to resolve repository alias %s for dependency %s: %v", repoURL, depName, err))
-						return ""
-					}
-					repoURL = resolvedURL
-				}
-
-				// Extract repository name from OCI URL
-				// Format: oci://<host>/artifactory/<repo> or oci://<host>/<repo>
-				repoURL = strings.TrimPrefix(repoURL, "oci://")
-				if strings.Contains(repoURL, "://") {
-					parts := strings.Split(repoURL, "://")
-					if len(parts) > 1 {
-						repoURL = parts[1]
-					}
-				}
-
-				parts := strings.Split(repoURL, "/")
-				for j, part := range parts {
-					if part == "artifactory" && j+1 < len(parts) {
-						return parts[j+1]
-					}
-				}
-				// If no "artifactory" found, return the last part
-				if len(parts) > 0 {
-					return parts[len(parts)-1]
-				}
+	// Find the dependency and extract repository
+	for _, dep := range chartYAML.Dependencies {
+		if dep.Name == depName {
+			if dep.Repository == "" {
 				return ""
 			}
+
+			repoURL := dep.Repository
+
+			// Check if repository is an alias (starts with "@")
+			if strings.HasPrefix(repoURL, "@") {
+				resolvedURL, err := resolveHelmRepositoryAlias(repoURL)
+				if err != nil {
+					log.Debug(fmt.Sprintf("Failed to resolve repository alias %s for dependency %s: %v", repoURL, depName, err))
+					return ""
+				}
+				repoURL = resolvedURL
+			}
+
+			// Extract repository name from OCI URL
+			// Format: oci://<host>/artifactory/<repo> or oci://<host>/<repo>
+			repoURL = strings.TrimPrefix(repoURL, "oci://")
+			if strings.Contains(repoURL, "://") {
+				parts := strings.Split(repoURL, "://")
+				if len(parts) > 1 {
+					repoURL = parts[1]
+				}
+			}
+
+			parts := strings.Split(repoURL, "/")
+			for j, part := range parts {
+				if part == "artifactory" && j+1 < len(parts) {
+					return parts[j+1]
+				}
+			}
+			// If no "artifactory" found, return the last part
+			if len(parts) > 0 {
+				return parts[len(parts)-1]
+			}
+			return ""
 		}
+	}
 
 	return ""
 }
 
 // addDependenciesFromHelmTemplate collects dependencies for install/upgrade/template commands
-// This function:
-// 1. Gets dependencies from Chart.yaml with resolved versions from Chart.lock
-//    (Chart.lock is updated by helm install/upgrade commands, but may not exist for template)
-// 2. For install/upgrade: Filters dependencies based on charts/ directory (conditions evaluation)
-// 3. For template: Uses all dependencies from Chart.yaml (template doesn't download dependencies)
-// 4. Searches Artifactory for each dependency to get checksums
-// 5. Adds dependencies to build info
 func addDependenciesFromHelmTemplate(buildInfo *entities.BuildInfo, workingDir string) error {
 	if buildInfo == nil || len(buildInfo.Modules) == 0 {
 		return nil
@@ -1181,14 +1112,12 @@ func addDependenciesFromHelmTemplate(buildInfo *entities.BuildInfo, workingDir s
 	if serviceManager == nil {
 		return nil
 	}
-
 	isTemplateCmd := isHelmTemplateCommand()
 	if !isTemplateCmd {
 		if err := runHelmTemplateForValidation(workingDir); err != nil {
 			log.Debug(fmt.Sprintf("Helm template validation failed (non-fatal): %v", err))
 		}
 	}
-
 	dependencies, err := getFilteredDependencies(workingDir, isTemplateCmd)
 	if err != nil {
 		return err
@@ -1196,16 +1125,12 @@ func addDependenciesFromHelmTemplate(buildInfo *entities.BuildInfo, workingDir s
 	if len(dependencies) == 0 {
 		return nil
 	}
-
 	return addDependenciesToModules(buildInfo, dependencies, serviceManager, workingDir, isTemplateCmd)
 }
 
 // runHelmTemplateForValidation runs helm template for validation
 func runHelmTemplateForValidation(workingDir string) error {
-	helmArgs, err := extractHelmArgsForTemplate()
-	if err != nil {
-		return fmt.Errorf("failed to extract helm arguments: %w", err)
-	}
+	helmArgs := extractHelmArgsForTemplate()
 
 	log.Debug(fmt.Sprintf("Running helm template with arguments: %v (for validation)", helmArgs))
 	templateCmd := exec.Command("helm", append([]string{"template"}, helmArgs...)...)
@@ -1243,17 +1168,12 @@ func getFilteredDependencies(workingDir string, isTemplateCmd bool) ([]entities.
 func addDependenciesToModules(buildInfo *entities.BuildInfo, dependencies []entities.Dependency, serviceManager artifactory.ArtifactoryServicesManager, workingDir string, isTemplateCmd bool) error {
 	log.Debug(fmt.Sprintf("Found %d dependencies in Chart.yaml", len(dependencies)))
 
-	// For install/upgrade commands, dependencies from build-info-go already have SHA256 checksums
-	// We can skip the name/version search and go directly to OCI artifact collection
-	// Only search by name/version if dependencies don't already have checksums
 	hasChecksums := checkIfDependenciesHaveChecksums(buildInfo)
 	if !hasChecksums {
 		// Dependencies don't have checksums yet, try to find them by name/version
 		for moduleIdx := range buildInfo.Modules {
 			module := &buildInfo.Modules[moduleIdx]
-			if err := addDependenciesToModule(module, moduleIdx, dependencies, serviceManager, workingDir); err != nil {
-				log.Debug(fmt.Sprintf("Failed to add dependencies to module[%d]: %v", moduleIdx, err))
-			}
+			addDependenciesToModule(module, moduleIdx, dependencies, serviceManager, workingDir)
 		}
 	} else {
 		log.Debug("Dependencies already have checksums from build-info-go, skipping name/version search")
@@ -1271,7 +1191,7 @@ func addDependenciesToModules(buildInfo *entities.BuildInfo, dependencies []enti
 	if isTemplateCmd {
 		commandType = "template"
 	}
-	
+
 	// Count actual dependencies added (from buildInfo, not from Chart.yaml)
 	totalDeps := 0
 	for _, module := range buildInfo.Modules {
@@ -1285,7 +1205,7 @@ func addDependenciesToModules(buildInfo *entities.BuildInfo, dependencies []enti
 func checkIfDependenciesHaveChecksums(buildInfo *entities.BuildInfo) bool {
 	for _, module := range buildInfo.Modules {
 		for _, dep := range module.Dependencies {
-			if dep.Checksum.Sha256 != "" {
+			if dep.Sha256 != "" {
 				return true
 			}
 		}
@@ -1294,7 +1214,7 @@ func checkIfDependenciesHaveChecksums(buildInfo *entities.BuildInfo) bool {
 }
 
 // addDependenciesToModule adds dependencies to a single module by searching Artifactory
-func addDependenciesToModule(module *entities.Module, moduleIdx int, dependencies []entities.Dependency, serviceManager artifactory.ArtifactoryServicesManager, workingDir string) error {
+func addDependenciesToModule(module *entities.Module, moduleIdx int, dependencies []entities.Dependency, serviceManager artifactory.ArtifactoryServicesManager, workingDir string) {
 	log.Debug(fmt.Sprintf("Processing module[%d]: %s", moduleIdx, module.Id))
 
 	for _, dep := range dependencies {
@@ -1305,25 +1225,26 @@ func addDependenciesToModule(module *entities.Module, moduleIdx int, dependencie
 		}
 
 		module.Dependencies = append(module.Dependencies, depEntity)
-		log.Debug(fmt.Sprintf("Added dependency: %s (sha256: %s)", depEntity.Id, depEntity.Checksum.Sha256))
+		log.Debug(fmt.Sprintf("Added dependency: %s (sha256: %s)", depEntity.Id, depEntity.Sha256))
 	}
-	return nil
 }
 
 // isHelmTemplateCommand checks if the current command was a Helm template command
 func isHelmTemplateCommand() bool {
+	cmdPos := getHelmCommandPosition()
+	if cmdPos == -1 {
+		return false
+	}
 	args := os.Args
-	for _, arg := range args {
-		if arg == "template" {
-			return true
-		}
+	if cmdPos < len(args) && args[cmdPos] == "template" {
+		return true
 	}
 	return false
 }
 
 // extractHelmArgsForTemplate extracts helm arguments from os.Args, removing build flags
 // Returns arguments suitable for helm template command (without "install"/"upgrade"/"template" command name)
-func extractHelmArgsForTemplate() ([]string, error) {
+func extractHelmArgsForTemplate() []string {
 	args := os.Args
 	var helmArgs []string
 	foundHelm := false
@@ -1387,7 +1308,7 @@ func extractHelmArgsForTemplate() ([]string, error) {
 		helmArgs = append(helmArgs, arg)
 	}
 
-	return helmArgs, nil
+	return helmArgs
 }
 
 // getDependenciesFromChartYAML reads Chart.yaml and returns dependency information
@@ -1587,25 +1508,23 @@ func updateDependencyVersionsInModules(buildInfo *entities.BuildInfo, lockVersio
 		module := &buildInfo.Modules[moduleIdx]
 		for i := range module.Dependencies {
 			dep := &module.Dependencies[i]
-			if err := updateDependencyVersionIfNeeded(dep, lockVersions); err != nil {
-				log.Debug(fmt.Sprintf("Failed to update dependency version: %v", err))
-			}
+			updateDependencyVersionIfNeeded(dep, lockVersions)
 		}
 	}
 	return nil
 }
 
 // updateDependencyVersionIfNeeded updates a dependency version if it's a range and a resolved version exists
-func updateDependencyVersionIfNeeded(dep *entities.Dependency, lockVersions map[string]string) error {
+func updateDependencyVersionIfNeeded(dep *entities.Dependency, lockVersions map[string]string) {
 	parts := strings.Split(dep.Id, ":")
 	if len(parts) != 2 {
-		return nil
+		return
 	}
 	depName := parts[0]
 	currentVersion := parts[1]
 
 	if !isVersionRange(currentVersion) {
-		return nil
+		return
 	}
 
 	if resolvedVersion, found := lockVersions[depName]; found {
@@ -1616,7 +1535,6 @@ func updateDependencyVersionIfNeeded(dep *entities.Dependency, lockVersions map[
 	} else {
 		log.Debug(fmt.Sprintf("No resolved version found in Chart.lock for dependency: %s", depName))
 	}
-	return nil
 }
 
 // isVersionRange checks if a version string is a version range
@@ -1643,8 +1561,6 @@ func searchDependencyInArtifactory(dep entities.Dependency, serviceManager artif
 		depName = parts[0]
 		depVersion = parts[1]
 	} else {
-		// Format: path/name (already updated from Artifactory)
-		// Example: "postgresql/14.3.3/postgresql-14.3.3.tgz"
 		pathParts := strings.Split(dep.Id, "/")
 		if len(pathParts) >= 2 {
 			// First part is the name, second part is usually the version
@@ -1662,7 +1578,6 @@ func searchDependencyInArtifactory(dep entities.Dependency, serviceManager artif
 	// Get repository for this dependency from Chart.yaml
 	depRepo := getRepositoryForDependency(depName, workingDir)
 	if depRepo == "" {
-		// Fall back to default repository
 		var err error
 		depRepo, err = getHelmRepositoryFromArgs(serviceManager)
 		if err != nil {
@@ -1685,7 +1600,6 @@ func searchDependencyInArtifactory(dep entities.Dependency, serviceManager artif
 	}
 	defer ioutils.Close(reader, &err)
 
-	// Get the first result (should be the .tar file)
 	var resultItem *servicesUtils.ResultItem
 	for item := new(servicesUtils.ResultItem); reader.NextRecord(item) == nil; item = new(servicesUtils.ResultItem) {
 		if item.Type != "folder" {
@@ -1697,19 +1611,12 @@ func searchDependencyInArtifactory(dep entities.Dependency, serviceManager artif
 	if resultItem == nil {
 		return dep, fmt.Errorf("dependency %s not found in Artifactory", dep.Id)
 	}
-
-	// Update dependency with checksums from Artifactory
-	// Keep the original ID format (name:version) for the main dependency
-	// The .tar file path will be added as a separate dependency by addDependencyOCIArtifactsFromArtifactory
 	dep.Checksum = entities.Checksum{
 		Sha1:   resultItem.Actual_Sha1,
 		Sha256: resultItem.Sha256,
 		Md5:    resultItem.Actual_Md5,
 	}
-	// Keep the original ID format (name:version), don't change it to the .tar file path
-	// The ID will be updated later by addDependencyOCIArtifactsFromArtifactory when it finds the layer file
-
-	log.Debug(fmt.Sprintf("Found dependency %s in Artifactory: %s (sha256: %s, path: %s/%s)", depName, dep.Id, dep.Checksum.Sha256, resultItem.Path, resultItem.Name))
+	log.Debug(fmt.Sprintf("Found dependency %s in Artifactory: %s (sha256: %s, path: %s/%s)", depName, dep.Id, dep.Sha256, resultItem.Path, resultItem.Name))
 	return dep, nil
 }
 
@@ -1731,23 +1638,21 @@ func addDependencyOCIArtifactsFromArtifactory(buildInfo *entities.BuildInfo, wor
 
 	for moduleIdx := range buildInfo.Modules {
 		module := &buildInfo.Modules[moduleIdx]
-		if err := processModuleDependenciesForOCIFromArtifactory(module, moduleIdx, buildInfo, serviceManager, workingDir); err != nil {
-			log.Debug(fmt.Sprintf("Failed to process dependencies for module[%d]: %v", moduleIdx, err))
-		}
+		processModuleDependenciesForOCIFromArtifactory(module, moduleIdx, buildInfo, serviceManager, workingDir)
 	}
 
 	return nil
 }
 
 // processModuleDependenciesForOCIFromArtifactory processes dependencies for a module and adds OCI artifacts from Artifactory
-func processModuleDependenciesForOCIFromArtifactory(module *entities.Module, moduleIdx int, buildInfo *entities.BuildInfo, serviceManager artifactory.ArtifactoryServicesManager, workingDir string) error {
+func processModuleDependenciesForOCIFromArtifactory(module *entities.Module, moduleIdx int, buildInfo *entities.BuildInfo, serviceManager artifactory.ArtifactoryServicesManager, workingDir string) {
 	log.Debug(fmt.Sprintf("Processing module[%d]: %s with %d dependencies", moduleIdx, module.Id, len(module.Dependencies)))
 
 	processedDeps := make(map[string]bool)
 	for i := range module.Dependencies {
 		dep := &module.Dependencies[i]
-		if processedDeps[dep.Id] || dep.Checksum.Sha256 == "" {
-			if dep.Checksum.Sha256 == "" {
+		if processedDeps[dep.Id] || dep.Sha256 == "" {
+			if dep.Sha256 == "" {
 				log.Debug(fmt.Sprintf("Dependency %s has no SHA256 checksum, skipping OCI artifact search", dep.Id))
 			}
 			continue
@@ -1760,15 +1665,14 @@ func processModuleDependenciesForOCIFromArtifactory(module *entities.Module, mod
 	}
 
 	log.Debug(fmt.Sprintf("Module[%d] %s: Processed %d dependencies", moduleIdx, module.Id, len(module.Dependencies)))
-	return nil
 }
 
 // processDependencyOCIArtifactsFromArtifactory processes OCI artifacts for a single dependency from Artifactory
 func processDependencyOCIArtifactsFromArtifactory(dep *entities.Dependency, depIdx int, module *entities.Module, moduleIdx int, buildInfo *entities.BuildInfo, serviceManager artifactory.ArtifactoryServicesManager, workingDir string) error {
-	layerSha256 := dep.Checksum.Sha256
+	layerSha256 := dep.Sha256
 	log.Debug(fmt.Sprintf("Searching for OCI artifacts for dependency %s", dep.Id))
 
-	depName, versionPath, depRepo := extractDependencyInfoFromID(dep.Id, workingDir, serviceManager)
+	_, versionPath, depRepo := extractDependencyInfoFromID(dep.Id, workingDir, serviceManager)
 	if versionPath == "" {
 		// Fallback to SHA256 search if we can't extract name/version
 		log.Debug(fmt.Sprintf("Could not extract version path from dependency ID %s, falling back to SHA256 search", dep.Id))
@@ -1781,7 +1685,7 @@ func processDependencyOCIArtifactsFromArtifactory(dep *entities.Dependency, depI
 	}
 
 	// Search directly by name/version path (more efficient than SHA256 search)
-	ociArtifacts, dirPath, err := searchDependencyOCIFilesByPath(serviceManager, depRepo, versionPath, depName, layerSha256)
+	ociArtifacts, dirPath, err := searchDependencyOCIFilesByPath(serviceManager, depRepo, versionPath, "", layerSha256)
 	if err != nil {
 		return fmt.Errorf("failed to search OCI artifacts: %w", err)
 	}
@@ -1803,35 +1707,33 @@ func deduplicateDependencies(buildInfo *entities.BuildInfo) {
 			continue
 		}
 
-		// Map to track dependencies by SHA256 checksum
 		// Keep the dependency with the most complete path (longest ID)
 		seenChecksums := make(map[string]int)
 		uniqueDeps := make([]entities.Dependency, 0, len(module.Dependencies))
 
 		for _, dep := range module.Dependencies {
-			if dep.Checksum.Sha256 == "" {
+			if dep.Sha256 == "" {
 				// If no SHA256, keep it (might be a placeholder or OCI artifact)
 				uniqueDeps = append(uniqueDeps, dep)
 				continue
 			}
 
 			// Check if we've seen this SHA256 before
-			if existingIdx, found := seenChecksums[dep.Checksum.Sha256]; found {
+			if existingIdx, found := seenChecksums[dep.Sha256]; found {
 				// Compare IDs - keep the one with the longer/more complete path
 				existingDep := uniqueDeps[existingIdx]
 				if len(dep.Id) > len(existingDep.Id) {
-					// Replace with the new dependency (has longer ID, likely the updated one)
 					uniqueDeps[existingIdx] = dep
 					log.Debug(fmt.Sprintf("Removing duplicate dependency %s (keeping %s with same SHA256: %s)",
-						existingDep.Id, dep.Id, dep.Checksum.Sha256))
+						existingDep.Id, dep.Id, dep.Sha256))
 				} else {
 					// Keep the existing one
 					log.Debug(fmt.Sprintf("Removing duplicate dependency %s (keeping %s with same SHA256: %s)",
-						dep.Id, existingDep.Id, dep.Checksum.Sha256))
+						dep.Id, existingDep.Id, dep.Sha256))
 				}
 			} else {
 				// First time seeing this SHA256, add it
-				seenChecksums[dep.Checksum.Sha256] = len(uniqueDeps)
+				seenChecksums[dep.Sha256] = len(uniqueDeps)
 				uniqueDeps = append(uniqueDeps, dep)
 			}
 		}
@@ -1872,4 +1774,3 @@ func extractDependencyInfoFromID(depId, workingDir string, serviceManager artifa
 
 	return depName, versionPath, depRepo
 }
-
