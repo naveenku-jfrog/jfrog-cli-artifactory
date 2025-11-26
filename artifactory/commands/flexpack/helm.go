@@ -897,7 +897,7 @@ func createAqlQueryForLayerFile(layerSha256 string, repository string) string {
 }
 
 // searchDependencyOCIFilesByPath searches for OCI artifacts directly by chart name/version path
-func searchDependencyOCIFilesByPath(serviceManager artifactory.ArtifactoryServicesManager, repo, versionPath, _ string, layerSha256 string) (map[string]*servicesUtils.ResultItem, string, error) {
+func searchDependencyOCIFilesByPath(serviceManager artifactory.ArtifactoryServicesManager, repo, versionPath, _ string, _ string) (map[string]*servicesUtils.ResultItem, string, error) {
 	log.Debug(fmt.Sprintf("Searching for OCI artifacts in path: %s/%s", repo, versionPath))
 
 	// Search for OCI artifacts directly in the version-specific directory
@@ -927,7 +927,7 @@ func searchDependencyOCIFilesByPath(serviceManager artifactory.ArtifactoryServic
 		if len(pathParts) > 1 {
 			parentPath := pathParts[0]
 			log.Debug(fmt.Sprintf("Trying parent path: %s/%s", repo, parentPath))
-			return searchDependencyOCIFilesByPath(serviceManager, repo, parentPath, "", layerSha256)
+			return searchDependencyOCIFilesByPath(serviceManager, repo, parentPath, "", "")
 		}
 		log.Debug(fmt.Sprintf("No OCI artifacts found for dependency in path: %s/%s (no parent directory to try)", repo, versionPath))
 		return nil, "", fmt.Errorf("no OCI artifacts found for dependency in path: %s/%s", repo, versionPath)
@@ -1128,9 +1128,33 @@ func addDependenciesFromHelmTemplate(buildInfo *entities.BuildInfo, workingDir s
 	return addDependenciesToModules(buildInfo, dependencies, serviceManager, workingDir, isTemplateCmd)
 }
 
+// validateHelmArgs validates Helm arguments to prevent command injection
+// Returns an error if any argument contains potentially dangerous characters
+func validateHelmArgs(args []string) error {
+	// Dangerous characters that could be used for command injection
+	dangerousChars := []string{";", "&", "|", "`", "$", "(", ")", "<", ">", "\n", "\r"}
+	for _, arg := range args {
+		for _, char := range dangerousChars {
+			if strings.Contains(arg, char) {
+				return fmt.Errorf("invalid character in Helm argument: %s (contains: %s)", arg, char)
+			}
+		}
+		// Check for command substitution attempts
+		if strings.Contains(arg, "$(") || strings.Contains(arg, "${") {
+			return fmt.Errorf("command substitution detected in Helm argument: %s", arg)
+		}
+	}
+	return nil
+}
+
 // runHelmTemplateForValidation runs helm template for validation
 func runHelmTemplateForValidation(workingDir string) error {
 	helmArgs := extractHelmArgsForTemplate()
+
+	// Validate arguments to prevent command injection
+	if err := validateHelmArgs(helmArgs); err != nil {
+		return fmt.Errorf("failed to validate Helm arguments: %w", err)
+	}
 
 	log.Debug(fmt.Sprintf("Running helm template with arguments: %v (for validation)", helmArgs))
 	templateCmd := exec.Command("helm", append([]string{"template"}, helmArgs...)...)
