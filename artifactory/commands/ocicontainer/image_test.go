@@ -186,9 +186,11 @@ func TestBuildRemoteRepoUrl(t *testing.T) {
 	}{
 		{"localhost:8082/docker-local/hello-world:123", true, "https://localhost:8082/v2/docker-local/hello-world/manifests/123"},
 		{"localhost:8082/docker-local/hello-world:latest", true, "https://localhost:8082/v2/docker-local/hello-world/manifests/latest"},
+		// It's local host
 		{"localhost:8082/docker-local/hello-world:latest", false, "http://localhost:8082/v2/docker-local/hello-world/manifests/latest"},
 		{"jfrog-docker-local.jfrog.io/hello-world:123", true, "https://jfrog-docker-local.jfrog.io/v2/hello-world/manifests/123"},
 		{"jfrog-docker-local.jfrog.io/hello-world:latest", true, "https://jfrog-docker-local.jfrog.io/v2/hello-world/manifests/latest"},
+		// It's local host
 		{"jfrog-docker-local.jfrog.io/hello-world:123", false, "http://jfrog-docker-local.jfrog.io/v2/hello-world/manifests/123"},
 	}
 	for _, v := range data {
