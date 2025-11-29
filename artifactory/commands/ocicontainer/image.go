@@ -172,7 +172,7 @@ func buildRequestUrl(longImageName, imageTag, containerRegistryUrl string, https
 	if https {
 		return "https://" + endpoint
 	}
-	// It's for local host
+	// #nosec It's for local host only
 	return "http://" + endpoint
 }
 
