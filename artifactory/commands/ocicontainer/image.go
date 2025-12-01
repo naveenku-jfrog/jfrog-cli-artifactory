@@ -12,6 +12,11 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/log"
 )
 
+const (
+	SchemeHTTP  = "http"
+	SchemeHTTPS = "https"
+)
+
 type Image struct {
 	// Image name includes the registry domain, image base name and image tag e.g.: my-registry:port/docker-local/hello-world:latest.
 	name string
@@ -167,13 +172,12 @@ func (image *Image) GetRemoteRepo(serviceManager artifactory.ArtifactoryServices
 }
 
 // Returns the name of the repository containing the image in Artifactory.
-func buildRequestUrl(longImageName, imageTag, containerRegistryUrl string, https bool) string {
+func buildRequestUrl(longImageName, imageTag, containerRegistryUrl string, isSecure bool) string {
 	endpoint := path.Join(containerRegistryUrl, "v2", longImageName, "manifests", imageTag)
-	if https {
-		return "https://" + endpoint
+	if isSecure {
+		return SchemeHTTPS + "://" + endpoint
 	}
-	// #nosec It's for local host only
-	return "http://" + endpoint
+	return SchemeHTTP + "://" + endpoint
 }
 
 func getStatusForbiddenErrorMessage() string {
