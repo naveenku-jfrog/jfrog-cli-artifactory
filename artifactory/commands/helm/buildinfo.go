@@ -20,10 +20,18 @@ func CollectHelmBuildInfoWithFlexPack(workingDir, buildName, buildNumber string)
 	if err != nil {
 		return fmt.Errorf("failed to collect build info: %w", err)
 	}
-	buildInfo.Modules[0].Dependencies[0].Sha256 = ""
-	buildInfo.Modules[0].Dependencies[0].Sha1 = ""
-	buildInfo.Modules[0].Dependencies[0].Md5 = ""
-	buildInfo.Modules[0].Dependencies[0].Repository = "https://rteco549demo.jfrogdev.org/artifactory/rteco549-classic-helm"
+
+	if buildInfo == nil {
+		log.Debug("No build info collected, skipping further processing")
+		return nil
+	}
+
+	if len(buildInfo.Modules) == 0 {
+		log.Debug("No modules found in build info, skipping dependency processing")
+		handlePushCommand(buildInfo, workingDir)
+		return saveBuildInfo(buildInstance, buildInfo, buildName, buildNumber)
+	}
+
 	handlePushCommand(buildInfo, workingDir)
 	updateDependencyArtifactsChecksumInBuildInfo(buildInfo)
 
