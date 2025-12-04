@@ -104,11 +104,12 @@ func searchHelmChartArtifacts(chartName, chartVersion, repoName string, serviceM
 		ioutils.Close(reader, &closeErr)
 	}()
 
-	return collectArtifactsFromSearch(reader)
+	artifacts := collectArtifactsFromSearch(reader)
+	return artifacts, nil
 }
 
 // collectArtifactsFromSearch collects artifacts from search results
-func collectArtifactsFromSearch(reader *content.ContentReader) ([]entities.Artifact, error) {
+func collectArtifactsFromSearch(reader *content.ContentReader) []entities.Artifact {
 	var artifacts []entities.Artifact
 
 	for resultItem := new(servicesUtils.ResultItem); reader.NextRecord(resultItem) == nil; resultItem = new(servicesUtils.ResultItem) {
@@ -126,8 +127,8 @@ func collectArtifactsFromSearch(reader *content.ContentReader) ([]entities.Artif
 
 	if len(artifacts) == 0 {
 		log.Debug("No Helm chart artifacts found in Artifactory")
-		return nil, nil
+		return nil
 	}
 
-	return artifacts, nil
+	return artifacts
 }

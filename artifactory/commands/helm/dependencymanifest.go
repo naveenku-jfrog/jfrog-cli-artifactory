@@ -78,7 +78,7 @@ func processModuleDependencies(module *entities.Module, moduleIdx int, buildInfo
 			continue
 		}
 
-		shouldIncrement := processDependency(dep, depIdx, module, moduleIdx, buildInfo, serviceManager, baseDepId)
+		shouldIncrement := processDependency(dep, depIdx, module, moduleIdx, buildInfo, serviceManager)
 		if shouldIncrement {
 			depIdx++
 		}
@@ -103,7 +103,7 @@ func shouldSkipDependency(dep *entities.Dependency, baseDepId string, processedD
 }
 
 // processDependency processes a single dependency and returns whether to increment the index
-func processDependency(dep *entities.Dependency, depIdx int, module *entities.Module, moduleIdx int, buildInfo *entities.BuildInfo, serviceManager artifactory.ArtifactoryServicesManager, baseDepId string) bool {
+func processDependency(dep *entities.Dependency, depIdx int, module *entities.Module, moduleIdx int, buildInfo *entities.BuildInfo, serviceManager artifactory.ArtifactoryServicesManager) bool {
 	if !isOCIRepository(dep.Repository) {
 		return processClassicHelmDependency(dep, depIdx, module, serviceManager)
 	}
@@ -146,7 +146,7 @@ func processOCIDependency(dep *entities.Dependency, depIdx int, module *entities
 		return true
 	}
 
-	if err := addManifestAndConfigForDependency(dep, depIdx, module, moduleIdx, buildInfo, serviceManager); err != nil {
+	if err := addManifestAndConfigForDependency(dep, module, moduleIdx, buildInfo, serviceManager); err != nil {
 		log.Debug(fmt.Sprintf("Failed to add manifest/config for dependency %s: %v", dep.Id, err))
 	}
 	return true
@@ -187,7 +187,7 @@ func extractBaseDependencyId(depId string) string {
 }
 
 // addManifestAndConfigForDependency adds manifest.json and config files for a single OCI dependency
-func addManifestAndConfigForDependency(dep *entities.Dependency, depIdx int, module *entities.Module, moduleIdx int, buildInfo *entities.BuildInfo, serviceManager artifactory.ArtifactoryServicesManager) error {
+func addManifestAndConfigForDependency(dep *entities.Dependency, module *entities.Module, moduleIdx int, buildInfo *entities.BuildInfo, serviceManager artifactory.ArtifactoryServicesManager) error {
 	versionPath := extractDependencyPath(dep.Id)
 	if versionPath == "" {
 		return fmt.Errorf("could not extract version path from dependency ID %s", dep.Id)
@@ -246,11 +246,14 @@ func addManifestAndConfigFromArtifacts(module *entities.Module, ociArtifacts map
 
 	manifestContent, err := downloadFileContentFromArtifactory(serviceManager, repoName, manifestItem.Path, manifestItem.Name)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	configLayerSha256, _, err := extractLayerChecksumsFromManifest(manifestContent)
-	if err != nil || configLayerSha256 == "" || hasConfig {
+	if err != nil {
+		return err
+	}
+	if configLayerSha256 == "" || hasConfig {
 		return nil
 	}
 

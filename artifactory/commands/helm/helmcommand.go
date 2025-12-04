@@ -21,7 +21,6 @@ type HelmCommand struct {
 	configuration    *buildUtils.BuildConfiguration
 	serverDetails    *config.ServerDetails
 	workingDirectory string
-	collectBuildInfo bool
 	serverId         string
 	username         string
 	password         string

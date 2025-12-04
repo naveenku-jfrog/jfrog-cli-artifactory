@@ -6,6 +6,12 @@ import (
 	"strings"
 )
 
+const (
+	oci          = "oci://"
+	schemeHttp   = "https"
+	schemeSecure = "http"
+)
+
 // getHelmRepositoryFromArgs extracts repository name from helm push command registry URL
 func getHelmRepositoryFromArgs() (string, error) {
 	registryURL := parseHelmFlags().registryURL
@@ -36,7 +42,7 @@ func extractRepositoryNameFromURL(repository string) string {
 
 // removeProtocolPrefix removes protocol prefix from URL
 func removeProtocolPrefix(repository string) string {
-	prefixes := []string{"oci://", "https://", "http://"}
+	prefixes := []string{oci, schemeHttp + "://", schemeSecure + "://"}
 
 	for _, prefix := range prefixes {
 		if strings.HasPrefix(repository, prefix) {
@@ -87,7 +93,7 @@ func isOCIRepository(repository string) bool {
 		return false
 	}
 
-	return strings.HasPrefix(repository, "oci://")
+	return strings.HasPrefix(repository, oci)
 }
 
 // resolveHelmRepositoryAlias resolves a Helm repository alias to its URL using helm repo list

@@ -20,9 +20,9 @@ func CollectHelmBuildInfoWithFlexPack(workingDir, buildName, buildNumber string)
 	if err != nil {
 		return fmt.Errorf("failed to collect build info: %w", err)
 	}
-	buildInfo.Modules[0].Dependencies[0].Checksum.Sha256 = ""
-	buildInfo.Modules[0].Dependencies[0].Checksum.Sha1 = ""
-	buildInfo.Modules[0].Dependencies[0].Checksum.Md5 = ""
+	buildInfo.Modules[0].Dependencies[0].Sha256 = ""
+	buildInfo.Modules[0].Dependencies[0].Sha1 = ""
+	buildInfo.Modules[0].Dependencies[0].Md5 = ""
 	buildInfo.Modules[0].Dependencies[0].Repository = "https://rteco549demo.jfrogdev.org/artifactory/rteco549-classic-helm"
 	handlePushCommand(buildInfo, workingDir)
 	updateDependencyArtifactsChecksumInBuildInfo(buildInfo)
