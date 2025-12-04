@@ -108,7 +108,7 @@ func processDependency(dep *entities.Dependency, depIdx int, module *entities.Mo
 		return processClassicHelmDependency(dep, depIdx, module, serviceManager)
 	}
 
-	return processOCIDependency(dep, depIdx, module, moduleIdx, buildInfo, serviceManager)
+	return processOCIDependency(dep, depIdx, module, serviceManager)
 }
 
 // processClassicHelmDependency handles classic Helm dependencies
@@ -131,7 +131,7 @@ func processClassicHelmDependency(dep *entities.Dependency, depIdx int, module *
 }
 
 // processOCIDependency handles OCI dependencies
-func processOCIDependency(dep *entities.Dependency, depIdx int, module *entities.Module, moduleIdx int, buildInfo *entities.BuildInfo, serviceManager artifactory.ArtifactoryServicesManager) bool {
+func processOCIDependency(dep *entities.Dependency, depIdx int, module *entities.Module, serviceManager artifactory.ArtifactoryServicesManager) bool {
 	if dep.Sha256 == "" {
 		addedLayers, err := addAllOCILayersForDependency(dep, module, serviceManager)
 		if err != nil {
