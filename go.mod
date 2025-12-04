@@ -16,6 +16,7 @@ require (
 	golang.org/x/exp v0.0.0-20251023183803-a4bb9ffd2546
 	golang.org/x/mod v0.29.0
 	gopkg.in/ini.v1 v1.67.0
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require golang.org/x/net v0.45.0 // indirect
@@ -93,13 +94,12 @@ require (
 	golang.org/x/term v0.37.0 // indirect
 	golang.org/x/text v0.30.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 //replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20251015045218-1a38c9e47097
 
 replace github.com/jfrog/jfrog-client-go => github.com/jfrog/jfrog-client-go v1.55.1-0.20251106114658-e01e86b037c8
 
-replace github.com/jfrog/build-info-go => github.com/naveenku-jfrog/build-info-go v1.12.1-0.20251126143612-aa523e62e51f
+replace github.com/jfrog/build-info-go => github.com/naveenku-jfrog/build-info-go v1.12.1-0.20251204140510-1d49e7aa4a2b
 
 replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20251026182600-8a8c0428f538
