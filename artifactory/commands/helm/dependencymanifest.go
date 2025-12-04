@@ -146,7 +146,7 @@ func processOCIDependency(dep *entities.Dependency, depIdx int, module *entities
 		return true
 	}
 
-	if err := addManifestAndConfigForDependency(dep, module, moduleIdx, buildInfo, serviceManager); err != nil {
+	if err := addManifestAndConfigForDependency(dep, module, serviceManager); err != nil {
 		log.Debug(fmt.Sprintf("Failed to add manifest/config for dependency %s: %v", dep.Id, err))
 	}
 	return true
@@ -187,7 +187,7 @@ func extractBaseDependencyId(depId string) string {
 }
 
 // addManifestAndConfigForDependency adds manifest.json and config files for a single OCI dependency
-func addManifestAndConfigForDependency(dep *entities.Dependency, module *entities.Module, moduleIdx int, buildInfo *entities.BuildInfo, serviceManager artifactory.ArtifactoryServicesManager) error {
+func addManifestAndConfigForDependency(dep *entities.Dependency, module *entities.Module, serviceManager artifactory.ArtifactoryServicesManager) error {
 	versionPath := extractDependencyPath(dep.Id)
 	if versionPath == "" {
 		return fmt.Errorf("could not extract version path from dependency ID %s", dep.Id)
