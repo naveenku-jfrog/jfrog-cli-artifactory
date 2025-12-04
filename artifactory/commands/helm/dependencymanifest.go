@@ -41,7 +41,7 @@ func updateDependencyArtifactsChecksumInBuildInfo(buildInfo *entities.BuildInfo)
 		}
 
 		existingManifestsAndConfigs := buildExistingManifestsAndConfigsMap(module)
-		processModuleDependencies(module, moduleIdx, buildInfo, serviceManager, processedDeps, existingManifestsAndConfigs)
+		processModuleDependencies(module, serviceManager, processedDeps, existingManifestsAndConfigs)
 	}
 
 	deduplicateDependencies(buildInfo)
@@ -67,7 +67,7 @@ func isManifestOrConfig(depId string) bool {
 }
 
 // processModuleDependencies processes all dependencies in a module
-func processModuleDependencies(module *entities.Module, moduleIdx int, buildInfo *entities.BuildInfo, serviceManager artifactory.ArtifactoryServicesManager, processedDeps, existingManifestsAndConfigs map[string]bool) {
+func processModuleDependencies(module *entities.Module, serviceManager artifactory.ArtifactoryServicesManager, processedDeps, existingManifestsAndConfigs map[string]bool) {
 	depIdx := 0
 	for depIdx < len(module.Dependencies) {
 		dep := &module.Dependencies[depIdx]
@@ -78,7 +78,7 @@ func processModuleDependencies(module *entities.Module, moduleIdx int, buildInfo
 			continue
 		}
 
-		shouldIncrement := processDependency(dep, depIdx, module, moduleIdx, buildInfo, serviceManager)
+		shouldIncrement := processDependency(dep, depIdx, module, serviceManager)
 		if shouldIncrement {
 			depIdx++
 		}
@@ -103,7 +103,7 @@ func shouldSkipDependency(dep *entities.Dependency, baseDepId string, processedD
 }
 
 // processDependency processes a single dependency and returns whether to increment the index
-func processDependency(dep *entities.Dependency, depIdx int, module *entities.Module, moduleIdx int, buildInfo *entities.BuildInfo, serviceManager artifactory.ArtifactoryServicesManager) bool {
+func processDependency(dep *entities.Dependency, depIdx int, module *entities.Module, serviceManager artifactory.ArtifactoryServicesManager) bool {
 	if !isOCIRepository(dep.Repository) {
 		return processClassicHelmDependency(dep, depIdx, module, serviceManager)
 	}
