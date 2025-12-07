@@ -37,18 +37,17 @@ func processModuleDependencies(module *entities.Module, serviceManager artifacto
 }
 
 // processDependency processes a single dependency and returns whether to increment the index
-func processDependency(dep *entities.Dependency, depIdx int, module *entities.Module, serviceManager artifactory.ArtifactoryServicesManager, processedDeps map[string]bool) {
+func processDependency(dep *entities.Dependency, _ int, module *entities.Module, serviceManager artifactory.ArtifactoryServicesManager, processedDeps map[string]bool) {
 	if !isOCIRepository(dep.Repository) {
 		processClassicHelmDependency(dep, module, serviceManager, processedDeps)
 		return
 	}
 	processOCIDependency(dep, module, serviceManager, processedDeps)
-	return
 }
 
 // processClassicHelmDependency handles classic Helm dependencies
 func processClassicHelmDependency(dep *entities.Dependency, module *entities.Module, serviceManager artifactory.ArtifactoryServicesManager, processedDeps map[string]bool) {
-	if processedDeps[dep.Sha256] == true {
+	if processedDeps[dep.Sha256] {
 		return
 	}
 	if dep.Sha256 == "" {

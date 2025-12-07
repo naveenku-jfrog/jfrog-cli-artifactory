@@ -125,14 +125,14 @@ func (hc *HelmCommand) appendCredentialsInArguments() {
 	}
 	hc.helmArgs = append(hc.helmArgs, fmt.Sprintf("--username=%s", user))
 	hc.helmArgs = append(hc.helmArgs, fmt.Sprintf("--password=%s", pass))
-	return
 }
 
 // executeHelmCommand executes the native Helm command
 func (hc *HelmCommand) executeHelmCommand() error {
 	log.Info(fmt.Sprintf("Running Helm %s.", hc.cmdName))
 
-	helmCmd := exec.Command("helm", append(hc.helmArgs)...)
+	args := append([]string{hc.cmdName}, hc.helmArgs...)
+	helmCmd := exec.Command("helm", args...)
 	helmCmd.Stdout = os.Stdout
 	helmCmd.Stderr = os.Stderr
 	helmCmd.Stdin = os.Stdin

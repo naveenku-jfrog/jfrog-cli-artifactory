@@ -46,12 +46,8 @@ func handlePullCommand(buildInfo *entities.BuildInfo, helmArgs []string, service
 	if dependencies == nil {
 		return
 	}
-	dependenciesWithChecksum, err := getDependenciesWithChecksums(dependencies, serviceManager, nil)
-	if err != nil {
-		return
-	}
+	dependenciesWithChecksum := getDependenciesWithChecksums(dependencies, serviceManager, nil)
 	if len(dependenciesWithChecksum) > 0 && buildInfo != nil && len(buildInfo.Modules) > 0 {
 		buildInfo.Modules[0].Dependencies = append(buildInfo.Modules[0].Dependencies, dependenciesWithChecksum...)
 	}
-	return
 }

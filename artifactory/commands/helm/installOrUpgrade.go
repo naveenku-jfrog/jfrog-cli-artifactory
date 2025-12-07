@@ -17,7 +17,7 @@ import (
 )
 
 func handleInstallOrUpgradeCommand(buildInfo *entities.BuildInfo, commandName string, helmArgs []string, serviceManager artifactory.ArtifactoryServicesManager) {
-	chartPath, err := getPullChartPath(commandName, helmArgs)
+	chartPath, _ := getPullChartPath(commandName, helmArgs)
 	if chartPath == "" {
 		return
 	}
@@ -57,21 +57,17 @@ func handleInstallOrUpgradeCommand(buildInfo *entities.BuildInfo, commandName st
 	}
 	// Build cache map for non-OCI dependencies
 	cacheMap := buildHelmCacheMap(settings)
-	dependenciesWithChecksum, err := getDependenciesWithChecksums(dependencies, serviceManager, cacheMap)
-	if err != nil {
-		return
-	}
+	dependenciesWithChecksum := getDependenciesWithChecksums(dependencies, serviceManager, cacheMap)
 	if len(dependenciesWithChecksum) > 0 && buildInfo != nil && len(buildInfo.Modules) > 0 {
 		buildInfo.Modules[0].Dependencies = append(buildInfo.Modules[0].Dependencies, dependenciesWithChecksum...)
 	}
-	return
 }
 
 // getDependenciesWithChecksums gets checksums for chart dependencies from the specified registry
 // For non-OCI dependencies, it first checks the Helm cache before querying Artifactory
-func getDependenciesWithChecksums(chartDeps []*chart.Dependency, serviceManager artifactory.ArtifactoryServicesManager, cacheMap map[string]string) ([]entities.Dependency, error) {
+func getDependenciesWithChecksums(chartDeps []*chart.Dependency, serviceManager artifactory.ArtifactoryServicesManager, cacheMap map[string]string) []entities.Dependency {
 	if len(chartDeps) == 0 {
-		return []entities.Dependency{}, nil
+		return []entities.Dependency{}
 	}
 	var dependencies []entities.Dependency
 	for _, chartDep := range chartDeps {
@@ -141,7 +137,7 @@ func getDependenciesWithChecksums(chartDeps []*chart.Dependency, serviceManager 
 			log.Debug(fmt.Sprintf("Found classic Helm checksums from Artifactory for dependency %s: sha256=%s", depId, dep.Sha256))
 		}
 	}
-	return dependencies, nil
+	return dependencies
 }
 
 // ExtractPathFromURL extracts the path from a URL, regardless of the scheme
@@ -165,22 +161,23 @@ func buildHelmCacheMap(settings *cli.EnvSettings) map[string]string {
 	log.Debug(fmt.Sprintf("Scanning Helm cache directory: %s", cacheDir))
 	err := filepath.Walk(cacheDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			return nil
+			return err
 		}
 		if info.IsDir() || !strings.HasSuffix(path, ".tgz") {
 			return nil
 		}
 		relPath, err := filepath.Rel(cacheDir, path)
 		if err != nil {
-			return nil
+			return err
 		}
 		parts := strings.Split(relPath, string(filepath.Separator))
 		var fileName string
-		if len(parts) >= 2 {
+		switch {
+		case len(parts) >= 2:
 			fileName = parts[len(parts)-1]
-		} else if len(parts) == 1 {
+		case len(parts) == 1:
 			fileName = parts[0]
-		} else {
+		default:
 			return nil
 		}
 
