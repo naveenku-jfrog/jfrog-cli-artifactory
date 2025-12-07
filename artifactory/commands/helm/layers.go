@@ -61,7 +61,6 @@ func processClassicHelmDependency(dep *entities.Dependency, module *entities.Mod
 		log.Debug(fmt.Sprintf("Removed classic Helm dependency %s without checksums (not found in Artifactory)", dep.Id))
 		return
 	}
-	return
 }
 
 // processOCIDependency handles OCI dependencies
