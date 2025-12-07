@@ -2,51 +2,38 @@ package helm
 
 import (
 	"fmt"
-
-	"github.com/jfrog/build-info-go/build"
 	"github.com/jfrog/build-info-go/entities"
 	"github.com/jfrog/build-info-go/flexpack"
+	"github.com/jfrog/jfrog-cli-core/v2/artifactory/utils"
+	buildtool "github.com/jfrog/jfrog-cli-core/v2/common/build"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 )
 
 // CollectHelmBuildInfoWithFlexPack collects Helm build info using FlexPack
-func CollectHelmBuildInfoWithFlexPack(workingDir, buildName, buildNumber string) error {
-	buildInstance, err := getOrCreateBuild(buildName, buildNumber)
-	if err != nil {
-		return fmt.Errorf("failed to get or create build: %w", err)
-	}
-
+func CollectHelmBuildInfoWithFlexPack(workingDir, buildName, buildNumber, project, commandName string, helmArgs []string, serverDetails *config.ServerDetails) error {
 	buildInfo, err := collectBuildInfoWithFlexPack(workingDir, buildName, buildNumber)
 	if err != nil {
 		return fmt.Errorf("failed to collect build info: %w", err)
 	}
-
 	if buildInfo == nil {
 		log.Debug("No build info collected, skipping further processing")
 		return nil
 	}
-
-	if len(buildInfo.Modules) == 0 {
-		log.Debug("No modules found in build info, skipping dependency processing")
-		handlePushCommand(buildInfo, workingDir)
-		return saveBuildInfo(buildInstance, buildInfo, buildName, buildNumber)
-	}
-
-	handlePushCommand(buildInfo, workingDir)
-	updateDependencyArtifactsChecksumInBuildInfo(buildInfo)
-
-	return saveBuildInfo(buildInstance, buildInfo, buildName, buildNumber)
-}
-
-// getOrCreateBuild gets or creates a build from the build service
-func getOrCreateBuild(buildName, buildNumber string) (*build.Build, error) {
-	buildInfoService := build.NewBuildInfoService()
-	buildInstance, err := buildInfoService.GetOrCreateBuildWithProject(buildName, buildNumber, "")
+	serviceManager, err := utils.CreateServiceManager(serverDetails, -1, 0, false)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get or create build: %w", err)
+		return fmt.Errorf("failed to create services manager: %w", err)
 	}
-
-	return buildInstance, nil
+	updateDependencyOCILayersInBuildInfo(buildInfo, serviceManager)
+	switch commandName {
+	case "push":
+		handlePushCommand(buildInfo, helmArgs, serviceManager)
+	case "pull", "fetch":
+		handlePullCommand(buildInfo, helmArgs, serviceManager)
+	case "install", "upgrade":
+		handleInstallOrUpgradeCommand(buildInfo, commandName, helmArgs, serviceManager)
+	}
+	return saveBuildInfo(buildInfo, buildName, buildNumber, project)
 }
 
 // collectBuildInfoWithFlexPack collects build info using FlexPack
@@ -68,24 +55,12 @@ func collectBuildInfoWithFlexPack(workingDir, buildName, buildNumber string) (*e
 	return buildInfo, nil
 }
 
-// handlePushCommand handles special processing for push command
-func handlePushCommand(buildInfo *entities.BuildInfo, workingDir string) {
-	if getHelmCommandName() != "push" {
-		return
-	}
-
-	if err := addDeployedHelmArtifactsToBuildInfo(buildInfo, workingDir); err != nil {
-		log.Warn("Failed to add deployed artifacts to build info: " + err.Error())
-	}
-}
-
 // saveBuildInfo saves build info to the build instance
-func saveBuildInfo(buildInstance *build.Build, buildInfo *entities.BuildInfo, buildName, buildNumber string) error {
-	if err := buildInstance.SaveBuildInfo(buildInfo); err != nil {
+func saveBuildInfo(buildInfo *entities.BuildInfo, buildName, buildNumber, project string) error {
+	if err := buildtool.SaveBuildInfo(buildName, buildNumber, project, buildInfo); err != nil {
 		log.Warn("Failed to save build info for jfrog-cli compatibility: " + err.Error())
 		return err
 	}
-
 	log.Info(fmt.Sprintf("Build info saved locally. Use 'jf rt bp %s %s' to publish it to Artifactory.", buildName, buildNumber))
 	return nil
 }

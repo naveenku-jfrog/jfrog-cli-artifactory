@@ -2,133 +2,162 @@ package helm
 
 import (
 	"fmt"
+	"github.com/jfrog/jfrog-client-go/artifactory"
+	"path"
+	"strings"
+
+	"github.com/jfrog/gofrog/crypto"
+	"helm.sh/helm/v3/pkg/chart/loader"
+	"helm.sh/helm/v3/pkg/registry"
+	orasregistry "oras.land/oras-go/v2/registry"
 
 	"github.com/jfrog/build-info-go/entities"
-	ioutils "github.com/jfrog/gofrog/io"
-	"github.com/jfrog/jfrog-cli-core/v2/artifactory/utils"
-	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
-	"github.com/jfrog/jfrog-client-go/artifactory"
-	"github.com/jfrog/jfrog-client-go/artifactory/services"
-	servicesUtils "github.com/jfrog/jfrog-client-go/artifactory/services/utils"
-	"github.com/jfrog/jfrog-client-go/utils/io/content"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 )
 
-// addDeployedHelmArtifactsToBuildInfo adds deployed Helm chart artifacts to build info
-func addDeployedHelmArtifactsToBuildInfo(buildInfo *entities.BuildInfo, workingDir string) error {
-	serverDetails, err := getHelmServerDetails()
+func handlePushCommand(buildInfo *entities.BuildInfo, helmArgs []string, serviceManager artifactory.ArtifactoryServicesManager) {
+	filePath := getPushChartPath(helmArgs)
+	if filePath == "" {
+		return
+	}
+	registryURL := getPushRegistryURL(helmArgs)
+	if registryURL == "" {
+		return
+	}
+	log.Debug(fmt.Sprintf("Processing push command for chart: %s to registry: %s", filePath, registryURL))
+	deploymentPath := getUploadedFileDeploymentPath(registryURL)
+	repoName := extractRepositoryNameFromURL(registryURL)
+	fileDetails, err := crypto.GetFileDetails(filePath, true)
 	if err != nil {
-		return fmt.Errorf("failed to get server details: %w", err)
+		return
 	}
-
-	if serverDetails == nil {
-		log.Debug("No server details configured, skipping artifact collection")
-		return nil
+	fileName := filePath
+	if strings.Contains(filePath, "/") {
+		parts := strings.Split(filePath, "/")
+		fileName = parts[len(parts)-1]
 	}
-
-	serviceManager, err := createServiceManager(serverDetails)
-	if err != nil {
-		return fmt.Errorf("failed to create services manager: %w", err)
+	artifact := entities.Artifact{
+		Name:                   fileName,
+		Path:                   deploymentPath,
+		OriginalDeploymentRepo: repoName,
+		Checksum: entities.Checksum{
+			Sha1:   fileDetails.Checksum.Sha1,
+			Md5:    fileDetails.Checksum.Md5,
+			Sha256: fileDetails.Checksum.Sha256,
+		},
 	}
-
-	chartName, chartVersion, err := getHelmChartInfo(workingDir)
-	if err != nil {
-		log.Debug("Could not get chart info, skipping artifact collection: " + err.Error())
-		return err
-	}
-
-	repoName, err := getHelmRepositoryFromArgs()
-	if err != nil {
-		log.Debug("Could not determine Helm repository, skipping artifact collection: " + err.Error())
-		return err
-	}
-
-	artifacts, err := searchHelmChartArtifacts(chartName, chartVersion, repoName, serviceManager)
-	if err != nil {
-		return fmt.Errorf("failed to search for Helm chart artifacts: %w", err)
-	}
-
-	if len(artifacts) == 0 {
-		log.Debug("No Helm chart artifacts found in Artifactory")
-		return nil
-	}
-
-	return addArtifactsToModules(buildInfo, artifacts)
-}
-
-// createServiceManager creates a service manager from server details
-func createServiceManager(serverDetails *config.ServerDetails) (artifactory.ArtifactoryServicesManager, error) {
-	serviceManager, err := utils.CreateServiceManager(serverDetails, -1, 0, false)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create services manager: %w", err)
-	}
-
-	return serviceManager, nil
-}
-
-// addArtifactsToModules adds artifacts to all modules in build info
-func addArtifactsToModules(buildInfo *entities.BuildInfo, artifacts []entities.Artifact) error {
-	if len(buildInfo.Modules) == 0 {
-		log.Warn("No modules found in build info, cannot add artifacts")
-		return nil
-	}
-
-	for moduleIdx := range buildInfo.Modules {
-		buildInfo.Modules[moduleIdx].Artifacts = append(buildInfo.Modules[moduleIdx].Artifacts, artifacts...)
-		log.Debug(fmt.Sprintf("Added %d Helm chart artifacts to module[%d]: %s", len(artifacts), moduleIdx, buildInfo.Modules[moduleIdx].Id))
-	}
-
-	log.Info(fmt.Sprintf("Added %d Helm chart artifacts to build info with checksums from Artifactory across %d modules", len(artifacts), len(buildInfo.Modules)))
-	return nil
-}
-
-// searchHelmChartArtifacts searches Artifactory for Helm chart artifacts and retrieves checksums
-func searchHelmChartArtifacts(chartName, chartVersion, repoName string, serviceManager artifactory.ArtifactoryServicesManager) ([]entities.Artifact, error) {
-	searchPattern := fmt.Sprintf("%s/%s/%s/*", repoName, chartName, chartVersion)
-	log.Debug(fmt.Sprintf("Searching for Helm chart artifacts with pattern: %s", searchPattern))
-
-	searchParams := services.NewSearchParams()
-	searchParams.Pattern = searchPattern
-	searchParams.Recursive = true
-
-	reader, err := serviceManager.SearchFiles(searchParams)
-	if err != nil {
-		return nil, fmt.Errorf("failed to search for Helm chart artifacts: %w", err)
-	}
-
-	var closeErr error
-	defer func() {
-		if closeErr != nil {
-			log.Debug(fmt.Sprintf("Failed to close search reader: %v", closeErr))
+	isOCI := registry.IsOCI(registryURL)
+	if !isOCI {
+		if buildInfo != nil && len(buildInfo.Modules) > 0 {
+			buildInfo.Modules[0].Artifacts = append(buildInfo.Modules[0].Artifacts, artifact)
 		}
-		ioutils.Close(reader, &closeErr)
-	}()
-
-	artifacts := collectArtifactsFromSearch(reader)
-	return artifacts, nil
+		return
+	}
+	var artifacts []entities.Artifact
+	var searchPattern string
+	chartName, chartVersion, err := getChartDetails(artifact.Name)
+	if err != nil {
+		log.Debug(fmt.Sprintf("Could not extract chart name/version from artifact: %s", artifact.Name))
+		return
+	}
+	searchPattern = fmt.Sprintf("%s/%s/%s/", artifact.Path, chartName, chartVersion)
+	ociArtifacts, err := searchDependencyOCIFilesByPath(serviceManager, searchPattern)
+	if err != nil {
+		log.Debug(fmt.Sprintf("Failed to search OCI artifacts for chart at path %s: %v", artifact.Path, err))
+		return
+	}
+	for _, ociArtifact := range ociArtifacts {
+		artifacts = append(artifacts, entities.Artifact{
+			Name:                   ociArtifact.Name,
+			Path:                   path.Join(ociArtifact.Path, ociArtifact.Name),
+			OriginalDeploymentRepo: ociArtifact.Repo,
+			Checksum: entities.Checksum{
+				Sha1:   ociArtifact.Actual_Sha1,
+				Md5:    ociArtifact.Actual_Md5,
+				Sha256: ociArtifact.Sha256,
+			},
+		})
+	}
+	if buildInfo != nil && len(buildInfo.Modules) > 0 {
+		buildInfo.Modules[0].Artifacts = artifacts
+	}
 }
 
-// collectArtifactsFromSearch collects artifacts from search results
-func collectArtifactsFromSearch(reader *content.ContentReader) []entities.Artifact {
-	var artifacts []entities.Artifact
-
-	for resultItem := new(servicesUtils.ResultItem); reader.NextRecord(resultItem) == nil; resultItem = new(servicesUtils.ResultItem) {
-		if resultItem.Type == "folder" {
+// getPushChartPath extracts the chart path from helm push command arguments
+func getPushChartPath(helmArgs []string) string {
+	for i := 1; i < len(helmArgs); i++ {
+		arg := helmArgs[i]
+		if strings.HasPrefix(arg, "--") {
+			if i+1 < len(helmArgs) && !strings.HasPrefix(helmArgs[i+1], "--") {
+				i++
+			}
 			continue
 		}
-
-		artifact := resultItem.ToArtifact()
-		artifacts = append(artifacts, artifact)
-		log.Debug(fmt.Sprintf("Including artifact: %s (path: %s/%s, modified: %s)",
-			artifact.Name, artifact.Path, artifact.Name, resultItem.Modified))
+		return arg
 	}
+	return ""
+}
 
-	log.Debug(fmt.Sprintf("Total artifacts found and included: %d", len(artifacts)))
-
-	if len(artifacts) == 0 {
-		log.Debug("No Helm chart artifacts found in Artifactory")
-		return nil
+// getPushRegistryURL extracts the registry URL from helm push command arguments
+func getPushRegistryURL(helmArgs []string) string {
+	positionalCount := 0
+	for i := 1; i < len(helmArgs); i++ {
+		arg := helmArgs[i]
+		if strings.HasPrefix(arg, "--") {
+			if i+1 < len(helmArgs) && !strings.HasPrefix(helmArgs[i+1], "--") {
+				i++
+			}
+			continue
+		}
+		positionalCount++
+		if positionalCount == 2 {
+			return arg
+		}
 	}
+	return ""
+}
 
-	return artifacts
+// getUploadedFileDeploymentPath extracts the deployment path from the OCI registry URL argument
+// Example: oci://example.com/my-repo/folder -> returns "my-repo/folder"
+func getUploadedFileDeploymentPath(registryURL string) string {
+	if registryURL == "" {
+		return ""
+	}
+	raw := strings.TrimPrefix(registryURL, registry.OCIScheme+"://")
+	ref, err := parseOCIReference(raw)
+	if err != nil {
+		log.Debug(fmt.Sprintf("Failed to parse OCI reference %s: %v", registryURL, err))
+		return ""
+	}
+	return ref.Repository
+}
+
+// parseOCIReference parses an OCI reference using the same approach as Helm SDK
+func parseOCIReference(raw string) (*ociReference, error) {
+	orasRef, err := orasregistry.ParseReference(raw)
+	if err != nil {
+		return nil, err
+	}
+	return &ociReference{
+		Registry:   orasRef.Registry,
+		Repository: orasRef.Repository,
+		Reference:  orasRef.Reference,
+	}, nil
+}
+
+// ociReference represents a parsed OCI reference (similar to Helm SDK's reference struct)
+type ociReference struct {
+	Registry   string
+	Repository string
+	Reference  string
+}
+
+func getChartDetails(filePath string) (string, string, error) {
+	chart, err := loader.Load(filePath)
+	if err != nil {
+		return "", "", err
+	}
+	name := chart.Metadata.Name
+	version := chart.Metadata.Version
+	return name, version, nil
 }

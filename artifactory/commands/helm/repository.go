@@ -12,16 +12,6 @@ const (
 	schemeSecure = "http"
 )
 
-// getHelmRepositoryFromArgs extracts repository name from helm push command registry URL
-func getHelmRepositoryFromArgs() (string, error) {
-	registryURL := parseHelmFlags().registryURL
-	if registryURL == "" {
-		return "", fmt.Errorf("could not extract repository from helm command arguments: registry URL not found")
-	}
-
-	return extractRepositoryNameFromURL(registryURL), nil
-}
-
 // extractRepositoryNameFromURL extracts the repository name from an OCI or HTTPS URL
 func extractRepositoryNameFromURL(repository string) string {
 	if repository == "" {
@@ -37,7 +27,15 @@ func extractRepositoryNameFromURL(repository string) string {
 		return repository
 	}
 
-	return extractRepoNameFromPath(repoURL)
+	parts := strings.Split(repoURL, "/")
+	if len(parts) > 1 && parts[0] == "" {
+		if len(parts) > 2 && parts[2] != "" {
+			return parts[2]
+		}
+	} else if len(parts) > 1 && parts[1] != "" {
+		return parts[1]
+	}
+	return ""
 }
 
 // removeProtocolPrefix removes protocol prefix from URL
@@ -56,25 +54,6 @@ func removeProtocolPrefix(repository string) string {
 	}
 
 	return repository
-}
-
-// extractRepoNameFromPath extracts repository name from path
-func extractRepoNameFromPath(repoURL string) string {
-	parts := strings.Split(repoURL, "/")
-
-	for j, part := range parts {
-		if part == "artifactory" && j+1 < len(parts) {
-			return parts[j+1]
-		}
-	}
-
-	for i := len(parts) - 1; i >= 0; i-- {
-		if parts[i] != "" {
-			return parts[i]
-		}
-	}
-
-	return ""
 }
 
 // extractDependencyPath extracts version path from dependency ID
