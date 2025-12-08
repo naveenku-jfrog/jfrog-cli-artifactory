@@ -21,13 +21,13 @@ func handleInstallOrUpgradeCommand(buildInfo *entities.BuildInfo, commandName st
 	if chartPath == "" {
 		return
 	}
-	log.Debug("Extracting dependencies from chart: %s", chartPath)
+	log.Debug("Extracting dependencies from chart: ", chartPath)
 	settings := cli.New()
 	actionConfig := new(action.Configuration)
 	if err := actionConfig.Init(settings.RESTClientGetter(), "", "secret", func(format string, v ...interface{}) {
 		log.Debug(fmt.Sprintf(format, v...))
 	}); err != nil {
-		log.Debug("Warning: failed to initialize action config: %v. Continuing with chart loading...", err)
+		log.Debug("Warning: failed to initialize action config: ", err, ". Continuing with chart loading...")
 	}
 	var chartPathOptions *action.ChartPathOptions
 	if commandName == "install" {
@@ -42,13 +42,13 @@ func handleInstallOrUpgradeCommand(buildInfo *entities.BuildInfo, commandName st
 	if err != nil {
 		return
 	}
-	log.Debug("Resolved chart path: %s", resolvedChartPath)
+	log.Debug("Resolved chart path: ", resolvedChartPath)
 	loadedChart, err := loader.Load(resolvedChartPath)
 	if err != nil {
 		return
 	}
 	if loadedChart.Lock == nil {
-		log.Debug("Chart.Lock is not available: %s", loadedChart.Metadata.Name)
+		log.Debug("Chart.Lock is not available: ", loadedChart.Metadata.Name)
 		return
 	}
 	dependencies := loadedChart.Lock.Dependencies
@@ -83,7 +83,7 @@ func getDependenciesWithChecksums(chartDeps []*chart.Dependency, serviceManager 
 			searchPattern := fmt.Sprintf("%s/%s/*", repository, versionPath)
 			ociArtifacts, err := searchDependencyOCIFilesByPath(serviceManager, searchPattern)
 			if err != nil {
-				log.Debug("Failed to search OCI artifacts for dependency %s: %v", depId, err)
+				log.Debug("Failed to search OCI artifacts for dependency ", depId, " : ", err)
 				dependencies = append(dependencies, dep)
 				continue
 			}
@@ -96,7 +96,7 @@ func getDependenciesWithChecksums(chartDeps []*chart.Dependency, serviceManager 
 						Md5:    resultItem.Actual_Md5,
 					}
 					dependencies = append(dependencies, dep)
-					log.Debug("Found OCI checksums for dependency %s: sha256=%s", depId, dep.Sha256)
+					log.Debug("Found OCI checksums for dependency ", depId, " sha256=", dep.Sha256)
 				}
 			}
 		} else {
@@ -104,10 +104,10 @@ func getDependenciesWithChecksums(chartDeps []*chart.Dependency, serviceManager 
 			cacheKey := buildCacheKey(chartDep.Name, chartDep.Version)
 			cachedPath, found := cacheMap[cacheKey]
 			if found {
-				log.Debug("Found dependency %s in Helm cache: %s", depId, cachedPath)
+				log.Debug("Found dependency", depId, " in Helm cache: ", cachedPath)
 				fileDetails, err := crypto.GetFileDetails(cachedPath, true)
 				if err != nil {
-					log.Debug("Failed to get checksums from cache for %s: %v", depId, err)
+					log.Debug("Failed to get checksums from cache for ", depId, " : ", err)
 				} else {
 					dep.Id = filepath.Base(cachedPath)
 					dep.Checksum = entities.Checksum{
@@ -116,14 +116,14 @@ func getDependenciesWithChecksums(chartDeps []*chart.Dependency, serviceManager 
 						Md5:    fileDetails.Checksum.Md5,
 					}
 					dependencies = append(dependencies, dep)
-					log.Debug("Found classic Helm checksums from cache for dependency %s: sha256=%s", depId, dep.Sha256)
+					log.Debug("Found classic Helm checksums from cache for dependency ", depId, ": sha256=", dep.Sha256)
 					continue
 				}
 			}
 			// Not found in cache, search Artifactory
 			resultItem, err := searchClassicHelmChart(serviceManager, repository, chartDep.Name, chartDep.Version)
 			if err != nil {
-				log.Debug("Classic Helm chart not found for dependency %s: %v", depId, err)
+				log.Debug("Classic Helm chart not found for dependency ", depId, " : ", err)
 				dependencies = append(dependencies, dep)
 				continue
 			}
@@ -134,7 +134,7 @@ func getDependenciesWithChecksums(chartDeps []*chart.Dependency, serviceManager 
 				Md5:    resultItem.Actual_Md5,
 			}
 			dependencies = append(dependencies, dep)
-			log.Debug("Found classic Helm checksums from Artifactory for dependency %s: sha256=%s", depId, dep.Sha256)
+			log.Debug("Found classic Helm checksums from Artifactory for dependency ", depId, " : sha256=", dep.Sha256)
 		}
 	}
 	return dependencies
@@ -158,7 +158,7 @@ func buildHelmCacheMap(settings *cli.EnvSettings) map[string]string {
 		log.Debug("Helm repository cache directory not configured")
 		return cacheMap
 	}
-	log.Debug("Scanning Helm cache directory: %s", cacheDir)
+	log.Debug("Scanning Helm cache directory: ", cacheDir)
 	err := filepath.Walk(cacheDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -191,13 +191,13 @@ func buildHelmCacheMap(settings *cli.EnvSettings) map[string]string {
 
 		cacheKey := fmt.Sprintf("%s:%s", chartName, version)
 		cacheMap[cacheKey] = path
-		log.Debug("Found cached chart: %s -> %s", cacheKey, path)
+		log.Debug("Found cached chart: ", cacheKey, " -> ", path)
 		return nil
 	})
 	if err != nil {
-		log.Debug("Error scanning Helm cache directory: %v", err)
+		log.Debug("Error scanning Helm cache directory: ", err)
 	}
-	log.Debug("Built cache map with %d entries", len(cacheMap))
+	log.Debug("Built cache map with ", len(cacheMap), " entries")
 	return cacheMap
 }
 

@@ -53,12 +53,12 @@ func processClassicHelmDependency(dep *entities.Dependency, module *entities.Mod
 	if dep.Sha256 == "" {
 		err := updateClassicHelmDependencyChecksums(dep, serviceManager)
 		if err != nil {
-			log.Debug("Failed to update checksums for classic Helm dependency %s: %v", dep.Id, err)
+			log.Debug("Failed to update checksums for classic Helm dependency ", dep.Id, " : ", err)
 			return
 		}
 		processedDeps[dep.Sha256] = true
 		removeDependencyByIndex(module)
-		log.Debug("Removed classic Helm dependency %s without checksums (not found in Artifactory)", dep.Id)
+		log.Debug("Removed classic Helm dependency ", dep.Id, " without checksums (not found in Artifactory)")
 		return
 	}
 }
@@ -67,12 +67,12 @@ func processClassicHelmDependency(dep *entities.Dependency, module *entities.Mod
 func processOCIDependency(dep *entities.Dependency, module *entities.Module, serviceManager artifactory.ArtifactoryServicesManager, processedDeps map[string]bool) bool {
 	addedLayers, err := addOCILayersForDependency(dep, module, serviceManager, processedDeps)
 	if err != nil {
-		log.Debug("Failed to add OCI layers for dependency %s: %v", dep.Id, err)
+		log.Debug("Failed to add OCI layers for dependency ", dep.Id, " : ", err)
 		return true
 	}
 	if addedLayers > 0 {
 		removeDependencyByIndex(module)
-		log.Debug("Removed dependency %s after adding %d OCI layers", dep.Id, addedLayers)
+		log.Debug("Removed dependency ", dep.Id, " after adding ", addedLayers, " OCI layers")
 		return false
 	}
 	return true
@@ -91,7 +91,7 @@ func addOCILayersForDependency(dep *entities.Dependency, module *entities.Module
 	searchPattern := fmt.Sprintf("%s/%s/*", repoName, versionPath)
 	ociArtifacts, err := searchDependencyOCIFilesByPath(serviceManager, searchPattern)
 	if err != nil {
-		log.Debug("Failed to search OCI artifacts for dependency %s: %v", dep.Id, err)
+		log.Debug("Failed to search OCI artifacts for dependency ", dep.Id, " : ", err)
 		return 0, nil
 	}
 	if len(ociArtifacts) == 0 {
@@ -105,7 +105,7 @@ func addOCILayersForDependency(dep *entities.Dependency, module *entities.Module
 		addOCILayer(module, resultItem)
 		addedCount++
 		processedDeps[resultItem.Sha256] = true
-		log.Debug("Added OCI artifact as dependency: %s (path: %s/%s)", name, resultItem.Path, name)
+		log.Debug("Added OCI artifact as dependency: ", name, " (path: ", resultItem.Path, "/", name, ")")
 	}
 	return addedCount, nil
 }
@@ -128,10 +128,10 @@ func updateClassicHelmDependencyChecksums(dep *entities.Dependency, serviceManag
 	if repoName == "" {
 		return fmt.Errorf("could not extract repository name from: %s", dep.Repository)
 	}
-	log.Debug("Classic Helm dependency %s has no checksums, searching for .tgz file in Artifactory", dep.Id)
+	log.Debug("Classic Helm dependency ", dep.Id, " has no checksums, searching for .tgz file in Artifactory")
 	resultItem, err := searchClassicHelmChart(serviceManager, repoName, depName, depVersion)
 	if err != nil {
-		log.Debug("Classic Helm chart not found for dependency %s: %v", dep.Id, err)
+		log.Debug("Classic Helm chart not found for dependency ", dep.Id, " : ", err)
 		return nil
 	}
 	dep.Checksum = entities.Checksum{
@@ -140,7 +140,7 @@ func updateClassicHelmDependencyChecksums(dep *entities.Dependency, serviceManag
 		Md5:    resultItem.Actual_Md5,
 	}
 	dep.Sha256 = resultItem.Sha256
-	log.Debug("Found classic Helm chart for dependency %s: %s (sha256: %s)", dep.Id, resultItem.Name, dep.Sha256)
+	log.Debug("Found classic Helm chart for dependency ", dep.Id, " : ", resultItem.Name, " (sha256: ", dep.Sha256, ")")
 	return nil
 }
 
@@ -156,7 +156,7 @@ func parseDependencyID(depId string) (string, string, error) {
 // searchClassicHelmChart searches for classic Helm chart .tgz file
 func searchClassicHelmChart(serviceManager artifactory.ArtifactoryServicesManager, repoName, depName, depVersion string) (*servicesUtils.ResultItem, error) {
 	searchPattern := fmt.Sprintf("%s/%s-%s*.tgz", repoName, depName, depVersion)
-	log.Debug("Searching for classic Helm chart with pattern: %s", searchPattern)
+	log.Debug("Searching for classic Helm chart with pattern: ", searchPattern)
 
 	searchParams := services.NewSearchParams()
 	searchParams.Pattern = searchPattern
@@ -170,7 +170,7 @@ func searchClassicHelmChart(serviceManager artifactory.ArtifactoryServicesManage
 	var closeErr error
 	defer func() {
 		if closeErr != nil {
-			log.Debug("Failed to close search reader: %v", closeErr)
+			log.Debug("Failed to close search reader: ", closeErr)
 		}
 		ioutils.Close(reader, &closeErr)
 	}()
@@ -184,7 +184,7 @@ func searchClassicHelmChart(serviceManager artifactory.ArtifactoryServicesManage
 
 // searchDependencyOCIFilesByPath searches for OCI artifacts using a search pattern
 func searchDependencyOCIFilesByPath(serviceManager artifactory.ArtifactoryServicesManager, searchPattern string) (map[string]*servicesUtils.ResultItem, error) {
-	log.Debug("Searching for OCI artifacts with pattern: %s", searchPattern)
+	log.Debug("Searching for OCI artifacts with pattern: ", searchPattern)
 
 	searchParams := services.NewSearchParams()
 	searchParams.Pattern = searchPattern
@@ -198,7 +198,7 @@ func searchDependencyOCIFilesByPath(serviceManager artifactory.ArtifactoryServic
 	var closeErr error
 	defer func() {
 		if closeErr != nil {
-			log.Debug("Failed to close search reader: %v", closeErr)
+			log.Debug("Failed to close search reader: ", closeErr)
 		}
 		ioutils.Close(reader, &closeErr)
 	}()
@@ -208,8 +208,7 @@ func searchDependencyOCIFilesByPath(serviceManager artifactory.ArtifactoryServic
 		if item.Type != "folder" && (item.Name == "manifest.json" || strings.HasPrefix(item.Name, "sha256__")) {
 			itemCopy := *item
 			artifacts[item.Name] = &itemCopy
-			log.Debug("Found OCI artifact: %s (path: %s/%s, sha256: %s)",
-				item.Name, item.Path, item.Name, item.Sha256)
+			log.Debug("Found OCI artifact: ", item.Name, " (path: ", item.Path, "/", item.Name, ", sha256: ", item.Sha256, ")")
 		}
 	}
 	return artifacts, nil
@@ -227,5 +226,5 @@ func addOCILayer(module *entities.Module, resultItem *servicesUtils.ResultItem) 
 	}
 
 	module.Dependencies = append(module.Dependencies, ociDependency)
-	log.Debug("Added OCI artifact as dependency: %s (path: %s/%s)", resultItem.Name, resultItem.Path, resultItem.Name)
+	log.Debug("Added OCI artifact as dependency: ", resultItem.Name, " (path: ", resultItem.Path, "/", resultItem.Name, ")")
 }

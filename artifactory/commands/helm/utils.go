@@ -71,35 +71,35 @@ func setStringFlag(chartPathOptions *action.ChartPathOptions, flagName, value st
 	switch flagName {
 	case "--ca-file":
 		chartPathOptions.CaFile = value
-		log.Debug("Setting %s=%s", flagName, value)
+		log.Debug("Setting ", flagName, "=", value)
 		return true
 	case "--cert-file":
 		chartPathOptions.CertFile = value
-		log.Debug("Setting %s=%s", flagName, value)
+		log.Debug("Setting ", flagName, "=", value)
 		return true
 	case "--key-file":
 		chartPathOptions.KeyFile = value
-		log.Debug("Setting %s=%s", flagName, value)
+		log.Debug("Setting ", flagName, "=", value)
 		return true
 	case "--keyring":
 		chartPathOptions.Keyring = value
-		log.Debug("Setting %s=%s", flagName, value)
+		log.Debug("Setting ", flagName, "=", value)
 		return true
 	case "--password":
 		chartPathOptions.Password = value
-		log.Debug("Setting %s=%s", flagName, value)
+		log.Debug("Setting ", flagName, "=", value)
 		return true
 	case "--repo":
 		chartPathOptions.RepoURL = value
-		log.Debug("Setting %s=%s", flagName, value)
+		log.Debug("Setting ", flagName, "=", value)
 		return true
 	case "--username", "--user":
 		chartPathOptions.Username = value
-		log.Debug("Setting %s=%s", flagName, value)
+		log.Debug("Setting ", flagName, "=", value)
 		return true
 	case "--version":
 		chartPathOptions.Version = value
-		log.Debug("Setting %s=%s", flagName, value)
+		log.Debug("Setting ", flagName, "=", value)
 		return true
 	default:
 		return false

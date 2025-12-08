@@ -61,6 +61,6 @@ func saveBuildInfo(buildInfo *entities.BuildInfo, buildName, buildNumber, projec
 		log.Warn("Failed to save build info for jfrog-cli compatibility: ", err.Error())
 		return err
 	}
-	log.Info("Build info saved locally. Use 'jf rt bp %s %s' to publish it to Artifactory.", buildName, buildNumber)
+	log.Info("Build info saved locally. Use 'jf rt bp ", buildName, " ", buildNumber, "' to publish it to Artifactory.")
 	return nil
 }
