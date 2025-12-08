@@ -211,15 +211,14 @@ func (hc *HelmCommand) getCredentials() (string, string) {
 		user = hc.serverDetails.User
 	}
 
-	if pass == "" {
-		pass = hc.serverDetails.Password
-	}
-
-	if hc.serverDetails.AccessToken != "" && pass == "" {
+	// Prioritize access token over password
+	if hc.serverDetails.AccessToken != "" {
 		if user == "" {
 			user = auth.ExtractUsernameFromAccessToken(hc.serverDetails.AccessToken)
 		}
 		pass = hc.serverDetails.AccessToken
+	} else if pass == "" {
+		pass = hc.serverDetails.Password
 	}
 
 	return user, pass
