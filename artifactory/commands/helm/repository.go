@@ -14,17 +14,17 @@ const (
 
 // extractRepositoryNameFromURL extracts the repository name from an OCI or HTTPS URL
 func extractRepositoryNameFromURL(repositoryURL string) string {
-	if repository == "" {
+	if repositoryURL == "" {
 		return ""
 	}
 
-	if !strings.Contains(repository, "://") {
-		return repository
+	if !strings.Contains(repositoryURL, "://") {
+		return repositoryURL
 	}
 
-	repoURL := removeProtocolPrefix(repository)
+	repoURL := removeProtocolPrefix(repositoryURL)
 	if repoURL == "" {
-		return repository
+		return repositoryURL
 	}
 
 	parts := strings.Split(repoURL, "/")
