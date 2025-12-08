@@ -6,7 +6,6 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
-	"strings"
 
 	buildUtils "github.com/jfrog/jfrog-cli-core/v2/common/build"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
@@ -228,8 +227,7 @@ func (hc *HelmCommand) getCredentials() (string, string) {
 func (hc *HelmCommand) executeHelmLogin(registryURL, user, pass string) error {
 	log.Debug("Performing helm registry login to", registryURL, " with user ", user)
 
-	cmdLogin := exec.Command("helm", "registry", "login", registryURL, "--username", user, "--password")
-	cmdLogin.Stdin = strings.NewReader(pass)
+	cmdLogin := exec.Command("helm", "registry", "login", registryURL, "--username", user, "--password", pass)
 	cmdLogin.Stdout = io.Discard
 	cmdLogin.Stderr = os.Stderr
 
