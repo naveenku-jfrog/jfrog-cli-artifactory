@@ -199,15 +199,6 @@ func (hc *HelmCommand) getRegistryURL() (string, error) {
 		}
 		return parsedURL.Host, nil
 	}
-
-	if hc.serverDetails.Url != "" {
-		parsedURL, err := url.Parse(hc.serverDetails.Url)
-		if err != nil {
-			return "", fmt.Errorf("failed to parse URL: %w", err)
-		}
-		return parsedURL.Host, nil
-	}
-
 	return "", nil
 }
 
@@ -238,7 +229,7 @@ func (hc *HelmCommand) getCredentials() (string, string) {
 func (hc *HelmCommand) executeHelmLogin(registryURL, user, pass string) error {
 	log.Debug("Performing helm registry login to %s with user %s", registryURL, user)
 
-	cmdLogin := exec.Command("helm", "registry", "login", registryURL, "--username", user, "--password-stdin")
+	cmdLogin := exec.Command("helm", "registry", "login", registryURL, "--username", user, "--password")
 	cmdLogin.Stdin = strings.NewReader(pass)
 	cmdLogin.Stdout = io.Discard
 	cmdLogin.Stderr = os.Stderr
