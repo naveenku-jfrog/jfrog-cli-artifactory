@@ -129,7 +129,7 @@ func (hc *HelmCommand) appendCredentialsInArguments() {
 
 // executeHelmCommand executes the native Helm command
 func (hc *HelmCommand) executeHelmCommand() error {
-	log.Info(fmt.Sprintf("Running Helm %s.", hc.cmdName))
+	log.Info("Running Helm %s.", hc.cmdName)
 
 	args := append([]string{hc.cmdName}, hc.helmArgs...)
 	helmCmd := exec.Command("helm", args...)
@@ -175,7 +175,7 @@ func (hc *HelmCommand) performRegistryLogin() error {
 	}
 	registryURL, err := hc.getRegistryURL()
 	if err != nil {
-		log.Debug(fmt.Sprintf("Failed to get registry URL: %v", err))
+		log.Debug("Failed to get registry URL: %v", err)
 		return nil
 	}
 	if registryURL == "" {
@@ -236,7 +236,7 @@ func (hc *HelmCommand) getCredentials() (string, string) {
 
 // executeHelmLogin executes the helm registry login command
 func (hc *HelmCommand) executeHelmLogin(registryURL, user, pass string) error {
-	log.Debug(fmt.Sprintf("Performing helm registry login to %s with user %s", registryURL, user))
+	log.Debug("Performing helm registry login to %s with user %s", registryURL, user)
 
 	cmdLogin := exec.Command("helm", "registry", "login", registryURL, "--username", user, "--password-stdin")
 	cmdLogin.Stdin = strings.NewReader(pass)
@@ -247,6 +247,6 @@ func (hc *HelmCommand) executeHelmLogin(registryURL, user, pass string) error {
 		return fmt.Errorf("helm registry login failed: %w", err)
 	}
 
-	log.Debug(fmt.Sprintf("Helm registry login to %s successful.", registryURL))
+	log.Debug("Helm registry login to %s successful.", registryURL)
 	return nil
 }

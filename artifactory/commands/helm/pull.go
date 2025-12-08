@@ -14,16 +14,16 @@ import (
 func handlePullCommand(buildInfo *entities.BuildInfo, helmArgs []string, serviceManager artifactory.ArtifactoryServicesManager) {
 	chartPath, err := getPullChartPath("pull", helmArgs)
 	if err != nil || chartPath == "" {
-		log.Debug(fmt.Sprintf("Could not extract chart path: %v", err))
+		log.Debug("Could not extract chart path: %v", err)
 		return
 	}
-	log.Debug(fmt.Sprintf("Extracting dependencies from chart: %s", chartPath))
+	log.Debug("Extracting dependencies from chart: %s", chartPath)
 	settings := cli.New()
 	actionConfig := new(action.Configuration)
 	if err := actionConfig.Init(settings.RESTClientGetter(), "", "secret", func(format string, v ...interface{}) {
 		log.Debug(fmt.Sprintf(format, v...))
 	}); err != nil {
-		log.Debug(fmt.Sprintf("Warning: failed to initialize action config: %v. Continuing with chart loading...", err))
+		log.Debug("Warning: failed to initialize action config: %v. Continuing with chart loading...", err)
 	}
 
 	pullClient := action.NewPull()
@@ -33,13 +33,13 @@ func handlePullCommand(buildInfo *entities.BuildInfo, helmArgs []string, service
 	if err != nil {
 		return
 	}
-	log.Debug(fmt.Sprintf("Resolved chart path: %s", resolvedChartPath))
+	log.Debug("Resolved chart path: %s", resolvedChartPath)
 	loadedChart, err := loader.Load(resolvedChartPath)
 	if err != nil {
 		return
 	}
 	if loadedChart.Lock == nil {
-		log.Debug(fmt.Sprintf("Chart.Lock is not available: %s", loadedChart.Metadata.Name))
+		log.Debug("Chart.Lock is not available: %s", loadedChart.Metadata.Name)
 		return
 	}
 	dependencies := loadedChart.Lock.Dependencies

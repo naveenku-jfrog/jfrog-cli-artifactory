@@ -24,7 +24,7 @@ func handlePushCommand(buildInfo *entities.BuildInfo, helmArgs []string, service
 	if registryURL == "" {
 		return
 	}
-	log.Debug(fmt.Sprintf("Processing push command for chart: %s to registry: %s", filePath, registryURL))
+	log.Debug("Processing push command for chart: %s to registry: %s", filePath, registryURL)
 	deploymentPath := getUploadedFileDeploymentPath(registryURL)
 	repoName := extractRepositoryNameFromURL(registryURL)
 	fileDetails, err := crypto.GetFileDetails(filePath, true)
@@ -57,13 +57,13 @@ func handlePushCommand(buildInfo *entities.BuildInfo, helmArgs []string, service
 	var searchPattern string
 	chartName, chartVersion, err := getChartDetails(artifact.Name)
 	if err != nil {
-		log.Debug(fmt.Sprintf("Could not extract chart name/version from artifact: %s", artifact.Name))
+		log.Debug("Could not extract chart name/version from artifact: %s", artifact.Name)
 		return
 	}
 	searchPattern = fmt.Sprintf("%s/%s/%s/", artifact.Path, chartName, chartVersion)
 	ociArtifacts, err := searchDependencyOCIFilesByPath(serviceManager, searchPattern)
 	if err != nil {
-		log.Debug(fmt.Sprintf("Failed to search OCI artifacts for chart at path %s: %v", artifact.Path, err))
+		log.Debug("Failed to search OCI artifacts for chart at path %s: %v", artifact.Path, err)
 		return
 	}
 	for _, ociArtifact := range ociArtifacts {
@@ -126,7 +126,7 @@ func getUploadedFileDeploymentPath(registryURL string) string {
 	raw := strings.TrimPrefix(registryURL, registry.OCIScheme+"://")
 	ref, err := parseOCIReference(raw)
 	if err != nil {
-		log.Debug(fmt.Sprintf("Failed to parse OCI reference %s: %v", registryURL, err))
+		log.Debug("Failed to parse OCI reference %s: %v", registryURL, err)
 		return ""
 	}
 	return ref.Repository
