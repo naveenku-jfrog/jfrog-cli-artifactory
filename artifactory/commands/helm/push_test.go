@@ -6,86 +6,57 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TestGetPushChartPath tests the getPushChartPath function
-func TestGetPushChartPath(t *testing.T) {
+// TestGetPushChartPathAndRegistryURL tests the getPushChartPathAndRegistryURL function
+func TestGetPushChartPathAndRegistryURL(t *testing.T) {
 	tests := []struct {
-		name     string
-		helmArgs []string
-		expected string
+		name           string
+		helmArgs       []string
+		expectedPath   string
+		expectedRegURL string
 	}{
 		{
-			name:     "Simple chart path",
-			helmArgs: []string{"push", "chart.tgz"},
-			expected: "chart.tgz",
+			name:           "Simple chart path and registry URL",
+			helmArgs:       []string{"chart.tgz", "oci://registry/repo"},
+			expectedPath:   "chart.tgz",
+			expectedRegURL: "oci://registry/repo",
 		},
 		{
-			name:     "Chart path with flags",
-			helmArgs: []string{"push", "chart.tgz", "oci://registry/repo", "--build-name=test"},
-			expected: "chart.tgz",
+			name:           "Chart path and registry URL with flags",
+			helmArgs:       []string{"chart.tgz", "oci://registry/repo", "--build-name=test"},
+			expectedPath:   "chart.tgz",
+			expectedRegURL: "oci://registry/repo",
 		},
 		{
-			name:     "Chart path with flags before",
-			helmArgs: []string{"--build-name=test", "chart.tgz", "oci://registry/repo"},
-			expected: "chart.tgz",
+			name:           "Chart path and registry URL with flags before",
+			helmArgs:       []string{"--build-name=test", "chart.tgz", "oci://registry/repo"},
+			expectedPath:   "chart.tgz",
+			expectedRegURL: "oci://registry/repo",
 		},
 		{
-			name:     "No positional args",
-			helmArgs: []string{"--build-name=test"},
-			expected: "",
+			name:           "Only one positional arg",
+			helmArgs:       []string{"chart.tgz"},
+			expectedPath:   "chart.tgz",
+			expectedRegURL: "",
 		},
 		{
-			name:     "Empty args",
-			helmArgs: []string{},
-			expected: "",
+			name:           "No positional args",
+			helmArgs:       []string{"--build-name=test"},
+			expectedPath:   "",
+			expectedRegURL: "",
+		},
+		{
+			name:           "Empty args",
+			helmArgs:       []string{},
+			expectedPath:   "",
+			expectedRegURL: "",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := getPushChartPath(tt.helmArgs)
-			assert.Equal(t, tt.expected, result)
-		})
-	}
-}
-
-// TestGetPushRegistryURL tests the getPushRegistryURL function
-func TestGetPushRegistryURL(t *testing.T) {
-	tests := []struct {
-		name     string
-		helmArgs []string
-		expected string
-	}{
-		{
-			name:     "Simple registry URL",
-			helmArgs: []string{"push", "chart.tgz", "oci://registry/repo"},
-			expected: "oci://registry/repo",
-		},
-		{
-			name:     "Registry URL with flags",
-			helmArgs: []string{"push", "chart.tgz", "oci://registry/repo", "--build-name=test"},
-			expected: "oci://registry/repo",
-		},
-		{
-			name:     "Registry URL with flags before",
-			helmArgs: []string{"--build-name=test", "chart.tgz", "oci://registry/repo"},
-			expected: "oci://registry/repo",
-		},
-		{
-			name:     "Only one positional arg",
-			helmArgs: []string{"chart.tgz"},
-			expected: "",
-		},
-		{
-			name:     "No positional args",
-			helmArgs: []string{"--build-name=test"},
-			expected: "",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := getPushRegistryURL(tt.helmArgs)
-			assert.Equal(t, tt.expected, result)
+			chartPath, registryURL := getPushChartPathAndRegistryURL(tt.helmArgs)
+			assert.Equal(t, tt.expectedPath, chartPath)
+			assert.Equal(t, tt.expectedRegURL, registryURL)
 		})
 	}
 }

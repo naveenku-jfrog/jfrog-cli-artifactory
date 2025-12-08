@@ -3,7 +3,6 @@ package helm
 import (
 	"testing"
 
-	"github.com/jfrog/build-info-go/entities"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -50,46 +49,6 @@ func TestParseDependencyID(t *testing.T) {
 				assert.Equal(t, tt.expectedName, name)
 				assert.Equal(t, tt.expectedVer, ver)
 			}
-		})
-	}
-}
-
-// TestRemoveDependencyByIndex tests the removeDependencyByIndex function
-func TestRemoveDependencyByIndex(t *testing.T) {
-	tests := []struct {
-		name           string
-		dependencies   []entities.Dependency
-		expectedLength int
-	}{
-		{
-			name: "Remove first dependency",
-			dependencies: []entities.Dependency{
-				{Id: "dep1:1.0.0"},
-				{Id: "dep2:2.0.0"},
-			},
-			expectedLength: 1,
-		},
-		{
-			name:           "Empty dependencies",
-			dependencies:   []entities.Dependency{},
-			expectedLength: 0,
-		},
-		{
-			name: "Single dependency",
-			dependencies: []entities.Dependency{
-				{Id: "dep1:1.0.0"},
-			},
-			expectedLength: 0,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			module := &entities.Module{
-				Dependencies: tt.dependencies,
-			}
-			removeDependencyByIndex(module)
-			assert.Equal(t, tt.expectedLength, len(module.Dependencies))
 		})
 	}
 }

@@ -21,13 +21,13 @@ func TestGetPullChartPathForPullCommand(t *testing.T) {
 	}{
 		{
 			name:        "Pull with chart name",
-			args:        []string{"pull", "nginx"},
+			args:        []string{"nginx"},
 			expected:    "nginx",
 			expectedErr: false,
 		},
 		{
 			name:        "Pull with flags",
-			args:        []string{"pull", "--repo", "https://charts.example.com", "nginx"},
+			args:        []string{"--repo", "https://charts.example.com", "nginx"},
 			expected:    "nginx",
 			expectedErr: false,
 		},

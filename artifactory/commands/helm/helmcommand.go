@@ -206,20 +206,20 @@ func (hc *HelmCommand) getCredentials() (string, string) {
 	user := hc.username
 	pass := hc.password
 
-	if user == "" {
+	if user == "" && hc.serverDetails != nil {
 		user = hc.serverDetails.User
 	}
 
-	// Prioritize access token over password
-	if hc.serverDetails.AccessToken != "" {
-		if user == "" {
-			user = auth.ExtractUsernameFromAccessToken(hc.serverDetails.AccessToken)
+	if hc.serverDetails != nil {
+		if hc.serverDetails.AccessToken != "" {
+			if user == "" {
+				user = auth.ExtractUsernameFromAccessToken(hc.serverDetails.AccessToken)
+			}
+			pass = hc.serverDetails.AccessToken
+		} else if pass == "" {
+			pass = hc.serverDetails.Password
 		}
-		pass = hc.serverDetails.AccessToken
-	} else if pass == "" {
-		pass = hc.serverDetails.Password
 	}
-
 	return user, pass
 }
 

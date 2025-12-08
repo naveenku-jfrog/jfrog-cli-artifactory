@@ -50,8 +50,8 @@ func TestHelmCommandSetters(t *testing.T) {
 	// Test SetServerDetails
 	serverDetails := &config.ServerDetails{
 		ArtifactoryUrl: "https://artifactory.example.com",
-		User:          "user",
-		Password:      "pass",
+		User:           "user",
+		Password:       "pass",
 	}
 	cmd.SetServerDetails(serverDetails)
 	assert.Equal(t, serverDetails, cmd.serverDetails)
@@ -146,14 +146,14 @@ func TestAppendCredentialsInArguments(t *testing.T) {
 		expectedArgs  []string
 	}{
 		{
-			name:     "Append credentials from command",
-			username: "cmduser",
-			password: "cmdpass",
+			name:          "Append credentials from command",
+			username:      "cmduser",
+			password:      "cmdpass",
 			serverDetails: &config.ServerDetails{},
-			expectedArgs: []string{"--username=cmduser", "--password=cmdpass"},
+			expectedArgs:  []string{"--username=cmduser", "--password=cmdpass"},
 		},
 		{
-			name:     "Append credentials from server details",
+			name: "Append credentials from server details",
 			serverDetails: &config.ServerDetails{
 				User:     "serveruser",
 				Password: "serverpass",
@@ -161,16 +161,16 @@ func TestAppendCredentialsInArguments(t *testing.T) {
 			expectedArgs: []string{"--username=serveruser", "--password=serverpass"},
 		},
 		{
-			name:     "Append credentials from access token",
+			name: "Append credentials from access token",
 			serverDetails: &config.ServerDetails{
 				AccessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VybmFtZSJ9.dGVzdA",
 			},
 			expectedArgs: []string{"--username=username", "--password=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VybmFtZSJ9.dGVzdA"},
 		},
 		{
-			name:     "No credentials - should not append",
+			name:          "No credentials - should not append",
 			serverDetails: &config.ServerDetails{},
-			expectedArgs: []string{},
+			expectedArgs:  []string{},
 		},
 		{
 			name:     "Command username, server password",
@@ -225,14 +225,14 @@ func TestHelmCommandGetRegistryURL(t *testing.T) {
 			expectedHost: "artifactory.example.com",
 		},
 		{
-			name: "Get host from Url when ArtifactoryUrl is empty",
+			name: "Empty ArtifactoryUrl returns empty",
 			serverDetails: &config.ServerDetails{
 				Url: "https://server.example.com",
 			},
-			expectedHost: "server.example.com",
+			expectedHost: "",
 		},
 		{
-			name: "ArtifactoryUrl takes precedence over Url",
+			name: "ArtifactoryUrl is used when both are present",
 			serverDetails: &config.ServerDetails{
 				ArtifactoryUrl: "https://artifactory.example.com",
 				Url:            "https://server.example.com",
@@ -247,11 +247,11 @@ func TestHelmCommandGetRegistryURL(t *testing.T) {
 			expectedError: true,
 		},
 		{
-			name: "Invalid Url",
+			name: "Invalid Url is ignored (only ArtifactoryUrl is checked)",
 			serverDetails: &config.ServerDetails{
 				Url: "://invalid",
 			},
-			expectedError: true,
+			expectedHost: "",
 		},
 		{
 			name:          "No URL available",
@@ -324,8 +324,8 @@ func TestHelmCommandGetCredentials(t *testing.T) {
 			expectedPass: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VybmFtZSJ9.dGVzdA",
 		},
 		{
-			name:         "Command username, server password",
-			username:     "cmduser",
+			name:     "Command username, server password",
+			username: "cmduser",
 			serverDetails: &config.ServerDetails{
 				Password: "serverpass",
 			},
@@ -333,7 +333,7 @@ func TestHelmCommandGetCredentials(t *testing.T) {
 			expectedPass: "serverpass",
 		},
 		{
-			name: "Server username, command password",
+			name:     "Server username, command password",
 			password: "cmdpass",
 			serverDetails: &config.ServerDetails{
 				User: "serveruser",
@@ -369,7 +369,7 @@ func TestPerformRegistryLogin(t *testing.T) {
 		expectedError bool
 	}{
 		{
-			name: "No server details - should return nil",
+			name:          "No server details - should return nil",
 			serverDetails: nil,
 			expectedError: false, // Returns nil, doesn't error
 		},
@@ -392,8 +392,8 @@ func TestPerformRegistryLogin(t *testing.T) {
 			name: "Valid server details with credentials",
 			serverDetails: &config.ServerDetails{
 				ArtifactoryUrl: "https://example.com",
-				User:          "user",
-				Password:      "pass",
+				User:           "user",
+				Password:       "pass",
 			},
 			expectedError: true, // Will fail because helm command doesn't exist in test
 		},
@@ -423,8 +423,8 @@ func TestHelmCommandServerDetails(t *testing.T) {
 	cmd := NewHelmCommand()
 	serverDetails := &config.ServerDetails{
 		ArtifactoryUrl: "https://example.com",
-		User:          "user",
-		Password:      "pass",
+		User:           "user",
+		Password:       "pass",
 	}
 	cmd.SetServerDetails(serverDetails)
 

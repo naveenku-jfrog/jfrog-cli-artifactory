@@ -130,10 +130,10 @@ func getPullChartPath(cmdName string, args []string) (string, error) {
 	positionalArgs := getPositionalArguments(args)
 	switch cmdName {
 	case "pull":
-		if len(positionalArgs) < 2 {
+		if len(positionalArgs) < 1 {
 			return "", errors.New("this command requires at least 1 argument: chart name")
 		}
-		return positionalArgs[1], nil
+		return positionalArgs[0], nil
 	case "upgrade":
 		if len(positionalArgs) < 3 {
 			return "", errors.New("this command requires 2 arguments: release name and chart name")

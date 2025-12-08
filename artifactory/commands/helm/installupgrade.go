@@ -89,13 +89,7 @@ func getDependenciesWithChecksums(chartDeps []*chart.Dependency, serviceManager 
 			}
 			if len(ociArtifacts) > 0 {
 				for _, resultItem := range ociArtifacts {
-					dep.Id = resultItem.Name
-					dep.Checksum = entities.Checksum{
-						Sha1:   resultItem.Actual_Sha1,
-						Sha256: resultItem.Sha256,
-						Md5:    resultItem.Actual_Md5,
-					}
-					dependencies = append(dependencies, dep)
+					dependencies = append(dependencies, resultItem.ToDependency())
 					log.Debug("Found OCI checksums for dependency ", depId, " sha256=", dep.Sha256)
 				}
 			}
@@ -127,13 +121,7 @@ func getDependenciesWithChecksums(chartDeps []*chart.Dependency, serviceManager 
 				dependencies = append(dependencies, dep)
 				continue
 			}
-			dep.Id = resultItem.Name
-			dep.Checksum = entities.Checksum{
-				Sha1:   resultItem.Actual_Sha1,
-				Sha256: resultItem.Sha256,
-				Md5:    resultItem.Actual_Md5,
-			}
-			dependencies = append(dependencies, dep)
+			dependencies = append(dependencies, resultItem.ToDependency())
 			log.Debug("Found classic Helm checksums from Artifactory for dependency ", depId, " : sha256=", dep.Sha256)
 		}
 	}

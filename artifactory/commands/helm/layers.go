@@ -2,6 +2,8 @@ package helm
 
 import (
 	"fmt"
+	"github.com/jfrog/jfrog-cli-artifactory/artifactory/commands/ocicontainer"
+	artutils "github.com/jfrog/jfrog-cli-core/v2/artifactory/utils"
 	"strings"
 
 	"github.com/jfrog/build-info-go/entities"
@@ -12,136 +14,138 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/log"
 )
 
+type manifest struct {
+	Config manifestConfig `json:"config,omitempty"`
+	Layers []layer        `json:"layers,omitempty"`
+}
+
+type manifestConfig struct {
+	Digest string `json:"digest,omitempty"`
+}
+
+type layer struct {
+	Digest    string `json:"digest,omitempty"`
+	MediaType string `json:"mediaType,omitempty"`
+}
+
 // updateDependencyManifestAndConfigFile adds manifest.json and config files for all OCI dependencies
 func updateDependencyOCILayersInBuildInfo(buildInfo *entities.BuildInfo, serviceManager artifactory.ArtifactoryServicesManager) {
 	if buildInfo == nil || len(buildInfo.Modules) == 0 {
 		return
 	}
-	processedDeps := make(map[string]bool)
 	for moduleIdx := range buildInfo.Modules {
 		module := &buildInfo.Modules[moduleIdx]
 		if len(module.Dependencies) == 0 {
 			continue
 		}
-		processModuleDependencies(module, serviceManager, processedDeps)
+		processedDependencies := &[]entities.Dependency{}
+		processModuleDependencies(module, serviceManager, processedDependencies)
+		if len(*processedDependencies) > 0 {
+			module.Dependencies = *processedDependencies
+		}
 	}
 }
 
 // processModuleDependencies processes all dependencies in a module
-func processModuleDependencies(module *entities.Module, serviceManager artifactory.ArtifactoryServicesManager, processedDeps map[string]bool) {
-	lengthOfDeps := len(module.Dependencies)
-	for depIdx := 0; depIdx < lengthOfDeps; depIdx++ {
-		dep := &module.Dependencies[0]
-		processDependency(dep, 0, module, serviceManager, processedDeps)
+func processModuleDependencies(module *entities.Module, serviceManager artifactory.ArtifactoryServicesManager, processedDependencies *[]entities.Dependency) {
+	moduleDependencies := module.Dependencies
+	for _, dependency := range moduleDependencies {
+		processDependency(dependency, serviceManager, processedDependencies)
 	}
 }
 
 // processDependency processes a single dependency and returns whether to increment the index
-func processDependency(dep *entities.Dependency, _ int, module *entities.Module, serviceManager artifactory.ArtifactoryServicesManager, processedDeps map[string]bool) {
+func processDependency(dep entities.Dependency, serviceManager artifactory.ArtifactoryServicesManager, processedDependencies *[]entities.Dependency) {
 	if !isOCIRepository(dep.Repository) {
-		processClassicHelmDependency(dep, module, serviceManager, processedDeps)
+		updateClassicHelmDependencyChecksums(dep, serviceManager, processedDependencies)
 		return
 	}
-	processOCIDependency(dep, module, serviceManager, processedDeps)
-}
-
-// processClassicHelmDependency handles classic Helm dependencies
-func processClassicHelmDependency(dep *entities.Dependency, module *entities.Module, serviceManager artifactory.ArtifactoryServicesManager, processedDeps map[string]bool) {
-	if processedDeps[dep.Sha256] {
-		return
-	}
-	if dep.Sha256 == "" {
-		err := updateClassicHelmDependencyChecksums(dep, serviceManager)
-		if err != nil {
-			log.Debug("Failed to update checksums for classic Helm dependency ", dep.Id, " : ", err)
-			return
-		}
-		processedDeps[dep.Sha256] = true
-		removeDependencyByIndex(module)
-		log.Debug("Removed classic Helm dependency ", dep.Id, " without checksums (not found in Artifactory)")
-		return
-	}
-}
-
-// processOCIDependency handles OCI dependencies
-func processOCIDependency(dep *entities.Dependency, module *entities.Module, serviceManager artifactory.ArtifactoryServicesManager, processedDeps map[string]bool) bool {
-	addedLayers, err := addOCILayersForDependency(dep, module, serviceManager, processedDeps)
-	if err != nil {
-		log.Debug("Failed to add OCI layers for dependency ", dep.Id, " : ", err)
-		return true
-	}
-	if addedLayers > 0 {
-		removeDependencyByIndex(module)
-		log.Debug("Removed dependency ", dep.Id, " after adding ", addedLayers, " OCI layers")
-		return false
-	}
-	return true
+	addOCILayersForDependency(dep, serviceManager, processedDependencies)
 }
 
 // addOCILayersForDependency adds all OCI layers for a dependency that has checksums
-func addOCILayersForDependency(dep *entities.Dependency, module *entities.Module, serviceManager artifactory.ArtifactoryServicesManager, processedDeps map[string]bool) (int, error) {
+func addOCILayersForDependency(dep entities.Dependency, serviceManager artifactory.ArtifactoryServicesManager, processedDependencies *[]entities.Dependency) {
 	versionPath := extractDependencyPath(dep.Id)
 	if versionPath == "" {
-		return 0, fmt.Errorf("could not extract version path from dependency ID %s", dep.Id)
+		log.Error("Failed to find a valid version for dependency: ", dep.Id)
+		return
 	}
 	repoName := extractRepositoryNameFromURL(dep.Repository)
 	if repoName == "" {
-		return 0, fmt.Errorf("could not extract repo name from: %s", dep.Repository)
-	}
-	searchPattern := fmt.Sprintf("%s/%s/*", repoName, versionPath)
-	ociArtifacts, err := searchDependencyOCIFilesByPath(serviceManager, searchPattern)
-	if err != nil {
-		log.Debug("Failed to search OCI artifacts for dependency ", dep.Id, " : ", err)
-		return 0, nil
-	}
-	if len(ociArtifacts) == 0 {
-		return 0, nil
-	}
-	addedCount := 0
-	for name, resultItem := range ociArtifacts {
-		if processedDeps[resultItem.Sha256] {
-			continue
-		}
-		addOCILayer(module, resultItem)
-		addedCount++
-		processedDeps[resultItem.Sha256] = true
-		log.Debug("Added OCI artifact as dependency: ", name, " (path: ", resultItem.Path, "/", name, ")")
-	}
-	return addedCount, nil
-}
-
-// removeDependencyByIndex removes a dependency from the module by its index
-func removeDependencyByIndex(module *entities.Module) {
-	if len(module.Dependencies) == 0 {
+		log.Error("Failed to find a valid repository for dependency: ", dep.Id)
 		return
 	}
-	module.Dependencies = module.Dependencies[1:]
+	searchPattern := fmt.Sprintf("%s/%s/*", repoName, versionPath)
+	resultMap, err := searchDependencyOCIFilesByPath(serviceManager, searchPattern)
+	if err != nil {
+		log.Debug("Failed to search OCI artifacts for dependency ", dep.Id, " : ", err)
+		return
+	}
+	if len(resultMap) == 0 {
+		log.Debug("Did not find any OCI artifacts for dependency: ", dep.Id)
+		return
+	}
+	dependencyManifest, err := getManifest(resultMap, serviceManager, repoName)
+	if err != nil {
+		log.Debug("Failed to get manifest")
+		return
+	}
+	if dependencyManifest == nil {
+		log.Debug("Could not find image manifest in Artifactory")
+		return
+	}
+	layerDigests := make([]struct{ Digest, MediaType string }, len(dependencyManifest.Layers))
+	for i, layerItem := range dependencyManifest.Layers {
+		layerDigests[i] = struct{ Digest, MediaType string }{
+			Digest:    layerItem.Digest,
+			MediaType: layerItem.MediaType,
+		}
+	}
+	dependencyLayers, err := ocicontainer.ExtractLayersFromManifestData(resultMap, dependencyManifest.Config.Digest, layerDigests)
+	if err != nil {
+		return
+	}
+	for _, depLayer := range dependencyLayers {
+		*processedDependencies = append(*processedDependencies, entities.Dependency{
+			Id:         depLayer.Name,
+			Type:       depLayer.Type,
+			Repository: depLayer.Repo,
+			Checksum: entities.Checksum{
+				Sha1:   depLayer.Actual_Sha1,
+				Md5:    depLayer.Actual_Md5,
+				Sha256: depLayer.Sha256,
+			},
+		})
+	}
 }
 
 // updateClassicHelmDependencyChecksums searches for a classic Helm chart .tgz file in Artifactory
-func updateClassicHelmDependencyChecksums(dep *entities.Dependency, serviceManager artifactory.ArtifactoryServicesManager) error {
+func updateClassicHelmDependencyChecksums(dep entities.Dependency, serviceManager artifactory.ArtifactoryServicesManager, processedDependencies *[]entities.Dependency) {
+	if dep.Id == "" {
+		return
+	}
+	if !dep.IsEmpty() {
+		if dep.Md5 != "" && dep.Sha1 != "" && dep.Sha256 != "" {
+			*processedDependencies = append(*processedDependencies, dep)
+			return
+		}
+	}
 	depName, depVersion, err := parseDependencyID(dep.Id)
 	if err != nil {
-		return fmt.Errorf("could not parse dependency ID %s: %w", dep.Id, err)
+		return
 	}
 	repoName := extractRepositoryNameFromURL(dep.Repository)
 	if repoName == "" {
-		return fmt.Errorf("could not extract repository name from: %s", dep.Repository)
+		return
 	}
 	log.Debug("Classic Helm dependency ", dep.Id, " has no checksums, searching for .tgz file in Artifactory")
 	resultItem, err := searchClassicHelmChart(serviceManager, repoName, depName, depVersion)
 	if err != nil {
 		log.Debug("Classic Helm chart not found for dependency ", dep.Id, " : ", err)
-		return nil
+		return
 	}
-	dep.Checksum = entities.Checksum{
-		Sha1:   resultItem.Actual_Sha1,
-		Sha256: resultItem.Sha256,
-		Md5:    resultItem.Actual_Md5,
-	}
-	dep.Sha256 = resultItem.Sha256
+	*processedDependencies = append(*processedDependencies, resultItem.ToDependency())
 	log.Debug("Found classic Helm chart for dependency ", dep.Id, " : ", resultItem.Name, " (sha256: ", dep.Sha256, ")")
-	return nil
 }
 
 // parseDependencyID parses dependency ID into name and version
@@ -214,17 +218,20 @@ func searchDependencyOCIFilesByPath(serviceManager artifactory.ArtifactoryServic
 	return artifacts, nil
 }
 
-// addOCIDependency adds an OCI artifact as a separate dependency
-func addOCILayer(module *entities.Module, resultItem *servicesUtils.ResultItem) {
-	ociDependency := entities.Dependency{
-		Id: fmt.Sprintf("%s/%s/%s", resultItem.Repo, resultItem.Path, resultItem.Name),
-		Checksum: entities.Checksum{
-			Sha1:   resultItem.Actual_Sha1,
-			Sha256: resultItem.Sha256,
-			Md5:    resultItem.Actual_Md5,
-		},
+func getManifest(resultMap map[string]*servicesUtils.ResultItem, serviceManager artifactory.ArtifactoryServicesManager, repo string) (layerManifest *manifest, err error) {
+	if len(resultMap) == 0 {
+		return
 	}
+	manifestSearchResult, ok := resultMap["manifest.json"]
+	if !ok {
+		return
+	}
+	err = downloadLayer(*manifestSearchResult, &layerManifest, serviceManager, repo)
+	return
+}
 
-	module.Dependencies = append(module.Dependencies, ociDependency)
-	log.Debug("Added OCI artifact as dependency: ", resultItem.Name, " (path: ", resultItem.Path, "/", resultItem.Name, ")")
+// Download the content of layer search result.
+func downloadLayer(searchResult servicesUtils.ResultItem, result interface{}, serviceManager artifactory.ArtifactoryServicesManager, repo string) error {
+	searchResult.Repo = repo
+	return artutils.RemoteUnmarshal(serviceManager, searchResult.GetItemRelativePath(), result)
 }

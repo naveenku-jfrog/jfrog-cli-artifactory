@@ -93,7 +93,7 @@ func TestGetPullChartPath(t *testing.T) {
 		{
 			name:        "Pull command - valid",
 			cmdName:     "pull",
-			args:        []string{"pull", "chart-name"},
+			args:        []string{"chart-name"},
 			expected:    "chart-name",
 			expectedErr: false,
 		},
@@ -281,74 +281,74 @@ func TestGetPositionalArguments(t *testing.T) {
 // TestSetStringFlag tests the setStringFlag function
 func TestSetStringFlag(t *testing.T) {
 	tests := []struct {
-		name              string
-		flagName          string
-		value             string
-		expectedRepo      string
-		expectedVersion   string
-		expectedUser      string
-		expectedPass      string
-		expectedCaFile    string
-		expectedCertFile  string
-		expectedKeyFile   string
-		expectedKeyring   string
-		shouldSet         bool
+		name             string
+		flagName         string
+		value            string
+		expectedRepo     string
+		expectedVersion  string
+		expectedUser     string
+		expectedPass     string
+		expectedCaFile   string
+		expectedCertFile string
+		expectedKeyFile  string
+		expectedKeyring  string
+		shouldSet        bool
 	}{
 		{
-			name:            "Set repo",
-			flagName:        "--repo",
-			value:           "https://charts.example.com",
-			expectedRepo:    "https://charts.example.com",
+			name:         "Set repo",
+			flagName:     "--repo",
+			value:        "https://charts.example.com",
+			expectedRepo: "https://charts.example.com",
+			shouldSet:    true,
+		},
+		{
+			name:            "Set version",
+			flagName:        "--version",
+			value:           "1.2.3",
+			expectedVersion: "1.2.3",
 			shouldSet:       true,
 		},
 		{
-			name:          "Set version",
-			flagName:      "--version",
-			value:         "1.2.3",
-			expectedVersion: "1.2.3",
-			shouldSet:     true,
+			name:         "Set username",
+			flagName:     "--username",
+			value:        "user",
+			expectedUser: "user",
+			shouldSet:    true,
 		},
 		{
-			name:          "Set username",
-			flagName:      "--username",
-			value:         "user",
-			expectedUser:  "user",
-			shouldSet:     true,
+			name:         "Set password",
+			flagName:     "--password",
+			value:        "pass",
+			expectedPass: "pass",
+			shouldSet:    true,
 		},
 		{
-			name:          "Set password",
-			flagName:      "--password",
-			value:         "pass",
-			expectedPass:  "pass",
-			shouldSet:     true,
-		},
-		{
-			name:          "Set ca-file",
-			flagName:      "--ca-file",
-			value:         "/path/to/ca.crt",
+			name:           "Set ca-file",
+			flagName:       "--ca-file",
+			value:          "/path/to/ca.crt",
 			expectedCaFile: "/path/to/ca.crt",
-			shouldSet:     true,
-		},
-		{
-			name:           "Set cert-file",
-			flagName:       "--cert-file",
-			value:          "/path/to/cert.crt",
-			expectedCertFile: "/path/to/cert.crt",
 			shouldSet:      true,
 		},
 		{
-			name:          "Set key-file",
-			flagName:      "--key-file",
-			value:         "/path/to/key.key",
-			expectedKeyFile: "/path/to/key.key",
-			shouldSet:     true,
+			name:             "Set cert-file",
+			flagName:         "--cert-file",
+			value:            "/path/to/cert.crt",
+			expectedCertFile: "/path/to/cert.crt",
+			shouldSet:        true,
 		},
 		{
-			name:          "Set keyring",
-			flagName:      "--keyring",
-			value:         "/path/to/keyring",
+			name:            "Set key-file",
+			flagName:        "--key-file",
+			value:           "/path/to/key.key",
+			expectedKeyFile: "/path/to/key.key",
+			shouldSet:       true,
+		},
+		{
+			name:            "Set keyring",
+			flagName:        "--keyring",
+			value:           "/path/to/keyring",
 			expectedKeyring: "/path/to/keyring",
-			shouldSet:     true,
+			shouldSet:       true,
 		},
 		{
 			name:      "Unknown flag",

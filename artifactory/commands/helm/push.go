@@ -2,9 +2,10 @@ package helm
 
 import (
 	"fmt"
-	"github.com/jfrog/jfrog-client-go/artifactory"
-	"path"
 	"strings"
+
+	"github.com/jfrog/jfrog-cli-artifactory/artifactory/commands/ocicontainer"
+	"github.com/jfrog/jfrog-client-go/artifactory"
 
 	"github.com/jfrog/gofrog/crypto"
 	"helm.sh/helm/v3/pkg/chart/loader"
@@ -16,12 +17,8 @@ import (
 )
 
 func handlePushCommand(buildInfo *entities.BuildInfo, helmArgs []string, serviceManager artifactory.ArtifactoryServicesManager) {
-	filePath := getPushChartPath(helmArgs)
-	if filePath == "" {
-		return
-	}
-	registryURL := getPushRegistryURL(helmArgs)
-	if registryURL == "" {
+	filePath, registryURL := getPushChartPathAndRegistryURL(helmArgs)
+	if filePath == "" || registryURL == "" {
 		return
 	}
 	log.Debug("Processing push command for chart: ", filePath, " to registry: ", registryURL)
@@ -36,89 +33,105 @@ func handlePushCommand(buildInfo *entities.BuildInfo, helmArgs []string, service
 		parts := strings.Split(filePath, "/")
 		fileName = parts[len(parts)-1]
 	}
-	artifact := entities.Artifact{
-		Name:                   fileName,
-		Path:                   deploymentPath,
-		OriginalDeploymentRepo: repoName,
-		Checksum: entities.Checksum{
-			Sha1:   fileDetails.Checksum.Sha1,
-			Md5:    fileDetails.Checksum.Md5,
-			Sha256: fileDetails.Checksum.Sha256,
-		},
-	}
 	isOCI := registry.IsOCI(registryURL)
 	if !isOCI {
+		artifact := entities.Artifact{
+			Name:                   fileName,
+			Path:                   deploymentPath,
+			OriginalDeploymentRepo: repoName,
+			Checksum: entities.Checksum{
+				Sha1:   fileDetails.Checksum.Sha1,
+				Md5:    fileDetails.Checksum.Md5,
+				Sha256: fileDetails.Checksum.Sha256,
+			},
+		}
 		if buildInfo != nil && len(buildInfo.Modules) > 0 {
 			buildInfo.Modules[0].Artifacts = append(buildInfo.Modules[0].Artifacts, artifact)
 		}
 		return
 	}
-	var artifacts []entities.Artifact
 	var searchPattern string
-	chartName, chartVersion, err := getChartDetails(artifact.Name)
+	chartName, chartVersion, err := getChartDetails(fileName)
 	if err != nil {
-		log.Debug("Could not extract chart name/version from artifact: ", artifact.Name)
+		log.Debug("Could not extract chart name/version from artifact: ", fileName)
 		return
 	}
-	searchPattern = fmt.Sprintf("%s/%s/%s/", artifact.Path, chartName, chartVersion)
-	ociArtifacts, err := searchDependencyOCIFilesByPath(serviceManager, searchPattern)
+	searchPattern = fmt.Sprintf("%s/%s/%s/", repoName, chartName, chartVersion)
+	resultMap, err := searchDependencyOCIFilesByPath(serviceManager, searchPattern)
 	if err != nil {
-		log.Debug("Failed to search OCI artifacts for chart at path", artifact.Path, " : ", err)
+		log.Debug("Failed to search OCI artifacts for ", chartName, " : ", chartVersion)
 		return
 	}
-	for _, ociArtifact := range ociArtifacts {
-		artifacts = append(artifacts, entities.Artifact{
-			Name:                   ociArtifact.Name,
-			Path:                   path.Join(ociArtifact.Path, ociArtifact.Name),
-			OriginalDeploymentRepo: ociArtifact.Repo,
-			Checksum: entities.Checksum{
-				Sha1:   ociArtifact.Actual_Sha1,
-				Md5:    ociArtifact.Actual_Md5,
-				Sha256: ociArtifact.Sha256,
-			},
-		})
+	if len(resultMap) == 0 {
+		log.Debug("No OCI artifacts found for chart: ", chartName, " : ", chartVersion)
+		return
+	}
+	artifactManifest, err := getManifest(resultMap, serviceManager, repoName)
+	if err != nil {
+		log.Debug("Failed to get manifest")
+		return
+	}
+	if artifactManifest == nil {
+		log.Debug("Could not find image manifest in Artifactory")
+		return
+	}
+	layerDigests := make([]struct{ Digest, MediaType string }, len(artifactManifest.Layers))
+	for i, layerItem := range artifactManifest.Layers {
+		layerDigests[i] = struct{ Digest, MediaType string }{
+			Digest:    layerItem.Digest,
+			MediaType: layerItem.MediaType,
+		}
+	}
+	artifactsLayers, err := ocicontainer.ExtractLayersFromManifestData(resultMap, artifactManifest.Config.Digest, layerDigests)
+	if err != nil {
+		log.Debug("Failed to extract OCI artifacts for ", chartName, " : ", chartVersion)
+		return
+	}
+
+	var artifacts []entities.Artifact
+	for _, artLayer := range artifactsLayers {
+		artifacts = append(artifacts, artLayer.ToArtifact())
 	}
 	if buildInfo != nil && len(buildInfo.Modules) > 0 {
 		buildInfo.Modules[0].Artifacts = artifacts
 	}
 }
 
-// getPushChartPath extracts the chart path from helm push command arguments
-func getPushChartPath(helmArgs []string) string {
-	for i := 1; i < len(helmArgs); i++ {
+func getPushChartPathAndRegistryURL(helmArgs []string) (chartPath, registryURL string) {
+	booleanFlags := map[string]bool{
+		"--debug": true, "--plain-http": true, "--insecure-skip-tls-verify": true,
+		"--verify": true, "--dry-run": true, "--help": true,
+	}
+	var positionalArgs []string
+	for i := 0; i < len(helmArgs); i++ {
 		arg := helmArgs[i]
+		if arg == "push" {
+			continue
+		}
 		if strings.HasPrefix(arg, "--") {
-			if i+1 < len(helmArgs) && !strings.HasPrefix(helmArgs[i+1], "--") {
+			if strings.Contains(arg, "=") {
+				continue
+			}
+			if booleanFlags[arg] {
+				continue
+			}
+			if i+1 < len(helmArgs) {
 				i++
 			}
 			continue
 		}
-		return arg
+		positionalArgs = append(positionalArgs, arg)
 	}
-	return ""
-}
-
-// getPushRegistryURL extracts the registry URL from helm push command arguments
-func getPushRegistryURL(helmArgs []string) string {
-	positionalCount := 0
-	for i := 1; i < len(helmArgs); i++ {
-		arg := helmArgs[i]
-		if strings.HasPrefix(arg, "--") {
-			if i+1 < len(helmArgs) && !strings.HasPrefix(helmArgs[i+1], "--") {
-				i++
-			}
-			continue
-		}
-		positionalCount++
-		if positionalCount == 2 {
-			return arg
-		}
+	if len(positionalArgs) > 0 {
+		chartPath = positionalArgs[0]
 	}
-	return ""
+	if len(positionalArgs) > 1 {
+		registryURL = positionalArgs[1]
+	}
+	return
 }
 
 // getUploadedFileDeploymentPath extracts the deployment path from the OCI registry URL argument
-// Example: oci://example.com/my-repo/folder -> returns "my-repo/folder"
 func getUploadedFileDeploymentPath(registryURL string) string {
 	if registryURL == "" {
 		return ""
