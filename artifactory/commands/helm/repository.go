@@ -13,7 +13,7 @@ const (
 )
 
 // extractRepositoryNameFromURL extracts the repository name from an OCI or HTTPS URL
-func extractRepositoryNameFromURL(repository string) string {
+func extractRepositoryNameFromURL(repositoryURL string) string {
 	if repository == "" {
 		return ""
 	}

@@ -58,7 +58,7 @@ func collectBuildInfoWithFlexPack(workingDir, buildName, buildNumber string) (*e
 // saveBuildInfo saves build info to the build instance
 func saveBuildInfo(buildInfo *entities.BuildInfo, buildName, buildNumber, project string) error {
 	if err := buildtool.SaveBuildInfo(buildName, buildNumber, project, buildInfo); err != nil {
-		log.Warn("Failed to save build info for jfrog-cli compatibility: " + err.Error())
+		log.Warn("Failed to save build info for jfrog-cli compatibility: ", err.Error())
 		return err
 	}
 	log.Info("Build info saved locally. Use 'jf rt bp %s %s' to publish it to Artifactory.", buildName, buildNumber)
