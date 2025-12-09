@@ -161,16 +161,13 @@ func parseDependencyID(depId string) (string, string, error) {
 func searchClassicHelmChart(serviceManager artifactory.ArtifactoryServicesManager, repoName, depName, depVersion string) (*servicesUtils.ResultItem, error) {
 	searchPattern := fmt.Sprintf("%s/%s-%s*.tgz", repoName, depName, depVersion)
 	log.Debug("Searching for classic Helm chart with pattern: ", searchPattern)
-
 	searchParams := services.NewSearchParams()
 	searchParams.Pattern = searchPattern
 	searchParams.Recursive = false
-
 	reader, err := serviceManager.SearchFiles(searchParams)
 	if err != nil {
 		return nil, fmt.Errorf("failed to search for classic Helm chart: %w", err)
 	}
-
 	var closeErr error
 	defer func() {
 		if closeErr != nil {
@@ -189,16 +186,13 @@ func searchClassicHelmChart(serviceManager artifactory.ArtifactoryServicesManage
 // searchDependencyOCIFilesByPath searches for OCI artifacts using a search pattern
 func searchDependencyOCIFilesByPath(serviceManager artifactory.ArtifactoryServicesManager, searchPattern string) (map[string]*servicesUtils.ResultItem, error) {
 	log.Debug("Searching for OCI artifacts with pattern: ", searchPattern)
-
 	searchParams := services.NewSearchParams()
 	searchParams.Pattern = searchPattern
 	searchParams.Recursive = false
-
 	reader, err := serviceManager.SearchFiles(searchParams)
 	if err != nil {
 		return nil, fmt.Errorf("failed to search for OCI artifacts: %w", err)
 	}
-
 	var closeErr error
 	defer func() {
 		if closeErr != nil {
@@ -206,7 +200,6 @@ func searchDependencyOCIFilesByPath(serviceManager artifactory.ArtifactoryServic
 		}
 		ioutils.Close(reader, &closeErr)
 	}()
-
 	artifacts := make(map[string]*servicesUtils.ResultItem)
 	for item := new(servicesUtils.ResultItem); reader.NextRecord(item) == nil; item = new(servicesUtils.ResultItem) {
 		if item.Type != "folder" && (item.Name == "manifest.json" || strings.HasPrefix(item.Name, "sha256__")) {

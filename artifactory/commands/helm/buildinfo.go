@@ -25,13 +25,8 @@ func CollectHelmBuildInfoWithFlexPack(workingDir, buildName, buildNumber, projec
 		return fmt.Errorf("failed to create services manager: %w", err)
 	}
 	updateDependencyOCILayersInBuildInfo(buildInfo, serviceManager)
-	switch commandName {
-	case "push":
+	if commandName == "push" {
 		handlePushCommand(buildInfo, helmArgs, serviceManager)
-	case "pull", "fetch":
-		handlePullCommand(buildInfo, helmArgs, serviceManager)
-	case "install", "upgrade":
-		handleInstallOrUpgradeCommand(buildInfo, commandName, helmArgs, serviceManager)
 	}
 	return saveBuildInfo(buildInfo, buildName, buildNumber, project)
 }
@@ -41,17 +36,14 @@ func collectBuildInfoWithFlexPack(workingDir, buildName, buildNumber string) (*e
 	helmConfig := flexpack.HelmConfig{
 		WorkingDirectory: workingDir,
 	}
-
 	helmFlex, err := flexpack.NewHelmFlexPack(helmConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Helm FlexPack: %w", err)
 	}
-
 	buildInfo, err := helmFlex.CollectBuildInfo(buildName, buildNumber)
 	if err != nil {
 		return nil, fmt.Errorf("failed to collect build info with FlexPack: %w", err)
 	}
-
 	return buildInfo, nil
 }
 

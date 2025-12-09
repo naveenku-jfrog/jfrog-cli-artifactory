@@ -7,13 +7,10 @@ import (
 	"github.com/jfrog/jfrog-cli-artifactory/artifactory/commands/ocicontainer"
 	"github.com/jfrog/jfrog-client-go/artifactory"
 
-	"github.com/jfrog/gofrog/crypto"
-	"helm.sh/helm/v3/pkg/chart/loader"
-	"helm.sh/helm/v3/pkg/registry"
-	orasregistry "oras.land/oras-go/v2/registry"
-
 	"github.com/jfrog/build-info-go/entities"
+	"github.com/jfrog/gofrog/crypto"
 	"github.com/jfrog/jfrog-client-go/utils/log"
+	"helm.sh/helm/v3/pkg/registry"
 )
 
 func handlePushCommand(buildInfo *entities.BuildInfo, helmArgs []string, serviceManager artifactory.ArtifactoryServicesManager) {
@@ -87,7 +84,6 @@ func handlePushCommand(buildInfo *entities.BuildInfo, helmArgs []string, service
 		log.Debug("Failed to extract OCI artifacts for ", chartName, " : ", chartVersion)
 		return
 	}
-
 	var artifacts []entities.Artifact
 	for _, artLayer := range artifactsLayers {
 		artifacts = append(artifacts, artLayer.ToArtifact())
@@ -95,82 +91,4 @@ func handlePushCommand(buildInfo *entities.BuildInfo, helmArgs []string, service
 	if buildInfo != nil && len(buildInfo.Modules) > 0 {
 		buildInfo.Modules[0].Artifacts = artifacts
 	}
-}
-
-func getPushChartPathAndRegistryURL(helmArgs []string) (chartPath, registryURL string) {
-	booleanFlags := map[string]bool{
-		"--debug": true, "--plain-http": true, "--insecure-skip-tls-verify": true,
-		"--verify": true, "--dry-run": true, "--help": true,
-	}
-	var positionalArgs []string
-	for i := 0; i < len(helmArgs); i++ {
-		arg := helmArgs[i]
-		if arg == "push" {
-			continue
-		}
-		if strings.HasPrefix(arg, "--") {
-			if strings.Contains(arg, "=") {
-				continue
-			}
-			if booleanFlags[arg] {
-				continue
-			}
-			if i+1 < len(helmArgs) {
-				i++
-			}
-			continue
-		}
-		positionalArgs = append(positionalArgs, arg)
-	}
-	if len(positionalArgs) > 0 {
-		chartPath = positionalArgs[0]
-	}
-	if len(positionalArgs) > 1 {
-		registryURL = positionalArgs[1]
-	}
-	return
-}
-
-// getUploadedFileDeploymentPath extracts the deployment path from the OCI registry URL argument
-func getUploadedFileDeploymentPath(registryURL string) string {
-	if registryURL == "" {
-		return ""
-	}
-	raw := strings.TrimPrefix(registryURL, registry.OCIScheme+"://")
-	ref, err := parseOCIReference(raw)
-	if err != nil {
-		log.Debug("Failed to parse OCI reference ", registryURL, " : ", err)
-		return ""
-	}
-	return ref.Repository
-}
-
-// parseOCIReference parses an OCI reference using the same approach as Helm SDK
-func parseOCIReference(raw string) (*ociReference, error) {
-	orasRef, err := orasregistry.ParseReference(raw)
-	if err != nil {
-		return nil, err
-	}
-	return &ociReference{
-		Registry:   orasRef.Registry,
-		Repository: orasRef.Repository,
-		Reference:  orasRef.Reference,
-	}, nil
-}
-
-// ociReference represents a parsed OCI reference (similar to Helm SDK's reference struct)
-type ociReference struct {
-	Registry   string
-	Repository string
-	Reference  string
-}
-
-func getChartDetails(filePath string) (string, string, error) {
-	chart, err := loader.Load(filePath)
-	if err != nil {
-		return "", "", err
-	}
-	name := chart.Metadata.Name
-	version := chart.Metadata.Version
-	return name, version, nil
 }

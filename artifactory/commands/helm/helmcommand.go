@@ -101,11 +101,9 @@ func (hc *HelmCommand) Run() error {
 	if err := hc.executeHelmCommand(); err != nil {
 		return errorutils.CheckErrorf("helm %s failed: %w", hc.cmdName, err)
 	}
-
 	if err := hc.collectBuildInfoIfNeeded(); err != nil {
 		return errorutils.CheckError(err)
 	}
-
 	return nil
 }
 
@@ -129,14 +127,12 @@ func (hc *HelmCommand) appendCredentialsInArguments() {
 // executeHelmCommand executes the native Helm command
 func (hc *HelmCommand) executeHelmCommand() error {
 	log.Info("Running Helm ", hc.cmdName, ".")
-
 	args := append([]string{hc.cmdName}, hc.helmArgs...)
 	helmCmd := exec.Command("helm", args...)
 	helmCmd.Stdout = os.Stdout
 	helmCmd.Stderr = os.Stderr
 	helmCmd.Stdin = os.Stdin
 	helmCmd.Dir = hc.workingDirectory
-
 	return helmCmd.Run()
 }
 
@@ -152,7 +148,11 @@ func (hc *HelmCommand) collectBuildInfoIfNeeded() error {
 	if !isCollectBuildInfo {
 		return nil
 	}
-	log.Info("Collecting build info for executed helm command...")
+	if !needBuildInfo(hc.cmdName) {
+		log.Debug("Skipping build info for ", hc.cmdName)
+		return nil
+	}
+	log.Info("Collecting build info for executed helm ", hc.cmdName, "command")
 	buildName, err := hc.buildConfiguration.GetBuildName()
 	if err != nil {
 		return errorutils.CheckError(err)
@@ -226,15 +226,12 @@ func (hc *HelmCommand) getCredentials() (string, string) {
 // executeHelmLogin executes the helm registry login command
 func (hc *HelmCommand) executeHelmLogin(registryURL, user, pass string) error {
 	log.Debug("Performing helm registry login to", registryURL, " with user ", user)
-
 	cmdLogin := exec.Command("helm", "registry", "login", registryURL, "--username", user, "--password", pass)
 	cmdLogin.Stdout = io.Discard
 	cmdLogin.Stderr = os.Stderr
-
 	if err := cmdLogin.Run(); err != nil {
 		return fmt.Errorf("helm registry login failed: %w", err)
 	}
-
 	log.Debug("Helm registry login to successful, ", registryURL)
 	return nil
 }
