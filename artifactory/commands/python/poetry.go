@@ -284,11 +284,17 @@ func (pc *PoetryCommand) SetPypiRepoUrlWithCredentials() error {
 		return err
 	}
 	if password != "" {
-		return ConfigPoetryRepo(
-			rtUrl.Scheme+"://"+rtUrl.Host+rtUrl.Path,
-			username,
-			password,
-			pc.repository)
+		// Construct base URL and strip /simple suffix for publishing
+		baseUrl := rtUrl.Scheme + "://" + rtUrl.Host + rtUrl.Path
+		publishUrl := strings.TrimSuffix(baseUrl, "/simple")
+		publishUrl = strings.TrimSuffix(publishUrl, "/")
+
+		// For publish commands, only configure Poetry TOML, don't modify pyproject.toml
+		if pc.commandName == "publish" {
+			return RunPoetryConfig(publishUrl, username, password, pc.repository)
+		}
+		// For install/other commands, configure Poetry TOML and add to pyproject.toml
+		return ConfigPoetryRepo(publishUrl, username, password, pc.repository)
 	}
 	return nil
 }
