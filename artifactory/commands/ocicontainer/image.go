@@ -147,12 +147,8 @@ func (image *Image) GetRemoteRepo(serviceManager artifactory.ArtifactoryServices
 	if err != nil {
 		return "", err
 	}
-	var isSecure bool
-	if rtUrl := serviceManager.GetConfig().GetServiceDetails().GetUrl(); strings.HasPrefix(rtUrl, "https") {
-		isSecure = true
-	}
 	// Build the request URL.
-	endpoint := buildRequestUrl(longImageName, imageTag, containerRegistryUrl, isSecure)
+	endpoint := buildRequestUrl(longImageName, imageTag, containerRegistryUrl, isSecureProtocol(serviceManager))
 	artHttpDetails := serviceManager.GetConfig().GetServiceDetails().CreateHttpClientDetails()
 	artHttpDetails.Headers["accept"] = "application/vnd.docker.distribution.manifest.v1+prettyjws, application/json, application/vnd.oci.image.manifest.v1+json, application/vnd.docker.distribution.manifest.v2+json, application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.oci.image.index.v1+json"
 	resp, _, err := serviceManager.Client().SendHead(endpoint, &artHttpDetails)
@@ -169,6 +165,52 @@ func (image *Image) GetRemoteRepo(serviceManager artifactory.ArtifactoryServices
 		return dockerRepo[0], nil
 	}
 	return "", errors.New("couldn't find 'X-Artifactory-Docker-Registry' header  docker repository in artifactory")
+}
+
+// Returns the physical Artifactory repository name of the pulled/pushed image, by reading a response header from Artifactory.
+func (image *Image) GetRemoteRepoAndManifestTypeAndLeadSha(serviceManager artifactory.ArtifactoryServicesManager) (string, string, string, error) {
+	containerRegistryUrl, err := image.GetRegistry()
+	if err != nil {
+		return "", "", "", err
+	}
+	longImageName, err := image.GetImageLongName()
+	if err != nil {
+		return "", "", "", err
+	}
+	imageTag, err := image.GetImageTag()
+	if err != nil {
+		return "", "", "", err
+	}
+	// Build the request URL.
+	endpoint := buildRequestUrl(longImageName, imageTag, containerRegistryUrl, isSecureProtocol(serviceManager))
+	artHttpDetails := serviceManager.GetConfig().GetServiceDetails().CreateHttpClientDetails()
+	artHttpDetails.Headers["accept"] = "application/vnd.docker.distribution.manifest.v1+prettyjws, application/json, application/vnd.oci.image.manifest.v1+json, application/vnd.docker.distribution.manifest.v2+json, application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.oci.image.index.v1+json"
+	resp, _, err := serviceManager.Client().SendHead(endpoint, &artHttpDetails)
+	if err != nil {
+		return "", "", "", err
+	}
+	if resp.StatusCode == http.StatusForbidden {
+		return "", "", "", errorutils.CheckErrorf("%s for image '%s'", getStatusForbiddenErrorMessage(), image.name)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return "", "", "", errorutils.CheckErrorf("error while getting docker repository name for image '%s'. Artifactory response: %s", image.name, resp.Status)
+	}
+
+	var dockerRepo, dockerManifestType, dockerLeadSha []string
+	if dockerRepo = resp.Header["X-Artifactory-Docker-Registry"]; len(dockerRepo) == 0 {
+		return "", "", "", errorutils.CheckErrorf("couldn't find 'X-Artifactory-Docker-Registry' header for image '%s'", image.name)
+	}
+	if dockerManifestType = resp.Header["X-Artifactory-Filename"]; len(dockerManifestType) == 0 {
+		return "", "", "", errorutils.CheckErrorf("couldn't find 'X-Artifactory-Filename' header for image '%s'", image.name)
+	}
+	if dockerLeadSha = resp.Header["X-Checksum-Sha256"]; len(dockerLeadSha) == 0 {
+		return "", "", "", errorutils.CheckErrorf("couldn't find 'X-Checksum-Sha256' header for image '%s'", image.name)
+	}
+	return dockerRepo[0], dockerManifestType[0], dockerLeadSha[0], nil
+}
+
+func isSecureProtocol(serviceManager artifactory.ArtifactoryServicesManager) bool {
+	return strings.HasPrefix(serviceManager.GetConfig().GetServiceDetails().GetUrl(), "https")
 }
 
 // Returns the name of the repository containing the image in Artifactory.
