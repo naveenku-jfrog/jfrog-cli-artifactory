@@ -2,16 +2,15 @@ package helm
 
 import (
 	"fmt"
-	"io"
-	"net/url"
-	"os"
-	"os/exec"
-
 	buildUtils "github.com/jfrog/jfrog-cli-core/v2/common/build"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-client-go/auth"
 	"github.com/jfrog/jfrog-client-go/utils/errorutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
+	"io"
+	"net/url"
+	"os"
+	"os/exec"
 )
 
 // HelmCommand represents a Helm command execution
@@ -91,12 +90,8 @@ func (hc *HelmCommand) ServerDetails() (*config.ServerDetails, error) {
 
 // Run executes the Helm command
 func (hc *HelmCommand) Run() error {
-	if hc.requiresCredentialsInArguments() {
+	if hc.requiresCredentialsInArguments(hc.helmArgs) {
 		hc.appendCredentialsInArguments()
-	}
-	err := hc.performRegistryLogin()
-	if err != nil {
-		return err
 	}
 	if err := hc.executeHelmCommand(); err != nil {
 		return errorutils.CheckErrorf("helm %s failed: %w", hc.cmdName, err)
@@ -108,20 +103,41 @@ func (hc *HelmCommand) Run() error {
 }
 
 // requiresCredentialsInArguments checks if the command requires credentials to be appended to arguments
-func (hc *HelmCommand) requiresCredentialsInArguments() bool {
+func (hc *HelmCommand) requiresCredentialsInArguments(args []string) bool {
 	cmdName := hc.cmdName
-	return cmdName == "registry" || cmdName == "repo" || cmdName == "dependency" || cmdName == "upgrade" || cmdName == "install" || cmdName == "pull" || cmdName == "push"
+	extendedCmdNames := map[string][]string{
+		"registry":   {"login"},
+		"dependency": {"update", "build"},
+		"repo":       {"add"},
+	}
+	if extendedArgs, ok := extendedCmdNames[cmdName]; ok {
+		if len(args) > 0 {
+			subCmd := args[0]
+			for _, arg := range extendedArgs {
+				if arg == subCmd {
+					return true
+				}
+			}
+		}
+		return false
+	}
+	return cmdName == "upgrade" || cmdName == "install" || cmdName == "pull" || cmdName == "push"
 }
 
 // appendCredentialsInArguments appends the username and password to arguments
 func (hc *HelmCommand) appendCredentialsInArguments() {
-	user, pass := hc.getCredentials()
-	if user == "" || pass == "" {
+	if hc.username != "" && hc.password != "" {
+		hc.helmArgs = append(hc.helmArgs, "--username", hc.username)
+		hc.helmArgs = append(hc.helmArgs, "--password", hc.password)
+		return
+	}
+	username, password := hc.getCredentials()
+	if username == "" || password == "" {
 		log.Debug("No credentials available for helm registry login")
 		return
 	}
-	hc.helmArgs = append(hc.helmArgs, fmt.Sprintf("--username=%s", user))
-	hc.helmArgs = append(hc.helmArgs, fmt.Sprintf("--password=%s", pass))
+	hc.helmArgs = append(hc.helmArgs, fmt.Sprintf("--username=%s", username))
+	hc.helmArgs = append(hc.helmArgs, fmt.Sprintf("--password=%s", password))
 }
 
 // executeHelmCommand executes the native Helm command
