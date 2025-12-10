@@ -6,7 +6,7 @@ import (
 	"github.com/jfrog/jfrog-client-go/artifactory"
 )
 
-func handleDependencyCommand(buildInfo *entities.BuildInfo, serviceManager artifactory.ArtifactoryServicesManager, workingDir, buildName, buildNumber, project string) error {
+func handleDependencyCommand(_ *entities.BuildInfo, serviceManager artifactory.ArtifactoryServicesManager, workingDir, buildName, buildNumber, project string) error {
 	buildInfo, err := collectBuildInfoWithFlexPack(workingDir, buildName, buildNumber)
 	if err != nil {
 		return fmt.Errorf("failed to collect build info: %w", err)

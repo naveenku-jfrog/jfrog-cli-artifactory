@@ -14,11 +14,11 @@ import (
 func handlePushCommand(buildInfo *entities.BuildInfo, helmArgs []string, serviceManager artifactory.ArtifactoryServicesManager, buildName, buildNumber, project string) error {
 	filePath, registryURL := getPushChartPathAndRegistryURL(helmArgs)
 	if filePath == "" || registryURL == "" {
-		return fmt.Errorf("Invalid helm chart path or registry url")
+		return fmt.Errorf("invalid helm chart path or registry url")
 	}
 	chartName, chartVersion, err := getChartDetails(filePath)
 	if err != nil {
-		return fmt.Errorf("Could not extract chart name/version from artifact %s: %w", filePath, err)
+		return fmt.Errorf("could not extract chart name/version from artifact %s: %w", filePath, err)
 	}
 	appendModuleAndBuildAgentIfAbsent(buildInfo, chartName, chartVersion)
 	log.Debug("Processing push command for chart: ", filePath, " to registry: ", registryURL)
@@ -31,10 +31,10 @@ func handlePushCommand(buildInfo *entities.BuildInfo, helmArgs []string, service
 	searchPattern := fmt.Sprintf("%s/%s/%s/", repoName, chartName, chartVersion)
 	resultMap, err := searchDependencyOCIFilesByPath(serviceManager, searchPattern, buildProps)
 	if err != nil {
-		return fmt.Errorf("Failed to search OCI artifacts for %s : %s: %w", chartName, chartVersion, err)
+		return fmt.Errorf("failed to search OCI artifacts for %s : %s: %w", chartName, chartVersion, err)
 	}
 	if len(resultMap) == 0 {
-		return fmt.Errorf("No OCI artifacts found for chart: %s : %s", chartName, chartVersion)
+		return fmt.Errorf("no OCI artifacts found for chart: %s : %s", chartName, chartVersion)
 	}
 	artifactManifest, err := getManifest(resultMap, serviceManager, repoName)
 	if err != nil {
@@ -52,7 +52,7 @@ func handlePushCommand(buildInfo *entities.BuildInfo, helmArgs []string, service
 	}
 	artifactsLayers, err := ocicontainer.ExtractLayersFromManifestData(resultMap, artifactManifest.Config.Digest, layerDigests)
 	if err != nil {
-		return fmt.Errorf("Failed to extract OCI artifacts for %s : %s: %w", chartName, chartVersion, err)
+		return fmt.Errorf("failed to extract OCI artifacts for %s : %s: %w", chartName, chartVersion, err)
 	}
 	var artifacts []entities.Artifact
 	for _, artLayer := range artifactsLayers {

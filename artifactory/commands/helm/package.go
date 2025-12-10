@@ -7,11 +7,14 @@ import (
 	"path/filepath"
 )
 
-func handlePackageCommand(buildInfo *entities.BuildInfo, args []string, serviceManager artifactory.ArtifactoryServicesManager, buildName, buildNumber, project string) error {
+func handlePackageCommand(_ *entities.BuildInfo, args []string, serviceManager artifactory.ArtifactoryServicesManager, buildName, buildNumber, project string) error {
 	packagePaths := getPaths(args)
 	for _, path := range packagePaths {
 		absolutePath, err := filepath.Abs(path)
-		buildInfo, err = collectBuildInfoWithFlexPack(absolutePath, buildName, buildNumber)
+		if err != nil {
+			return fmt.Errorf("failed to get absolute path: %w", err)
+		}
+		buildInfo, err := collectBuildInfoWithFlexPack(absolutePath, buildName, buildNumber)
 		if err != nil {
 			return fmt.Errorf("failed to collect build info: %w", err)
 		}
