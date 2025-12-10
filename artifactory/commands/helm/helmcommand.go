@@ -121,7 +121,7 @@ func (hc *HelmCommand) requiresCredentialsInArguments(args []string) bool {
 		}
 		return false
 	}
-	return cmdName == "upgrade" || cmdName == "install" || cmdName == "pull" || cmdName == "push"
+	return cmdName == "upgrade" || cmdName == "install" || cmdName == "pull" || cmdName == "push" || cmdName == "show"
 }
 
 // appendCredentialsInArguments appends the username and password to arguments
