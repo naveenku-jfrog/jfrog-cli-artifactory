@@ -39,7 +39,6 @@ func appendModuleAndBuildAgentIfAbsent(buildInfo *entities.BuildInfo, chartName 
 		buildInfo.BuildAgent.Name = "Helm"
 		buildInfo.BuildAgent.Version = getHelmVersion()
 	}
-	return
 }
 
 func getHelmVersion() string {

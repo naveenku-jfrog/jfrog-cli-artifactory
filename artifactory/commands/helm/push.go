@@ -13,7 +13,7 @@ import (
 	"helm.sh/helm/v3/pkg/registry"
 )
 
-func handlePushCommand(buildInfo *entities.BuildInfo, helmArgs []string, serviceManager artifactory.ArtifactoryServicesManager, buildName, buildNumber string) {
+func handlePushCommand(buildInfo *entities.BuildInfo, helmArgs []string, serviceManager artifactory.ArtifactoryServicesManager) {
 	filePath, registryURL := getPushChartPathAndRegistryURL(helmArgs)
 	if filePath == "" || registryURL == "" {
 		return
@@ -51,8 +51,7 @@ func handlePushCommand(buildInfo *entities.BuildInfo, helmArgs []string, service
 		buildInfo.Modules[0].Artifacts = append(buildInfo.Modules[0].Artifacts, artifact)
 		return
 	}
-	var searchPattern string
-	searchPattern = fmt.Sprintf("%s/%s/%s/", repoName, chartName, chartVersion)
+	searchPattern := fmt.Sprintf("%s/%s/%s/", repoName, chartName, chartVersion)
 	resultMap, err := searchDependencyOCIFilesByPath(serviceManager, searchPattern)
 	if err != nil {
 		log.Debug("Failed to search OCI artifacts for ", chartName, " : ", chartVersion)
@@ -88,5 +87,4 @@ func handlePushCommand(buildInfo *entities.BuildInfo, helmArgs []string, service
 		artifacts = append(artifacts, artLayer.ToArtifact())
 	}
 	buildInfo.Modules[0].Artifacts = artifacts
-	return
 }

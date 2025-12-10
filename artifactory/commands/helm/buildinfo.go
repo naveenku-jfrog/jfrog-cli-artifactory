@@ -26,7 +26,7 @@ func CollectHelmBuildInfoWithFlexPack(workingDir, buildName, buildNumber, projec
 		return fmt.Errorf("failed to build info: %w", err)
 	}
 	if commandName == "push" {
-		handlePushCommand(buildInfo, helmArgs, serviceManager, buildName, buildNumber)
+		handlePushCommand(buildInfo, helmArgs, serviceManager)
 	} else {
 		buildInfo, err = collectBuildInfoWithFlexPack(workingDir, buildName, buildNumber)
 		if err != nil {
