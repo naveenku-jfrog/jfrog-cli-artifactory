@@ -18,6 +18,12 @@ func handlePushCommand(buildInfo *entities.BuildInfo, helmArgs []string, service
 	if filePath == "" || registryURL == "" {
 		return
 	}
+	chartName, chartVersion, err := getChartDetails(filePath)
+	if err != nil {
+		log.Debug("Could not extract chart name/version from artifact: ", filePath)
+		return
+	}
+	appendModuleAndBuildAgentIfAbsent(buildInfo, chartName, chartVersion)
 	log.Debug("Processing push command for chart: ", filePath, " to registry: ", registryURL)
 	deploymentPath := getUploadedFileDeploymentPath(registryURL)
 	repoName := extractRepositoryNameFromURL(registryURL)
@@ -42,18 +48,10 @@ func handlePushCommand(buildInfo *entities.BuildInfo, helmArgs []string, service
 				Sha256: fileDetails.Checksum.Sha256,
 			},
 		}
-		if buildInfo != nil && len(buildInfo.Modules) > 0 {
-			buildInfo.Modules[0].Artifacts = append(buildInfo.Modules[0].Artifacts, artifact)
-		}
+		buildInfo.Modules[0].Artifacts = append(buildInfo.Modules[0].Artifacts, artifact)
 		return
 	}
-	var searchPattern string
-	chartName, chartVersion, err := getChartDetails(fileName)
-	if err != nil {
-		log.Debug("Could not extract chart name/version from artifact: ", fileName)
-		return
-	}
-	searchPattern = fmt.Sprintf("%s/%s/%s/", repoName, chartName, chartVersion)
+	searchPattern := fmt.Sprintf("%s/%s/%s/", repoName, chartName, chartVersion)
 	resultMap, err := searchDependencyOCIFilesByPath(serviceManager, searchPattern)
 	if err != nil {
 		log.Debug("Failed to search OCI artifacts for ", chartName, " : ", chartVersion)
@@ -88,7 +86,5 @@ func handlePushCommand(buildInfo *entities.BuildInfo, helmArgs []string, service
 	for _, artLayer := range artifactsLayers {
 		artifacts = append(artifacts, artLayer.ToArtifact())
 	}
-	if buildInfo != nil && len(buildInfo.Modules) > 0 {
-		buildInfo.Modules[0].Artifacts = artifacts
-	}
+	buildInfo.Modules[0].Artifacts = artifacts
 }

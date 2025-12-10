@@ -3,6 +3,7 @@ package helm
 import (
 	"testing"
 
+	"github.com/jfrog/build-info-go/entities"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -206,4 +207,37 @@ func TestParseOCIReference(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestAppendModuleAndBuildAgentIfAbsent(t *testing.T) {
+	t.Run("Nil build info", func(t *testing.T) {
+		appendModuleAndBuildAgentIfAbsent(nil, "test-chart", "1.0.0")
+	})
+	t.Run("Empty modules adds module and BuildAgent", func(t *testing.T) {
+		buildInfo := &entities.BuildInfo{
+			Modules: []entities.Module{},
+		}
+		appendModuleAndBuildAgentIfAbsent(buildInfo, "test-chart", "1.0.0")
+		assert.Len(t, buildInfo.Modules, 1)
+		assert.Equal(t, "test-chart:1.0.0", buildInfo.Modules[0].Id)
+		assert.Equal(t, entities.ModuleType("helm"), buildInfo.Modules[0].Type)
+		assert.NotNil(t, buildInfo.BuildAgent)
+		assert.Equal(t, "Helm", buildInfo.BuildAgent.Name)
+		assert.NotEmpty(t, buildInfo.BuildAgent.Version)
+	})
+	t.Run("Existing module does not add", func(t *testing.T) {
+		buildInfo := &entities.BuildInfo{
+			Modules: []entities.Module{
+				{Id: "existing:1.0.0", Type: "helm"},
+			},
+		}
+		initialCount := len(buildInfo.Modules)
+		appendModuleAndBuildAgentIfAbsent(buildInfo, "test-chart", "1.0.0")
+		assert.Equal(t, initialCount, len(buildInfo.Modules))
+	})
+}
+
+func TestGetHelmVersion(t *testing.T) {
+	version := getHelmVersion()
+	assert.NotEmpty(t, version)
 }

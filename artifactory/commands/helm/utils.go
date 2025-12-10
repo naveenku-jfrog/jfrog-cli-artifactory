@@ -1,10 +1,13 @@
 package helm
 
 import (
+	"fmt"
+	"github.com/jfrog/build-info-go/entities"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/registry"
 	orasregistry "oras.land/oras-go/v2/registry"
+	"os/exec"
 	"strings"
 )
 
@@ -15,6 +18,43 @@ func needBuildInfo(cmdName string) bool {
 		"push":       true,
 	}
 	return buildInfoNeededCommands[cmdName]
+}
+
+func appendModuleAndBuildAgentIfAbsent(buildInfo *entities.BuildInfo, chartName string, chartVersion string) {
+	if buildInfo == nil {
+		log.Debug("No build info collected, skipping further processing")
+		return
+	}
+	if len(buildInfo.Modules) == 0 {
+		module := entities.Module{
+			Id:   fmt.Sprintf("%s:%s", chartName, chartVersion),
+			Type: "helm",
+		}
+		buildInfo.Modules = append(buildInfo.Modules, module)
+	}
+	if buildInfo.BuildAgent == nil || buildInfo.BuildAgent.Version == "" {
+		if buildInfo.BuildAgent == nil {
+			buildInfo.BuildAgent = &entities.Agent{}
+		}
+		buildInfo.BuildAgent.Name = "Helm"
+		buildInfo.BuildAgent.Version = getHelmVersion()
+	}
+}
+
+func getHelmVersion() string {
+	cmd := exec.Command("helm", "version", "--short")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return "unknown"
+	}
+	versionStr := strings.TrimSpace(string(output))
+	// Remove 'v' prefix if present
+	versionStr = strings.TrimPrefix(versionStr, "v")
+	// Remove any build metadata after '+'
+	if idx := strings.Index(versionStr, "+"); idx != -1 {
+		versionStr = versionStr[:idx]
+	}
+	return versionStr
 }
 
 func getChartDetails(filePath string) (string, string, error) {

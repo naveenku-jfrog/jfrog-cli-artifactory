@@ -67,61 +67,103 @@ func TestRequiresCredentialsInArguments(t *testing.T) {
 	tests := []struct {
 		name     string
 		cmdName  string
+		args     []string
 		expected bool
 	}{
 		{
-			name:     "Registry command requires credentials",
+			name:     "Registry login requires credentials",
 			cmdName:  "registry",
+			args:     []string{"login"},
 			expected: true,
 		},
 		{
-			name:     "Repo command requires credentials",
+			name:     "Registry without subcommand does not require credentials",
+			cmdName:  "registry",
+			args:     []string{},
+			expected: false,
+		},
+		{
+			name:     "Repo add requires credentials",
 			cmdName:  "repo",
+			args:     []string{"add"},
 			expected: true,
 		},
 		{
-			name:     "Dependency command requires credentials",
+			name:     "Repo without subcommand does not require credentials",
+			cmdName:  "repo",
+			args:     []string{},
+			expected: false,
+		},
+		{
+			name:     "Dependency update requires credentials",
 			cmdName:  "dependency",
+			args:     []string{"update"},
 			expected: true,
+		},
+		{
+			name:     "Dependency build requires credentials",
+			cmdName:  "dependency",
+			args:     []string{"build"},
+			expected: true,
+		},
+		{
+			name:     "Dependency without subcommand does not require credentials",
+			cmdName:  "dependency",
+			args:     []string{},
+			expected: false,
 		},
 		{
 			name:     "Upgrade command requires credentials",
 			cmdName:  "upgrade",
+			args:     []string{},
 			expected: true,
 		},
 		{
 			name:     "Install command requires credentials",
 			cmdName:  "install",
+			args:     []string{},
 			expected: true,
 		},
 		{
 			name:     "Pull command requires credentials",
 			cmdName:  "pull",
+			args:     []string{},
 			expected: true,
 		},
 		{
 			name:     "Push command requires credentials",
 			cmdName:  "push",
+			args:     []string{},
+			expected: true,
+		},
+		{
+			name:     "Show command requires credentials",
+			cmdName:  "show",
+			args:     []string{},
 			expected: true,
 		},
 		{
 			name:     "Package command does not require credentials",
 			cmdName:  "package",
+			args:     []string{},
 			expected: false,
 		},
 		{
 			name:     "Template command does not require credentials",
 			cmdName:  "template",
+			args:     []string{},
 			expected: false,
 		},
 		{
 			name:     "List command does not require credentials",
 			cmdName:  "list",
+			args:     []string{},
 			expected: false,
 		},
 		{
 			name:     "Empty command does not require credentials",
 			cmdName:  "",
+			args:     []string{},
 			expected: false,
 		},
 	}
@@ -130,7 +172,7 @@ func TestRequiresCredentialsInArguments(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cmd := NewHelmCommand()
 			cmd.SetHelmCmdName(tt.cmdName)
-			result := cmd.requiresCredentialsInArguments()
+			result := cmd.requiresCredentialsInArguments(tt.args)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
@@ -150,7 +192,7 @@ func TestAppendCredentialsInArguments(t *testing.T) {
 			username:      "cmduser",
 			password:      "cmdpass",
 			serverDetails: &config.ServerDetails{},
-			expectedArgs:  []string{"--username=cmduser", "--password=cmdpass"},
+			expectedArgs:  []string{"--username", "cmduser", "--password", "cmdpass"},
 		},
 		{
 			name: "Append credentials from server details",
