@@ -32,7 +32,10 @@ func appendModuleAndBuildAgentIfAbsent(buildInfo *entities.BuildInfo, chartName 
 		}
 		buildInfo.Modules = append(buildInfo.Modules, module)
 	}
-	if buildInfo.BuildAgent == nil || buildInfo.Agent.Version == "" {
+	if buildInfo.BuildAgent == nil || buildInfo.BuildAgent.Version == "" {
+		if buildInfo.BuildAgent == nil {
+			buildInfo.BuildAgent = &entities.Agent{}
+		}
 		buildInfo.BuildAgent.Name = "Helm"
 		buildInfo.BuildAgent.Version = getHelmVersion()
 	}
