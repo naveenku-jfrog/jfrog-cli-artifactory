@@ -26,8 +26,7 @@ func handlePackageCommand(buildInfoOld *entities.BuildInfo, args []string, servi
 			appendModuleInExistingBuildInfo(buildInfoOld, &buildInfo.Modules[0])
 		}
 		removeDuplicateDependencies(buildInfoOld)
-		removeDuplicateDependencies(buildInfo)
-		err = saveBuildInfo(buildInfo, buildName, buildNumber, project)
+		err = saveBuildInfo(buildInfoOld, buildName, buildNumber, project)
 		if err != nil {
 			return fmt.Errorf("failed to save build info")
 		}
