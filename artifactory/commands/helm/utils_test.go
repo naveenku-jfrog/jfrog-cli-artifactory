@@ -502,3 +502,143 @@ func TestRemoveDuplicateArtifacts(t *testing.T) {
 		assert.Len(t, buildInfo.Modules[1].Artifacts, 1)
 	})
 }
+
+func TestAppendModuleInExistingBuildInfo(t *testing.T) {
+	t.Run("Nil build info", func(t *testing.T) {
+		module := &entities.Module{Id: "test:1.0.0"}
+		appendModuleInExistingBuildInfo(nil, module)
+	})
+
+	t.Run("Nil module", func(t *testing.T) {
+		buildInfo := &entities.BuildInfo{
+			Modules: []entities.Module{},
+		}
+		appendModuleInExistingBuildInfo(buildInfo, nil)
+		assert.Len(t, buildInfo.Modules, 0)
+	})
+
+	t.Run("Add new module when not exists", func(t *testing.T) {
+		buildInfo := &entities.BuildInfo{
+			Modules: []entities.Module{
+				{Id: "existing:1.0.0"},
+			},
+		}
+		moduleToAdd := &entities.Module{
+			Id: "new:2.0.0",
+			Dependencies: []entities.Dependency{
+				{Id: "dep1", Checksum: entities.Checksum{Sha256: "sha1"}},
+			},
+		}
+		appendModuleInExistingBuildInfo(buildInfo, moduleToAdd)
+		assert.Len(t, buildInfo.Modules, 2)
+		assert.Equal(t, "new:2.0.0", buildInfo.Modules[1].Id)
+	})
+
+	t.Run("Append dependencies to existing module", func(t *testing.T) {
+		buildInfo := &entities.BuildInfo{
+			Modules: []entities.Module{
+				{
+					Id: "test:1.0.0",
+					Dependencies: []entities.Dependency{
+						{Id: "dep1", Checksum: entities.Checksum{Sha256: "sha1"}},
+					},
+				},
+			},
+		}
+		moduleToAdd := &entities.Module{
+			Id: "test:1.0.0",
+			Dependencies: []entities.Dependency{
+				{Id: "dep2", Checksum: entities.Checksum{Sha256: "sha2"}},
+				{Id: "dep3", Checksum: entities.Checksum{Sha256: "sha3"}},
+			},
+		}
+		appendModuleInExistingBuildInfo(buildInfo, moduleToAdd)
+		assert.Len(t, buildInfo.Modules, 1)
+		assert.Len(t, buildInfo.Modules[0].Dependencies, 3)
+		assert.Equal(t, "dep1", buildInfo.Modules[0].Dependencies[0].Id)
+		assert.Equal(t, "dep2", buildInfo.Modules[0].Dependencies[1].Id)
+		assert.Equal(t, "dep3", buildInfo.Modules[0].Dependencies[2].Id)
+	})
+
+	t.Run("Replace artifacts in existing module", func(t *testing.T) {
+		buildInfo := &entities.BuildInfo{
+			Modules: []entities.Module{
+				{
+					Id: "test:1.0.0",
+					Artifacts: []entities.Artifact{
+						{Name: "old1", Checksum: entities.Checksum{Sha256: "sha1"}},
+					},
+				},
+			},
+		}
+		moduleToAdd := &entities.Module{
+			Id: "test:1.0.0",
+			Artifacts: []entities.Artifact{
+				{Name: "new1", Checksum: entities.Checksum{Sha256: "sha2"}},
+				{Name: "new2", Checksum: entities.Checksum{Sha256: "sha3"}},
+			},
+		}
+		appendModuleInExistingBuildInfo(buildInfo, moduleToAdd)
+		assert.Len(t, buildInfo.Modules, 1)
+		assert.Len(t, buildInfo.Modules[0].Artifacts, 2)
+		assert.Equal(t, "new1", buildInfo.Modules[0].Artifacts[0].Name)
+		assert.Equal(t, "new2", buildInfo.Modules[0].Artifacts[1].Name)
+	})
+
+	t.Run("Empty dependencies and artifacts do not modify", func(t *testing.T) {
+		buildInfo := &entities.BuildInfo{
+			Modules: []entities.Module{
+				{
+					Id: "test:1.0.0",
+					Dependencies: []entities.Dependency{
+						{Id: "dep1", Checksum: entities.Checksum{Sha256: "sha1"}},
+					},
+					Artifacts: []entities.Artifact{
+						{Name: "art1", Checksum: entities.Checksum{Sha256: "sha1"}},
+					},
+				},
+			},
+		}
+		moduleToAdd := &entities.Module{
+			Id:          "test:1.0.0",
+			Dependencies: []entities.Dependency{},
+			Artifacts:   []entities.Artifact{},
+		}
+		appendModuleInExistingBuildInfo(buildInfo, moduleToAdd)
+		assert.Len(t, buildInfo.Modules, 1)
+		assert.Len(t, buildInfo.Modules[0].Dependencies, 1)
+		assert.Len(t, buildInfo.Modules[0].Artifacts, 1)
+	})
+
+	t.Run("Append dependencies and replace artifacts together", func(t *testing.T) {
+		buildInfo := &entities.BuildInfo{
+			Modules: []entities.Module{
+				{
+					Id: "test:1.0.0",
+					Dependencies: []entities.Dependency{
+						{Id: "dep1", Checksum: entities.Checksum{Sha256: "sha1"}},
+					},
+					Artifacts: []entities.Artifact{
+						{Name: "old1", Checksum: entities.Checksum{Sha256: "sha1"}},
+					},
+				},
+			},
+		}
+		moduleToAdd := &entities.Module{
+			Id: "test:1.0.0",
+			Dependencies: []entities.Dependency{
+				{Id: "dep2", Checksum: entities.Checksum{Sha256: "sha2"}},
+			},
+			Artifacts: []entities.Artifact{
+				{Name: "new1", Checksum: entities.Checksum{Sha256: "sha3"}},
+			},
+		}
+		appendModuleInExistingBuildInfo(buildInfo, moduleToAdd)
+		assert.Len(t, buildInfo.Modules, 1)
+		assert.Len(t, buildInfo.Modules[0].Dependencies, 2)
+		assert.Len(t, buildInfo.Modules[0].Artifacts, 1)
+		assert.Equal(t, "dep1", buildInfo.Modules[0].Dependencies[0].Id)
+		assert.Equal(t, "dep2", buildInfo.Modules[0].Dependencies[1].Id)
+		assert.Equal(t, "new1", buildInfo.Modules[0].Artifacts[0].Name)
+	})
+}

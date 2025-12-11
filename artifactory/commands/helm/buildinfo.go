@@ -31,7 +31,7 @@ func CollectHelmBuildInfoWithFlexPack(workingDir, buildName, buildNumber, projec
 	case "package":
 		return handlePackageCommand(buildInfo, helmArgs, serviceManager, buildName, buildNumber, project)
 	case "dependency":
-		return handleDependencyCommand(buildInfo, serviceManager, workingDir, buildName, buildNumber, project)
+		return handleDependencyCommand(buildInfo, helmArgs, serviceManager, workingDir, buildName, buildNumber, project)
 	}
 	log.Info("Skipping helm build info because", commandName, "command is not collecting build info")
 	return nil

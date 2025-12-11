@@ -137,6 +137,9 @@ func removeDuplicateDependencies(buildInfo *entities.BuildInfo) {
 		var dependencies []entities.Dependency
 		for _, dependency := range module.Dependencies {
 			sha256 := dependency.Sha256
+			if sha256 == "" {
+				log.Debug("Missing Sha256 for dependency: ", dependency.Id, "so, skipping it from adding into build info.")
+			}
 			_, exist := dependenciesMap[sha256]
 			if sha256 != "" && !exist {
 				dependenciesMap[sha256] = dependency
@@ -170,6 +173,9 @@ func removeDuplicateArtifacts(buildInfo *entities.BuildInfo) {
 		var artifacts []entities.Artifact
 		for _, artifact := range module.Artifacts {
 			sha256 := artifact.Sha256
+			if sha256 == "" {
+				log.Debug("Missing Sha256 for artifact: ", artifact.Name, "so, skipping it from adding into build info.")
+			}
 			_, exist := artifactsMap[sha256]
 			if sha256 != "" && !exist {
 				artifactsMap[sha256] = artifact
@@ -179,4 +185,24 @@ func removeDuplicateArtifacts(buildInfo *entities.BuildInfo) {
 		module.Artifacts = artifacts
 		buildInfo.Modules[moduleIdx] = module
 	}
+}
+
+func appendModuleInExistingBuildInfo(buildInfo *entities.BuildInfo, moduleToAdd *entities.Module) {
+	if buildInfo == nil || moduleToAdd == nil {
+		return
+	}
+	for moduleIdx, module := range buildInfo.Modules {
+		if module.Id == moduleToAdd.Id {
+			dependencies := moduleToAdd.Dependencies
+			if len(dependencies) > 0 {
+				buildInfo.Modules[moduleIdx].Dependencies = append(buildInfo.Modules[moduleIdx].Dependencies, dependencies...)
+			}
+			artifacts := moduleToAdd.Artifacts
+			if len(artifacts) > 0 {
+				buildInfo.Modules[moduleIdx].Artifacts = artifacts
+			}
+			return
+		}
+	}
+	buildInfo.Modules = append(buildInfo.Modules, *moduleToAdd)
 }

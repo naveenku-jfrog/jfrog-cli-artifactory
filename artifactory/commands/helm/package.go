@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 )
 
-func handlePackageCommand(_ *entities.BuildInfo, args []string, serviceManager artifactory.ArtifactoryServicesManager, buildName, buildNumber, project string) error {
+func handlePackageCommand(buildInfoOld *entities.BuildInfo, args []string, serviceManager artifactory.ArtifactoryServicesManager, buildName, buildNumber, project string) error {
 	packagePaths := getPaths(args)
 	for _, path := range packagePaths {
 		absolutePath, err := filepath.Abs(path)
@@ -22,6 +22,10 @@ func handlePackageCommand(_ *entities.BuildInfo, args []string, serviceManager a
 			return fmt.Errorf("no build info collected, skipping further processing")
 		}
 		updateDependencyOCILayersInBuildInfo(buildInfo, serviceManager)
+		if len(buildInfo.Modules) > 0 {
+			appendModuleInExistingBuildInfo(buildInfoOld, &buildInfo.Modules[0])
+		}
+		removeDuplicateDependencies(buildInfoOld)
 		removeDuplicateDependencies(buildInfo)
 		err = saveBuildInfo(buildInfo, buildName, buildNumber, project)
 		if err != nil {
