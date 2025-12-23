@@ -7,10 +7,10 @@ require (
 	github.com/forPelevin/gomoji v1.4.1
 	github.com/google/go-containerregistry v0.20.7
 	github.com/jedib0t/go-pretty/v6 v6.7.5
-	github.com/jfrog/build-info-go v1.12.5-0.20251209171349-eb030db986f9
+	github.com/jfrog/build-info-go v1.8.9-0.20251223092904-9e9460642431
 	github.com/jfrog/gofrog v1.7.6
-	github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20251015045218-1a38c9e47097
-	github.com/jfrog/jfrog-client-go v1.55.1-0.20251209090954-d6b1c70d3a5e
+	github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20251223102649-e659f6937251
+	github.com/jfrog/jfrog-client-go v1.55.1-0.20251223101502-1a13a993b0c7
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.11.1
@@ -21,7 +21,7 @@ require (
 	oras.land/oras-go/v2 v2.6.0
 )
 
-require golang.org/x/net v0.45.0 // indirect
+require golang.org/x/net v0.47.0 // indirect
 
 require (
 	dario.cat/mergo v1.0.2 // indirect
@@ -109,7 +109,7 @@ require (
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.62.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.2 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/crypto v0.43.0 // indirect
+	golang.org/x/crypto v0.45.0 // indirect
 	golang.org/x/sync v0.18.0 // indirect
 	golang.org/x/sys v0.38.0 // indirect
 	golang.org/x/term v0.37.0 // indirect
@@ -123,10 +123,6 @@ require (
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )
 
-//replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20251015045218-1a38c9e47097
+//replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go v1.8.9-0.20251223092904-9e9460642431
 
-replace github.com/jfrog/jfrog-client-go => github.com/naveenku-jfrog/jfrog-client-go v1.54.2-0.20251212200746-04c08281da50
-
-//replace github.com/jfrog/build-info-go => github.com/naveenku-jfrog/build-info-go v1.12.1-0.20251204140510-1d49e7aa4a2b
-
-replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20251026182600-8a8c0428f538
+// replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20251026182600-8a8c0428f538
