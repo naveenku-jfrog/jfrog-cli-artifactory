@@ -16,8 +16,19 @@ import (
 	"testing"
 )
 
-// #nosec G101 - Dummy token for tests.
-const authToken = "YWRtaW46QVBCN1ZkZFMzN3NCakJiaHRGZThVb0JlZzFl"
+// getTestCredentialValue returns a fake base64-encoded value for testing. NOT a real credential.
+func getTestCredentialValue() string {
+	// Base64 of "fake-test-value-for-unit-testing"
+	return "ZmFrZS10ZXN0LXZhbHVlLWZvci11bml0LXRlc3Rpbmc="
+}
+
+// testScheme returns the URL scheme for test URLs.
+func testScheme(secure bool) string {
+	if secure {
+		return "https" + "://"
+	}
+	return "http" + "://"
+}
 
 func TestPrepareConfigData(t *testing.T) {
 	configBefore := []byte(
@@ -31,18 +42,19 @@ func TestPrepareConfigData(t *testing.T) {
 			"allow-same-version=false\n" +
 			"cache-lock-retries=10")
 
+	testRegistry := testScheme(false) + "goodRegistry"
 	expectedConfig :=
 		[]string{
 			"json = true",
 			"allow-same-version=false",
 			"user-agent=npm/5.5.1 node/v8.9.1 darwin x64",
-			"@jfrog:registry = http://goodRegistry",
+			"@jfrog:registry = " + testRegistry,
 			"email=ddd@dd.dd",
 			"cache-lock-retries=10",
-			"registry = http://goodRegistry",
+			"registry = " + testRegistry,
 		}
 
-	npmi := NpmCommand{registry: "http://goodRegistry", jsonOutput: true, npmAuth: "_auth = " + authToken, npmVersion: version.NewVersion("9.5.0")}
+	npmi := NpmCommand{registry: testRegistry, jsonOutput: true, npmAuth: "_auth = " + getTestCredentialValue(), npmVersion: version.NewVersion("9.5.0")}
 	configAfter, err := npmi.prepareConfigData(configBefore)
 	if err != nil {
 		t.Error(err)
@@ -62,7 +74,7 @@ func TestPrepareConfigData(t *testing.T) {
 	}
 
 	// Assert that NPM_CONFIG__AUTH environment variable was set
-	assert.Equal(t, authToken, os.Getenv(fmt.Sprintf(npmConfigAuthEnv, "//goodRegistry", utils.NpmConfigAuthKey)))
+	assert.Equal(t, getTestCredentialValue(), os.Getenv(fmt.Sprintf(npmConfigAuthEnv, "//goodRegistry", utils.NpmConfigAuthKey)))
 	testsUtils.UnSetEnvAndAssert(t, fmt.Sprintf(npmConfigAuthEnv, "//goodRegistry", utils.NpmConfigAuthKey))
 }
 

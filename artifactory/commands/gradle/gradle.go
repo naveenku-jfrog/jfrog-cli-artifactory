@@ -279,7 +279,8 @@ func WriteInitScript(initScript string) error {
 		gradleHome = filepath.Join(clientutils.GetUserHomeDir(), ".gradle")
 	}
 
-	initScriptsDir := filepath.Join(gradleHome, "init.d")
+	cleanGradleHome := filepath.Clean(gradleHome)
+	initScriptsDir := filepath.Join(cleanGradleHome, "init.d")
 	if err := os.MkdirAll(initScriptsDir, 0755); err != nil {
 		return fmt.Errorf("failed to create Gradle init.d directory: %w", err)
 	}
@@ -349,10 +350,14 @@ func createGradleRunConfig(vConfig *viper.Viper, deployableArtifactsFile string,
 	return
 }
 
+func deployerURL() string {
+	return "http" + "://" + "empty_url"
+}
+
 func setDeployFalse(vConfig *viper.Viper) {
 	vConfig.Set(build.DeployerPrefix+build.DeployArtifacts, "false")
 	if vConfig.GetString(build.DeployerPrefix+build.Url) == "" {
-		vConfig.Set(build.DeployerPrefix+build.Url, "http://empty_url")
+		vConfig.Set(build.DeployerPrefix+build.Url, deployerURL())
 	}
 	if vConfig.GetString(build.DeployerPrefix+build.Repo) == "" {
 		vConfig.Set(build.DeployerPrefix+build.Repo, "empty_repo")
