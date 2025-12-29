@@ -805,7 +805,7 @@ var commandFlags = map[string][]string{
 		url, user, password, accessToken, sshPassphrase, sshKeyPath, serverId, deleteQuiet,
 	},
 	ReleaseBundleSearch: {
-		Format, OrderBy, FilterBy, OrderAsc, Limit, Offset, Includes,
+		Format, OrderBy, FilterBy, OrderAsc, Limit, Offset, Includes, Project,
 	},
 }
 

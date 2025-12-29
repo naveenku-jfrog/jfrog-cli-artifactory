@@ -652,6 +652,7 @@ func GetReleaseBundleVersionsCmd(c *components.Context, lcDetails *config.Server
 		SetOrderAsc(c.GetBoolFlagValue(flagkit.OrderAsc)).
 		SetIncludes(c.GetStringFlagValue(flagkit.Includes)).
 		SetReleaseBundleName(c.Arguments[1]).
-		SetOutputFormat(c.GetStringFlagValue(flagkit.Format))
+		SetOutputFormat(c.GetStringFlagValue(flagkit.Format)).
+		SetProject(c.GetStringFlagValue(flagkit.Project))
 	return commands.Exec(rbSearchCmd)
 }
