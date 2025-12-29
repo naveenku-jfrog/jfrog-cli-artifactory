@@ -186,16 +186,19 @@ func (tc *TwineCommand) uploadAndCollectBuildInfo() error {
 	if err != nil {
 		return err
 	}
-	var filesSha1 []string
+	var filesSha256 []string
 	for _, arg := range artifacts {
 		if arg.Name != "" {
-			filesSha1 = append(filesSha1, arg.Sha1)
+			filesSha256 = append(filesSha256, arg.Sha256)
 		}
+	}
+	if len(filesSha256) == 0 {
+		return errors.New("could not find any files to upload")
 	}
 	searchParams := services.SearchParams{
 		CommonParams: &servicesUtils.CommonParams{
 			Aql: servicesUtils.Aql{
-				ItemsFind: CreateAqlQueryForSearchBySHA1s(tc.targetRepo, filesSha1),
+				ItemsFind: CreateAqlQueryForSearchBySHA256(tc.targetRepo, filesSha256),
 			},
 		},
 	}
@@ -237,13 +240,10 @@ func (tc *TwineCommand) getRepoConfigFlagProvidedErr() string {
 	return "twine command must not be executed with the following flags: " + coreutils.ListToText(twineRepoConfigFlags)
 }
 
-func CreateAqlQueryForSearchBySHA1s(repo string, sha1s []string) string {
-	if len(sha1s) == 0 {
-		return ""
-	}
-	sha1Conditions := make([]string, len(sha1s))
-	for i, sha1 := range sha1s {
-		sha1Conditions[i] = fmt.Sprintf(`{"actual_sha1": "%s"}`, sha1)
+func CreateAqlQueryForSearchBySHA256(repo string, sha256s []string) string {
+	sha1Conditions := make([]string, len(sha256s))
+	for i, sha1 := range sha256s {
+		sha1Conditions[i] = fmt.Sprintf(`{"sha256": "%s"}`, sha1)
 	}
 	itemsPart :=
 		`{` +
