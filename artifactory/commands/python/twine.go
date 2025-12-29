@@ -242,8 +242,8 @@ func (tc *TwineCommand) getRepoConfigFlagProvidedErr() string {
 
 func CreateAqlQueryForSearchBySHA256(repo string, sha256s []string) string {
 	sha1Conditions := make([]string, len(sha256s))
-	for i, sha1 := range sha256s {
-		sha1Conditions[i] = fmt.Sprintf(`{"sha256": "%s"}`, sha1)
+	for i, sha256 := range sha256s {
+		sha1Conditions[i] = fmt.Sprintf(`{"sha256": "%s"}`, sha256)
 	}
 	itemsPart :=
 		`{` +
