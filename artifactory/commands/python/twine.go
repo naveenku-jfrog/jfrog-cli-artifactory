@@ -191,46 +191,45 @@ func (tc *TwineCommand) uploadAndCollectBuildInfo() error {
 		return err
 	}
 
-	var fileInitials string
-	for _, arg := range artifacts {
-		if strings.HasSuffix(arg.Path, ".tar.gz") {
-			fileInitials = strings.TrimSuffix(arg.Path, ".tar.gz")
-		}
-	}
-
-	searchParams := services.SearchParams{
-		CommonParams: &servicesUtils.CommonParams{
-			Aql: servicesUtils.Aql{
-				ItemsFind: CreateAqlQueryForSearch(tc.targetRepo, fileInitials),
-			},
-		},
-	}
-
 	servicesManager, err := rtUtils.CreateServiceManager(tc.serverDetails, -1, 0, false)
 	if err != nil {
 		return err
 	}
 
-	searchReader, err := servicesManager.SearchFiles(searchParams)
-	if err != nil {
-		log.Error("Failed to get uploaded twine package: ", err.Error())
-		return err
+	var files []string
+	for _, arg := range artifacts {
+		if arg.Name != "" {
+			files = append(files, arg.Name)
+		}
 	}
 
-	timestamp := strconv.FormatInt(buildInfo.GetBuildTimestamp().UnixNano()/int64(time.Millisecond), 10)
-	propsParams := services.PropsParams{
-		Reader: searchReader,
-		Props:  fmt.Sprintf("build.name=%s;build.number=%s;build.timestamp=%s", buildName, buildNumber, timestamp),
+	var foundError error
+	for _, file_ := range files {
+		searchParams := services.SearchParams{
+			CommonParams: &servicesUtils.CommonParams{
+				Aql: servicesUtils.Aql{
+					ItemsFind: CreateAqlQueryForSearch(tc.targetRepo, file_),
+				},
+			},
+		}
+		searchReader, err := servicesManager.SearchFiles(searchParams)
+		if err != nil {
+			log.Error("Failed to get uploaded twine package: ", err.Error())
+			foundError = err
+		}
+		timestamp := strconv.FormatInt(buildInfo.GetBuildTimestamp().UnixNano()/int64(time.Millisecond), 10)
+		propsParams := services.PropsParams{
+			Reader: searchReader,
+			Props:  fmt.Sprintf("build.name=%s;build.number=%s;build.timestamp=%s", buildName, buildNumber, timestamp),
+		}
+		_, err = servicesManager.SetProps(propsParams)
+		if err != nil {
+			foundError = err
+			log.Warn("Unable to set build properties: ", err, "\nThis may cause build to not properly link with artifact, please add build name and build number properties on the artifacts manually")
+		}
+		log.Debug(fmt.Sprintf("Command finished successfully. %d artifacs were added to build info.", len(artifacts)))
 	}
-
-	_, err = servicesManager.SetProps(propsParams)
-	if err != nil {
-		log.Warn("Unable to set build properties: ", err, "\nThis may cause build to not properly link with artifact, please add build name and build number properties on the artifacts manually")
-		return err
-	}
-
-	log.Debug(fmt.Sprintf("Command finished successfully. %d artifacs were added to build info.", len(artifacts)))
-	return nil
+	return foundError
 }
 
 func (tc *TwineCommand) isRepoConfigFlagProvided() bool {
