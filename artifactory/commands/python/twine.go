@@ -188,7 +188,7 @@ func (tc *TwineCommand) uploadAndCollectBuildInfo() error {
 	}
 	var filesSha256 []string
 	for _, arg := range artifacts {
-		if arg.Name != "" {
+		if arg.Sha256 != "" {
 			filesSha256 = append(filesSha256, arg.Sha256)
 		}
 	}
@@ -245,11 +245,11 @@ func CreateAqlQueryForSearchBySHA256(repo string, sha256s []string) string {
 	for i, sha256 := range sha256s {
 		sha1Conditions[i] = fmt.Sprintf(`{"sha256": "%s"}`, sha256)
 	}
+	sha256Condition := strings.Join(sha1Conditions, ",")
 	itemsPart :=
 		`{` +
 			`"repo": "%s",` +
 			`"$or": [%s]` +
 			`}`
-	sha256OrClause := strings.Join(sha1Conditions, ",")
-	return fmt.Sprintf(itemsPart, repo, sha256OrClause)
+	return fmt.Sprintf(itemsPart, repo, sha256Condition)
 }
