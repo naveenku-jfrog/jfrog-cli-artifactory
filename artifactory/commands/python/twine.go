@@ -250,6 +250,6 @@ func CreateAqlQueryForSearchBySHA256(repo string, sha256s []string) string {
 			`"repo": "%s",` +
 			`"$or": [%s]` +
 			`}`
-	sha1OrClause := strings.Join(sha1Conditions, ",")
-	return fmt.Sprintf(itemsPart, repo, sha1OrClause)
+	sha256OrClause := strings.Join(sha1Conditions, ",")
+	return fmt.Sprintf(itemsPart, repo, sha256OrClause)
 }
