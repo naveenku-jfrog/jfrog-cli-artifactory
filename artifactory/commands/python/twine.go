@@ -155,13 +155,11 @@ func (tc *TwineCommand) uploadAndCollectBuildInfo() error {
 	if err != nil {
 		return err
 	}
-
 	defer func() {
 		if buildInfo != nil && err != nil {
 			err = errors.Join(err, buildInfo.Clean())
 		}
 	}()
-
 	var pythonModule *build.PythonModule
 	pythonModule, err = buildInfo.AddPythonModule("", pythonutils.Twine)
 	if err != nil {
@@ -170,7 +168,6 @@ func (tc *TwineCommand) uploadAndCollectBuildInfo() error {
 	if tc.buildConfiguration.GetModule() != "" {
 		pythonModule.SetName(tc.buildConfiguration.GetModule())
 	}
-
 	artifacts, err := pythonModule.TwineUploadWithLogParsing(tc.args)
 	if err != nil {
 		return err
@@ -181,7 +178,6 @@ func (tc *TwineCommand) uploadAndCollectBuildInfo() error {
 	if err = pythonModule.AddArtifacts(artifacts); err != nil {
 		return err
 	}
-
 	buildName, err := tc.buildConfiguration.GetBuildName()
 	if err != nil {
 		return err
@@ -190,45 +186,41 @@ func (tc *TwineCommand) uploadAndCollectBuildInfo() error {
 	if err != nil {
 		return err
 	}
-
-	var fileInitials string
+	var filesSha256 []string
 	for _, arg := range artifacts {
-		if strings.HasSuffix(arg.Name, ".tar.gz") {
-			fileInitials = arg.Name
+		if arg.Sha256 != "" {
+			filesSha256 = append(filesSha256, arg.Sha256)
 		}
 	}
-
+	if len(filesSha256) == 0 {
+		return errors.New("could not find any files to upload")
+	}
 	searchParams := services.SearchParams{
 		CommonParams: &servicesUtils.CommonParams{
 			Aql: servicesUtils.Aql{
-				ItemsFind: CreateAqlQueryForSearch(tc.targetRepo, fileInitials),
+				ItemsFind: CreateAqlQueryForSearchBySHA256(tc.targetRepo, filesSha256),
 			},
 		},
 	}
-
 	servicesManager, err := rtUtils.CreateServiceManager(tc.serverDetails, -1, 0, false)
 	if err != nil {
 		return err
 	}
-
 	searchReader, err := servicesManager.SearchFiles(searchParams)
 	if err != nil {
 		log.Error("Failed to get uploaded twine package: ", err.Error())
 		return err
 	}
-
 	timestamp := strconv.FormatInt(buildInfo.GetBuildTimestamp().UnixNano()/int64(time.Millisecond), 10)
 	propsParams := services.PropsParams{
 		Reader: searchReader,
 		Props:  fmt.Sprintf("build.name=%s;build.number=%s;build.timestamp=%s", buildName, buildNumber, timestamp),
 	}
-
 	_, err = servicesManager.SetProps(propsParams)
 	if err != nil {
 		log.Warn("Unable to set build properties: ", err, "\nThis may cause build to not properly link with artifact, please add build name and build number properties on the artifacts manually")
 		return err
 	}
-
 	log.Debug(fmt.Sprintf("Command finished successfully. %d artifacs were added to build info.", len(artifacts)))
 	return nil
 }
@@ -248,16 +240,16 @@ func (tc *TwineCommand) getRepoConfigFlagProvidedErr() string {
 	return "twine command must not be executed with the following flags: " + coreutils.ListToText(twineRepoConfigFlags)
 }
 
-func CreateAqlQueryForSearch(repo, fileInitial string) string {
+func CreateAqlQueryForSearchBySHA256(repo string, sha256s []string) string {
+	sha1Conditions := make([]string, len(sha256s))
+	for i, sha256 := range sha256s {
+		sha1Conditions[i] = fmt.Sprintf(`{"sha256": "%s"}`, sha256)
+	}
+	sha256Condition := strings.Join(sha1Conditions, ",")
 	itemsPart :=
 		`{` +
 			`"repo": "%s",` +
-			`"$or": [{` +
-			`"$and":[{` +
-			`"path": {"$match": "*"},` +
-			`"name": {"$match": "%s*"}` +
-			`}]` +
-			`}]` +
+			`"$or": [%s]` +
 			`}`
-	return fmt.Sprintf(itemsPart, repo, fileInitial)
+	return fmt.Sprintf(itemsPart, repo, sha256Condition)
 }
