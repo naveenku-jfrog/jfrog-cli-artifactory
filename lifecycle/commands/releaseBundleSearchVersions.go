@@ -23,6 +23,7 @@ type SearchVersionsCommand struct {
 	includes          string
 	orderAsc          bool
 	format            string
+	project           string
 }
 
 func NewSearchVersionsCommand() *SearchVersionsCommand {
@@ -31,6 +32,11 @@ func NewSearchVersionsCommand() *SearchVersionsCommand {
 
 func (svc *SearchVersionsCommand) SetServerDetails(serverDetails *config.ServerDetails) *SearchVersionsCommand {
 	svc.serverDetails = serverDetails
+	return svc
+}
+
+func (svc *SearchVersionsCommand) SetProject(project string) *SearchVersionsCommand {
+	svc.project = project
 	return svc
 }
 
@@ -97,6 +103,7 @@ func (svc *SearchVersionsCommand) Run() error {
 		FilterBy: svc.filterBy,
 		OrderBy:  svc.orderBy,
 		OrderAsc: svc.orderAsc,
+		Project:  svc.project,
 	}
 	searchVersionResponse, err := lcServicesManager.ReleaseBundlesSearchVersions(svc.releaseBundleName, queryParameters)
 	if err != nil {
