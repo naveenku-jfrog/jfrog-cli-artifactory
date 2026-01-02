@@ -256,7 +256,7 @@ func TestHelmCommandGetCredentials(t *testing.T) {
 			serverDetails: &config.ServerDetails{
 				AccessToken: getTestJWT(),
 			},
-			expectedUser: "testuser",    // Extracted from fake JWT
+			expectedUser: "testuser", // Extracted from fake JWT
 			expectedPass: getTestJWT(),
 		},
 		{
