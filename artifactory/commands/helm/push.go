@@ -168,8 +168,5 @@ func addBuildPropertiesOnArtifacts(serviceManager artifactory.ArtifactoryService
 		Props:       buildProps,
 		IsRecursive: true,
 	}
-	_, err := serviceManager.SetProps(propsParams)
-	if err != nil {
-		log.Warn(fmt.Sprintf("Failed to set properties on %s: %s", searchPattern, err))
-	}
+	_, _ = serviceManager.SetProps(propsParams)
 }
