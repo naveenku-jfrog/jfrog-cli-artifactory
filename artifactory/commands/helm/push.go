@@ -125,8 +125,7 @@ func searchPushedArtifacts(serviceManager artifactory.ArtifactoryServicesManager
 			return nil, err
 		}
 		reader.Reset()
-		searchPattern := fmt.Sprintf("%s/%s/sha256:%s/", repoName, chartName, manifestSha256)
-		addBuildPropertiesOnArtifacts(serviceManager, reader, buildProperties, searchPattern)
+		addBuildPropertiesOnArtifacts(serviceManager, reader, buildProperties)
 	}
 	return artifacts, nil
 }
@@ -162,7 +161,7 @@ func updateReaderContents(reader *content.ContentReader, repo, path, name string
 	return nil
 }
 
-func addBuildPropertiesOnArtifacts(serviceManager artifactory.ArtifactoryServicesManager, reader *content.ContentReader, buildProps, searchPattern string) {
+func addBuildPropertiesOnArtifacts(serviceManager artifactory.ArtifactoryServicesManager, reader *content.ContentReader, buildProps string) {
 	propsParams := services.PropsParams{
 		Reader:      reader,
 		Props:       buildProps,
