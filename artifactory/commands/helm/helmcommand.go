@@ -219,18 +219,15 @@ func (hc *HelmCommand) performRegistryLogin() error {
 	if registryURL == "" {
 		registryURL, err = hc.getRegistryURL()
 		if err != nil {
-			log.Debug("Failed to get registry URL: ", err)
-			return nil
+			return fmt.Errorf("failed to get registry URL for helm registry login: %w", err)
 		}
 		if registryURL == "" {
-			log.Debug("No server URL available for helm registry login")
-			return nil
+			return fmt.Errorf("no registry URL available for helm registry login")
 		}
 	}
 	user, pass := hc.getCredentials()
 	if user == "" || pass == "" {
-		log.Debug("No credentials available for helm registry login")
-		return nil
+		return fmt.Errorf("no credentials available for helm registry login")
 	}
 	return hc.executeHelmLogin(registryURL, user, pass)
 }
@@ -308,7 +305,7 @@ func (hc *HelmCommand) executeHelmLogin(registryURL, user, pass string) error {
 	}
 	_, err = io.WriteString(stdin, pass+"\n")
 	if err != nil {
-		err := stdin.Close()
+		err = stdin.Close()
 		if err != nil {
 			return err
 		}
@@ -318,14 +315,14 @@ func (hc *HelmCommand) executeHelmLogin(registryURL, user, pass string) error {
 		}
 		return fmt.Errorf("failed to write password to stdin: %w", err)
 	}
-	if err := stdin.Close(); err != nil {
-		err := cmdLogin.Wait()
+	if err = stdin.Close(); err != nil {
+		err = cmdLogin.Wait()
 		if err != nil {
 			return err
 		}
 		return fmt.Errorf("failed to close stdin: %w", err)
 	}
-	if err := cmdLogin.Wait(); err != nil {
+	if err = cmdLogin.Wait(); err != nil {
 		return fmt.Errorf("helm registry login failed: %w", err)
 	}
 	log.Debug("Helm registry login to successful, ", registryURL)

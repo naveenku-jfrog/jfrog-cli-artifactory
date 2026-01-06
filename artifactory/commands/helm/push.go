@@ -106,10 +106,10 @@ func searchPushedArtifacts(serviceManager artifactory.ArtifactoryServicesManager
 	}
 	var closeErr error
 	defer func() {
+		ioutils.Close(reader, &closeErr)
 		if closeErr != nil {
 			log.Debug("Failed to close search reader: ", closeErr)
 		}
-		ioutils.Close(reader, &closeErr)
 	}()
 	artifacts := make(map[string]*servicesUtils.ResultItem)
 	for item := new(servicesUtils.ResultItem); reader.NextRecord(item) == nil; item = new(servicesUtils.ResultItem) {
@@ -120,7 +120,7 @@ func searchPushedArtifacts(serviceManager artifactory.ArtifactoryServicesManager
 		}
 	}
 	if buildProperties != "" {
-		err = updateReaderContents(reader, repoName, chartName, "sha256:"+manifestSha256)
+		err = overwriteReaderWithManifestFolder(reader, repoName, chartName, "sha256:"+manifestSha256)
 		if err != nil {
 			return nil, err
 		}
@@ -131,7 +131,7 @@ func searchPushedArtifacts(serviceManager artifactory.ArtifactoryServicesManager
 }
 
 // updateReaderContents updates the reader contents by writing the specified JSON value to all file paths
-func updateReaderContents(reader *content.ContentReader, repo, path, name string) error {
+func overwriteReaderWithManifestFolder(reader *content.ContentReader, repo, path, name string) error {
 	if reader == nil {
 		return fmt.Errorf("reader is nil")
 	}
