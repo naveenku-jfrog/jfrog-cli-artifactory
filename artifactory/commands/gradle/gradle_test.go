@@ -251,7 +251,7 @@ func TestParseUserHomeFromJavaOutput(t *testing.T) {
 // This is the fix for container environments where $HOME differs from Java's user.home.
 func TestWriteInitScriptUsesJavaUserHome(t *testing.T) {
 	// Get Java's user.home - skip if Java is not available
-	javaHome, err := getJavaUserHome()
+	javaHome, err := GetJavaUserHome()
 	if err != nil {
 		t.Skip("Java not available, skipping test")
 	}
