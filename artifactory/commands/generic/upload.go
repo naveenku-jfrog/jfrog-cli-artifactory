@@ -230,12 +230,14 @@ func getUploadParams(f *spec.File, configuration *utils.UploadConfiguration, bui
 		return
 	}
 
-	// Disable IncludeDirs in dry-run mode to prevent directory structure creation
 	includeDirs, err := f.IsIncludeDirs(false)
 	if err != nil {
 		return
 	}
+
+	// Disable IncludeDirs in dry-run mode to prevent directory structure creation
 	uploadParams.IncludeDirs = includeDirs && !dryRun
+	log.Info("In Dry-run mode, include-dir flag will be ignored.")
 
 	uploadParams.Flat, err = f.IsFlat(true)
 	if err != nil {
