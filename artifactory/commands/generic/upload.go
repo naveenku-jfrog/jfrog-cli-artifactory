@@ -2,6 +2,7 @@ package generic
 
 import (
 	"errors"
+	"github.com/jfrog/jfrog-cli-artifactory/artifactory/utils/civcs"
 	"os"
 	"strconv"
 	"time"
@@ -119,6 +120,7 @@ func (uc *UploadCommand) upload() (err error) {
 		file.TargetProps = clientUtils.AddProps(file.TargetProps, file.Props)
 		file.TargetProps = clientUtils.AddProps(file.TargetProps, syncDeletesProp)
 		file.Props += syncDeletesProp
+		file.TargetProps = civcs.MergeWithUserProps(file.TargetProps)
 		uploadParams, err := getUploadParams(file, uc.uploadConfiguration, buildProps, addVcsProps, uc.DryRun())
 		if err != nil {
 			errorOccurred = true
