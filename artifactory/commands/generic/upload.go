@@ -2,13 +2,13 @@ package generic
 
 import (
 	"errors"
-	"github.com/jfrog/jfrog-cli-artifactory/artifactory/utils/civcs"
 	"os"
 	"strconv"
 	"time"
 
 	buildInfo "github.com/jfrog/build-info-go/entities"
 	ioutils "github.com/jfrog/gofrog/io"
+	"github.com/jfrog/jfrog-cli-artifactory/artifactory/utils/civcs"
 	"github.com/jfrog/jfrog-cli-core/v2/artifactory/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/artifactory/utils/commandsummary"
 	"github.com/jfrog/jfrog-cli-core/v2/common/build"
