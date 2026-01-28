@@ -175,7 +175,7 @@ func (rbc *ReleaseBundleCreateCommand) Run() error {
 		if err != nil {
 			return err
 		}
-		updateRepositoryKeyForReleaseBundleSources(sources)
+		updateReleaseBundleRepoKeyWithProject(sources)
 		_, err = rbc.createFromMultipleSources(servicesManager, rbDetails, queryParams, sources)
 		return err
 	}
@@ -183,7 +183,7 @@ func (rbc *ReleaseBundleCreateCommand) Run() error {
 	return errorutils.CheckErrorf("release bundle creation failed, unable to identify source for creation")
 }
 
-func updateRepositoryKeyForReleaseBundleSources(sources []services.RbSource) {
+func updateReleaseBundleRepoKeyWithProject(sources []services.RbSource) {
 	if len(sources) == 0 || sources[0].SourceType != "release_bundles" {
 		return
 	}
