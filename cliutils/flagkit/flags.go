@@ -95,6 +95,11 @@ const (
 	GroupAddUsers                = "group-add-users"
 	GroupDelete                  = "group-delete"
 	passphrase                   = "passphrase"
+	HuggingFaceUpload            = "hugging-face-upload"
+	HuggingFaceDownload          = "hugging-face-download"
+	Revision                     = "revision"
+	EtagTimeout                  = "etag-timeout"
+	RepoType                     = "repo-type"
 
 	// ReleaseBundleSearch command flags
 	ReleaseBundleSearch = "release-bundle-search"
@@ -813,6 +818,12 @@ var commandFlags = map[string][]string{
 	ReleaseBundleSearch: {
 		Format, OrderBy, FilterBy, OrderAsc, Limit, Offset, Includes, Project,
 	},
+	HuggingFaceDownload: {
+		hfRevision, hfRepoType, hfEtagTimeout,
+	},
+	HuggingFaceUpload: {
+		hfRevision, hfRepoType,
+	},
 }
 
 var flagsMap = map[string]components.Flag{
@@ -1111,6 +1122,9 @@ var flagsMap = map[string]components.Flag{
 	SourceTypeBuilds:         components.NewStringFlag(SourceTypeBuilds, "List of semicolon-separated(;) builds in the form of 'name=buildName1, id=runID1, include-deps=true; name=buildName2, id=runID2' to be included in the new bundle.", components.SetMandatoryFalse()),
 	Draft:                    components.NewBoolFlag(Draft, "Set to true to create the release bundle as a draft. A draft release bundle can be updated and finalized later.", components.WithBoolDefaultValueFalse()),
 	AddSources:               components.NewBoolFlag(AddSources, "Add sources to an existing draft release bundle.", components.WithBoolDefaultValueFalse()),
+	hfRevision:               components.NewStringFlag(hfRevision, "The specific revision, branch, or tag to download. Defaults to main branch if not specified.", components.SetMandatoryFalse()),
+	hfEtagTimeout:            components.NewStringFlag(hfEtagTimeout, "Timeout in seconds for ETag validation. Defaults to 86400 (24 hours).", components.SetMandatoryFalse()),
+	hfRepoType:               components.NewStringFlag(hfRepoType, "Type of repository. Defaults to 'model'. Can be 'model', 'dataset'.", components.SetMandatoryFalse()),
 }
 
 func GetCommandFlags(cmdKey string) []components.Flag {

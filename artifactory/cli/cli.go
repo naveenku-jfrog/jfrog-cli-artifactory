@@ -1,6 +1,9 @@
 package cli
 
 import (
+	artifactoryCommands "github.com/jfrog/jfrog-cli-artifactory/artifactory/commands/huggingface"
+	"github.com/jfrog/jfrog-cli-artifactory/artifactory/docs/huggingfacedownload"
+	"github.com/jfrog/jfrog-cli-artifactory/artifactory/docs/huggingfaceupload"
 	"os"
 	"strconv"
 	"strings"
@@ -412,6 +415,26 @@ func GetCommands() []components.Command {
 			Arguments:   replicationdelete.GetArguments(),
 			Action:      replicationDeleteCmd,
 			Category:    replicCategory,
+		},
+		{
+			Name:        "hugging-face-upload",
+			Aliases:     []string{"hfu"},
+			Flags:       flagkit.GetCommandFlags(flagkit.HuggingFaceUpload),
+			Description: huggingfaceupload.GetDescription(),
+			Arguments:   huggingfaceupload.GetArguments(),
+			Hidden:      true,
+			Action:      huggingFaceUploadCmd,
+			Category:    otherCategory,
+		},
+		{
+			Name:        "hugging-face-download",
+			Aliases:     []string{"hfd"},
+			Flags:       flagkit.GetCommandFlags(flagkit.HuggingFaceDownload),
+			Description: huggingfacedownload.GetDescription(),
+			Arguments:   huggingfacedownload.GetArguments(),
+			Hidden:      true,
+			Action:      huggingFaceDownloadCmd,
+			Category:    otherCategory,
 		},
 	}
 
@@ -1589,6 +1612,60 @@ func replicationDeleteCmd(c *components.Context) error {
 	replicationDeleteCmd := replication.NewReplicationDeleteCommand()
 	replicationDeleteCmd.SetRepoKey(c.GetArgumentAt(0)).SetServerDetails(rtDetails).SetQuiet(common.GetQuietValue(c))
 	return commands.Exec(replicationDeleteCmd)
+}
+
+func huggingFaceUploadCmd(c *components.Context) error {
+	if c.GetNumberOfArgs() < 2 {
+		return common.PrintHelpAndReturnError("Folder path and repository ID are required.", c)
+	}
+	folderPath := c.GetArgumentAt(0)
+	if folderPath == "" {
+		return common.PrintHelpAndReturnError("Folder path cannot be empty.", c)
+	}
+	repoID := c.GetArgumentAt(1)
+	if repoID == "" {
+		return common.PrintHelpAndReturnError("Repository ID cannot be empty.", c)
+	}
+	revision := ""
+	if c.GetNumberOfArgs() > 2 {
+		revision = c.GetArgumentAt(2)
+	} else if c.GetStringFlagValue(flagkit.Revision) != "" {
+		revision = c.GetStringFlagValue(flagkit.Revision)
+	}
+	repoType := c.GetStringFlagValue(flagkit.RepoType)
+	if repoType == "" {
+		repoType = "model"
+	}
+	huggingFaceUploadCmd := artifactoryCommands.NewHFUploadCmd().SetFolderPath(folderPath).SetRepoId(repoID).SetRepoType(repoType).SetRevision(revision)
+	return commands.Exec(huggingFaceUploadCmd)
+}
+
+func huggingFaceDownloadCmd(c *components.Context) error {
+	if c.GetNumberOfArgs() < 1 {
+		return common.PrintHelpAndReturnError("Model/Dataset name is required.", c)
+	}
+	repoID := c.GetArgumentAt(0)
+	if repoID == "" {
+		return common.PrintHelpAndReturnError("Model/Dataset name cannot be empty.", c)
+	}
+	revision := ""
+	if c.GetStringFlagValue(flagkit.Revision) != "" {
+		revision = c.GetStringFlagValue(flagkit.Revision)
+	}
+	etagTimeout := 86400
+	if c.GetStringFlagValue(flagkit.EtagTimeout) != "" {
+		var err error
+		etagTimeout, err = strconv.Atoi(c.GetStringFlagValue(flagkit.EtagTimeout))
+		if err != nil {
+			return errorutils.CheckErrorf("invalid etag-timeout value: %s", c.GetStringFlagValue(flagkit.EtagTimeout))
+		}
+	}
+	repoType := c.GetStringFlagValue(flagkit.RepoType)
+	if repoType == "" {
+		repoType = "model"
+	}
+	huggingFaceDownloadCmd := artifactoryCommands.NewHFDownloadCmd().SetRepoId(repoID).SetRepoType(repoType).SetRevision(revision).SetEtagTimeout(etagTimeout)
+	return commands.Exec(huggingFaceDownloadCmd)
 }
 
 func createDefaultCopyMoveSpec(c *components.Context) (*spec.SpecFiles, error) {
