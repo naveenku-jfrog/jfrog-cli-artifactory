@@ -1,4 +1,4 @@
-package huggingface
+package cli
 
 import (
 	"testing"
@@ -8,9 +8,9 @@ import (
 )
 
 func TestNewHFDownloadCmd(t *testing.T) {
-	cmd := NewHFDownloadCmd()
+	cmd := NewHuggingFaceDownload()
 	assert.NotNil(t, cmd)
-	assert.IsType(t, &HFDownloadCmd{}, cmd)
+	assert.IsType(t, &HuggingFaceDownload{}, cmd)
 	assert.Empty(t, cmd.repoId)
 	assert.Empty(t, cmd.revision)
 	assert.Empty(t, cmd.repoType)
@@ -18,14 +18,14 @@ func TestNewHFDownloadCmd(t *testing.T) {
 }
 
 func TestHFDownloadCmd_SetRepoId(t *testing.T) {
-	cmd := NewHFDownloadCmd()
+	cmd := NewHuggingFaceDownload()
 	result := cmd.SetRepoId("test-repo")
 	assert.Equal(t, cmd, result)
 	assert.Equal(t, "test-repo", cmd.repoId)
 }
 
 func TestHFDownloadCmd_SetRevision(t *testing.T) {
-	cmd := NewHFDownloadCmd()
+	cmd := NewHuggingFaceDownload()
 	result := cmd.SetRevision("main")
 	assert.Equal(t, cmd, result)
 	assert.Equal(t, "main", cmd.revision)
@@ -44,7 +44,7 @@ func TestHFDownloadCmd_SetRepoType(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
-			cmd := NewHFDownloadCmd()
+			cmd := NewHuggingFaceDownload()
 			result := cmd.SetRepoType(tc.repoType)
 			assert.Equal(t, cmd, result)
 			assert.Equal(t, tc.expected, cmd.repoType)
@@ -64,7 +64,7 @@ func TestHFDownloadCmd_SetEtagTimeout(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
-			cmd := NewHFDownloadCmd()
+			cmd := NewHuggingFaceDownload()
 			result := cmd.SetEtagTimeout(tc.etagTimeout)
 			assert.Equal(t, cmd, result)
 			assert.Equal(t, tc.expected, cmd.etagTimeout)
@@ -73,14 +73,14 @@ func TestHFDownloadCmd_SetEtagTimeout(t *testing.T) {
 }
 
 func TestHFDownloadCmd_CommandName(t *testing.T) {
-	cmd := NewHFDownloadCmd()
+	cmd := NewHuggingFaceDownload()
 	assert.Empty(t, cmd.CommandName())
 	cmd.name = "test-command"
 	assert.Equal(t, "test-command", cmd.CommandName())
 }
 
 func TestHFDownloadCmd_ServerDetails(t *testing.T) {
-	cmd := NewHFDownloadCmd()
+	cmd := NewHuggingFaceDownload()
 	serverDetails, err := cmd.ServerDetails()
 	assert.NoError(t, err)
 	assert.Nil(t, serverDetails)
@@ -93,7 +93,7 @@ func TestHFDownloadCmd_ServerDetails(t *testing.T) {
 }
 
 func TestHFDownloadCmd_Run_EmptyRepoId(t *testing.T) {
-	cmd := NewHFDownloadCmd()
+	cmd := NewHuggingFaceDownload()
 	err := cmd.Run()
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "repo_id cannot be empty")

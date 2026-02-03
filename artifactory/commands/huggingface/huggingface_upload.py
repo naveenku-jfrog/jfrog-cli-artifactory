@@ -18,7 +18,7 @@ def upload(folder_path, repo_id, repo_type, revision=None, **kwargs):
         revision (str, optional): The specific revision/branch/tag to upload to.
                                   Defaults to None (main branch).
         repo_type (str, optional): Type of repository. Defaults to "model".
-                                   Can be "model", "dataset", or "space".
+                                   Can be "model", "dataset".
         **kwargs: Additional arguments to pass to upload_folder.
     
     Example:

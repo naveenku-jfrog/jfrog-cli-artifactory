@@ -1,4 +1,4 @@
-package huggingface
+package cli
 
 import (
 	"encoding/json"
@@ -10,8 +10,8 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/log"
 )
 
-// HFUploadCmd represents a command to upload models or datasets to HuggingFace Hub
-type HFUploadCmd struct {
+// HuggingFaceUpload represents a command to upload models or datasets to HuggingFace Hub
+type HuggingFaceUpload struct {
 	name          string
 	folderPath    string
 	repoId        string
@@ -21,18 +21,17 @@ type HFUploadCmd struct {
 }
 
 // Run executes the upload command to upload a model or dataset folder to HuggingFace Hub
-func (hfu *HFUploadCmd) Run() error {
+func (hfu *HuggingFaceUpload) Run() error {
 	if hfu.folderPath == "" {
 		return errorutils.CheckErrorf("folder_path cannot be empty")
 	}
 	if hfu.repoId == "" {
 		return errorutils.CheckErrorf("repo_id cannot be empty")
 	}
-	pythonPath, err := exec.LookPath("python3")
+	pythonPath, err := GetPythonPath()
 	if err != nil {
-		return errorutils.CheckErrorf("python3 not found in PATH. Please ensure Python 3 is installed and available in your PATH")
+		return err
 	}
-	log.Debug(fmt.Sprintf("Using Python interpreter: %s", pythonPath))
 	scriptDir, err := getHuggingFaceScriptPath("huggingface_upload.py")
 	if err != nil {
 		return errorutils.CheckError(err)
@@ -51,16 +50,8 @@ func (hfu *HFUploadCmd) Run() error {
 	if err != nil {
 		return errorutils.CheckErrorf("failed to marshal arguments to JSON: %w", err)
 	}
-	pythonCmd := fmt.Sprintf(`import sys,json,importlib
-try:
-	m=importlib.import_module("huggingface_upload")
-	f=getattr(m,"upload")
-	f(**json.loads("""%s"""))
-	print(json.dumps({"success":True}))
-except Exception as e:
-	print(json.dumps({"success":False,"error":str(e)}))
-	sys.exit(1)`, string(argsJSON))
-	log.Debug(fmt.Sprintf("Executing Python function to upload %s: %s to %s", args["repo_type"], hfu.folderPath, hfu.repoId))
+	pythonCmd := BuildPythonUploadCmd(string(argsJSON))
+	log.Debug("Executing Python function to upload ", args["repo_type"], ": ", hfu.folderPath, " to ", hfu.repoId)
 	cmd := exec.Command(pythonPath, "-c", pythonCmd)
 	cmd.Dir = scriptDir
 	output, err := cmd.CombinedOutput()
@@ -70,7 +61,7 @@ except Exception as e:
 		}
 		return errorutils.CheckErrorf("Python script produced no output. The script may not be executing correctly.")
 	}
-	var result HuggingFaceResult
+	var result Response
 	if jsonErr := json.Unmarshal(output, &result); jsonErr != nil {
 		if err != nil {
 			return errorutils.CheckErrorf("failed to execute Python script: %w, output: %s", err, string(output))
@@ -88,40 +79,40 @@ except Exception as e:
 }
 
 // ServerDetails returns the server details configuration for the command
-func (hfu *HFUploadCmd) ServerDetails() (*config.ServerDetails, error) {
+func (hfu *HuggingFaceUpload) ServerDetails() (*config.ServerDetails, error) {
 	return hfu.serverDetails, nil
 }
 
 // CommandName returns the name of the command
-func (hfu *HFUploadCmd) CommandName() string {
+func (hfu *HuggingFaceUpload) CommandName() string {
 	return hfu.name
 }
 
-// NewHFUploadCmd creates a new instance of HFUploadCmd
-func NewHFUploadCmd() *HFUploadCmd {
-	return &HFUploadCmd{}
+// NewHuggingFaceUpload creates a new instance of HFUploadCmd
+func NewHuggingFaceUpload() *HuggingFaceUpload {
+	return &HuggingFaceUpload{}
 }
 
 // SetFolderPath sets the folder path to upload for the upload command
-func (hfu *HFUploadCmd) SetFolderPath(folderPath string) *HFUploadCmd {
+func (hfu *HuggingFaceUpload) SetFolderPath(folderPath string) *HuggingFaceUpload {
 	hfu.folderPath = folderPath
 	return hfu
 }
 
 // SetRepoId sets the repository ID for the upload command
-func (hfu *HFUploadCmd) SetRepoId(repoId string) *HFUploadCmd {
+func (hfu *HuggingFaceUpload) SetRepoId(repoId string) *HuggingFaceUpload {
 	hfu.repoId = repoId
 	return hfu
 }
 
 // SetRevision sets the revision (branch, tag, or commit) for the upload command
-func (hfu *HFUploadCmd) SetRevision(revision string) *HFUploadCmd {
+func (hfu *HuggingFaceUpload) SetRevision(revision string) *HuggingFaceUpload {
 	hfu.revision = revision
 	return hfu
 }
 
 // SetRepoType sets the repository type (model, dataset, or space) for the upload command
-func (hfu *HFUploadCmd) SetRepoType(repoType string) *HFUploadCmd {
+func (hfu *HuggingFaceUpload) SetRepoType(repoType string) *HuggingFaceUpload {
 	hfu.repoType = repoType
 	return hfu
 }
