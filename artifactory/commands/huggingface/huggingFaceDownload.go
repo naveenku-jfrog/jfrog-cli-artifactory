@@ -53,7 +53,9 @@ func (hfd *HuggingFaceDownload) Run() error {
 		repoType = "model"
 	}
 
-	cmdArgs := append(prefixArgs, "download", hfd.repoId, "--repo-type", repoType)
+	var cmdArgs []string
+	cmdArgs = append(cmdArgs, prefixArgs...)
+	cmdArgs = append(cmdArgs, "download", hfd.repoId, "--repo-type", repoType)
 
 	if hfd.revision != "" {
 		cmdArgs = append(cmdArgs, "--revision", hfd.revision)
