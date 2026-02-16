@@ -173,9 +173,9 @@ func (jc *JetbrainsCommand) detectJetBrainsIDEs() error {
 		}
 		// Also check legacy location if primary path doesn't exist
 		configBasePath = filepath.Clean(configBasePath)
-		if _, err := os.Stat(configBasePath); os.IsNotExist(err) {
+		if _, err := os.Stat(configBasePath); os.IsNotExist(err) { // #nosec G703 -- path sanitized with filepath.Clean
 			legacyPath := filepath.Clean(filepath.Join(os.Getenv("HOME"), ".JetBrains"))
-			if _, err := os.Stat(legacyPath); err == nil {
+			if _, err := os.Stat(legacyPath); err == nil { // #nosec G703 -- path sanitized with filepath.Clean
 				configBasePath = legacyPath
 			}
 		}
@@ -184,7 +184,7 @@ func (jc *JetbrainsCommand) detectJetBrainsIDEs() error {
 	}
 
 	configBasePath = filepath.Clean(configBasePath)
-	if _, err := os.Stat(configBasePath); os.IsNotExist(err) {
+	if _, err := os.Stat(configBasePath); os.IsNotExist(err) { // #nosec G703 -- path sanitized with filepath.Clean
 		return fmt.Errorf("JetBrains configuration directory not found at: %s", configBasePath)
 	}
 
@@ -352,7 +352,7 @@ func (jc *JetbrainsCommand) modifyPropertiesFile(ide IDEInstallation, repository
 	// Write a modified properties file
 	content := strings.Join(lines, "\n") + "\n"
 	cleanPath := filepath.Clean(ide.PropertiesPath)
-	if err := os.WriteFile(cleanPath, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(cleanPath, []byte(content), 0644); err != nil { // #nosec G703 -- path sanitized with filepath.Clean
 		return fmt.Errorf("failed to write properties file: %w", err)
 	}
 

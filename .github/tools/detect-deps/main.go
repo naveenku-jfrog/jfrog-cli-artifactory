@@ -83,7 +83,7 @@ func main() {
 	if outputFile != "" {
 		var err error
 		cleanOutputFile := filepath.Clean(outputFile)
-		output, err = os.OpenFile(cleanOutputFile, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+		output, err = os.OpenFile(cleanOutputFile, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644) // #nosec G703 -- GitHub Actions env var
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error opening GITHUB_OUTPUT: %v\n", err)
 			os.Exit(1)
@@ -181,7 +181,7 @@ func branchExists(repo, branch string) bool {
 	}
 
 	url := fmt.Sprintf("https://github.com/%s.git", repo)
-	cmd := exec.Command("git", "ls-remote", "--heads", url, branch)
+	cmd := exec.Command("git", "ls-remote", "--heads", url, branch) // #nosec G702 -- inputs validated above
 	out, err := cmd.Output()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: failed to check branch '%s' in %s: %v\n", branch, repo, err)
