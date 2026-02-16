@@ -166,7 +166,7 @@ func (getImageSystemCompatibilityCmd *getImageSystemCompatibilityCmd) RunCmd() (
 type LoginCmd struct {
 	DockerRegistry   string
 	Username         string
-	Password         string // #nosec G117 -- required field for container registry authentication
+	Password         string // #nosec G117 -- public API field used by jfrog-cli
 	containerManager ContainerManagerType
 }
 
