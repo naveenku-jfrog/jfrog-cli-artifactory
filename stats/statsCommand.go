@@ -4,7 +4,7 @@ const displayLimit = 5
 
 type Stats struct {
 	Format       string
-	AccessToken  string
+	AccessToken  string // #nosec G117 -- required field for Artifactory authentication
 	ServerId     string
 	DisplayLimit int
 }

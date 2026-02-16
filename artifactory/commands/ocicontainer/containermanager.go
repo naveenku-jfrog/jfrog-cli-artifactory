@@ -166,7 +166,7 @@ func (getImageSystemCompatibilityCmd *getImageSystemCompatibilityCmd) RunCmd() (
 type LoginCmd struct {
 	DockerRegistry   string
 	Username         string
-	Password         string
+	Password         string // #nosec G117 -- required field for container registry authentication
 	containerManager ContainerManagerType
 }
 
