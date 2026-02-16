@@ -155,9 +155,14 @@ func (jc *JetbrainsCommand) detectJetBrainsIDEs() error {
 			if strings.Contains(testHome, "..") {
 				return fmt.Errorf("invalid TEST_HOME path: contains directory traversal")
 			}
-			configBasePath = filepath.Join(testHome, "Library", "Application Support", "JetBrains")
+			configBasePath = filepath.Join(testHome, "Library", "Application Support", "JetBrains") // #nosec G703 -- validated above
 		} else {
-			configBasePath = filepath.Join(os.Getenv("HOME"), "Library", "Application Support", "JetBrains")
+			// Validate HOME to prevent directory traversal
+			homeDir := os.Getenv("HOME")
+			if strings.Contains(homeDir, "..") {
+				return fmt.Errorf("invalid HOME path: contains directory traversal")
+			}
+			configBasePath = filepath.Join(homeDir, "Library", "Application Support", "JetBrains") // #nosec G703 -- validated above
 		}
 	case "windows":
 		// Check for test override first, then use standard APPDATA location
@@ -167,11 +172,21 @@ func (jc *JetbrainsCommand) detectJetBrainsIDEs() error {
 			if strings.Contains(testAppData, "..") {
 				return fmt.Errorf("invalid TEST_APPDATA path: contains directory traversal")
 			}
-			configBasePath = filepath.Join(testAppData, "JetBrains")
+			configBasePath = filepath.Join(testAppData, "JetBrains") // #nosec G703 -- validated above
 		} else {
-			configBasePath = filepath.Join(os.Getenv("APPDATA"), "JetBrains")
+			// Validate APPDATA to prevent directory traversal
+			appData := os.Getenv("APPDATA")
+			if strings.Contains(appData, "..") {
+				return fmt.Errorf("invalid APPDATA path: contains directory traversal")
+			}
+			configBasePath = filepath.Join(appData, "JetBrains") // #nosec G703 -- validated above
 		}
 	case "linux":
+		// Validate HOME to prevent directory traversal
+		homeDir := os.Getenv("HOME")
+		if strings.Contains(homeDir, "..") {
+			return fmt.Errorf("invalid HOME path: contains directory traversal")
+		}
 		// Respect XDG_CONFIG_HOME environment variable
 		xdgConfigHome := os.Getenv("XDG_CONFIG_HOME")
 		if xdgConfigHome != "" {
@@ -179,15 +194,15 @@ func (jc *JetbrainsCommand) detectJetBrainsIDEs() error {
 			if strings.Contains(xdgConfigHome, "..") {
 				return fmt.Errorf("invalid XDG_CONFIG_HOME path: contains directory traversal")
 			}
-			configBasePath = filepath.Join(xdgConfigHome, "JetBrains")
+			configBasePath = filepath.Join(xdgConfigHome, "JetBrains") // #nosec G703 -- validated above
 		} else {
-			configBasePath = filepath.Join(os.Getenv("HOME"), ".config", "JetBrains")
+			configBasePath = filepath.Join(homeDir, ".config", "JetBrains") // #nosec G703 -- homeDir validated above
 		}
 		// Also check legacy location if primary path doesn't exist
 		configBasePath = filepath.Clean(configBasePath)
-		if _, err := os.Stat(configBasePath); os.IsNotExist(err) {
-			legacyPath := filepath.Clean(filepath.Join(os.Getenv("HOME"), ".JetBrains"))
-			if _, err := os.Stat(legacyPath); err == nil {
+		if _, err := os.Stat(configBasePath); os.IsNotExist(err) { // #nosec G703 -- path validated above
+			legacyPath := filepath.Clean(filepath.Join(homeDir, ".JetBrains")) // #nosec G703 -- homeDir validated above
+			if _, err := os.Stat(legacyPath); err == nil {                     // #nosec G703 -- homeDir validated above
 				configBasePath = legacyPath
 			}
 		}
@@ -200,7 +215,7 @@ func (jc *JetbrainsCommand) detectJetBrainsIDEs() error {
 		return fmt.Errorf("invalid configuration path: contains directory traversal")
 	}
 	configBasePath = filepath.Clean(configBasePath)
-	if _, err := os.Stat(configBasePath); os.IsNotExist(err) {
+	if _, err := os.Stat(configBasePath); os.IsNotExist(err) { // #nosec G703 -- path validated above
 		return fmt.Errorf("JetBrains configuration directory not found at: %s", configBasePath)
 	}
 
