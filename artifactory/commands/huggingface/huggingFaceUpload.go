@@ -99,39 +99,17 @@ func (hfu *HuggingFaceUpload) Run() error {
 }
 
 func (hfu *HuggingFaceUpload) CollectArtifactsForBuildInfo() error {
-	if hfu.buildConfiguration == nil {
+	ctx, err := GetBuildInfoContext(hfu.buildConfiguration, hfu.name)
+	if err != nil {
+		return err
+	}
+	if ctx == nil {
 		return nil
-	}
-	isCollectBuildInfo, err := hfu.buildConfiguration.IsCollectBuildInfo()
-	if err != nil {
-		return errorutils.CheckError(err)
-	}
-	if !isCollectBuildInfo {
-		return nil
-	}
-	log.Info("Collecting build info for executed huggingface ", hfu.name, "command")
-	buildName, err := hfu.buildConfiguration.GetBuildName()
-	if err != nil {
-		return errorutils.CheckError(err)
-	}
-	buildNumber, err := hfu.buildConfiguration.GetBuildNumber()
-	if err != nil {
-		return errorutils.CheckError(err)
-	}
-	project := hfu.buildConfiguration.GetProject()
-	buildInfoService := buildUtils.CreateBuildInfoService()
-	build, err := buildInfoService.GetOrCreateBuildWithProject(buildName, buildNumber, project)
-	if err != nil {
-		return fmt.Errorf("failed to create build info: %w", err)
-	}
-	buildInfo, err := build.ToBuildInfo()
-	if err != nil {
-		return fmt.Errorf("failed to build info: %w", err)
 	}
 	timestamp := strconv.FormatInt(time.Now().UnixNano()/int64(time.Millisecond), 10)
-	buildProps := fmt.Sprintf("build.name=%s;build.number=%s;build.timestamp=%s", buildName, buildNumber, timestamp)
-	if project != "" {
-		buildProps += fmt.Sprintf(";build.project=%s", project)
+	buildProps := fmt.Sprintf("build.name=%s;build.number=%s;build.timestamp=%s", ctx.BuildName, ctx.BuildNumber, timestamp)
+	if ctx.Project != "" {
+		buildProps += fmt.Sprintf(";build.project=%s", ctx.Project)
 	}
 	artifacts, err := hfu.GetArtifacts(buildProps)
 	if err != nil {
@@ -140,19 +118,15 @@ func (hfu *HuggingFaceUpload) CollectArtifactsForBuildInfo() error {
 	if len(artifacts) == 0 {
 		return nil
 	}
-	if len(buildInfo.Modules) == 0 {
-		buildInfo.Modules = append(buildInfo.Modules, entities.Module{
+	// Add module and set artifacts before saving
+	if len(ctx.BuildInfo.Modules) == 0 {
+		ctx.BuildInfo.Modules = append(ctx.BuildInfo.Modules, entities.Module{
 			Type: entities.ModuleType(hfu.repoType),
 			Id:   hfu.repoId,
 		})
 	}
-	buildInfo.Modules[0].Artifacts = artifacts
-	if err := buildUtils.SaveBuildInfo(buildName, buildNumber, project, buildInfo); err != nil {
-		log.Warn("Failed to save build info for jfrog-cli compatibility: ", err.Error())
-		return err
-	}
-	log.Info("Build info saved locally. Use 'jf rt bp", buildName, buildNumber, "' to publish it to Artifactory.")
-	return nil
+	ctx.BuildInfo.Modules[0].Artifacts = artifacts
+	return SaveBuildInfo(ctx)
 }
 
 // GetArtifacts returns HuggingFace model/dataset files in JFrog Artifactory

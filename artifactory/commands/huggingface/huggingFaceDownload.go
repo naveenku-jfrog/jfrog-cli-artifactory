@@ -2,7 +2,6 @@ package cli
 
 import (
 	"fmt"
-	"os"
 	"os/exec"
 	"sort"
 
@@ -68,11 +67,9 @@ func (hfd *HuggingFaceDownload) Run() error {
 	log.Debug("Executing: ", hfCliPath, " ", cmdArgs)
 
 	cmd := exec.Command(hfCliPath, cmdArgs...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	if err := cmd.Run(); err != nil {
-		return errorutils.CheckErrorf("huggingface-cli download failed: %w", err)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return errorutils.CheckErrorf("huggingface-cli download failed: %w\nOutput: %s", err, string(output))
 	}
 
 	log.Info("Downloaded successfully: ", hfd.repoId)
@@ -84,34 +81,12 @@ func (hfd *HuggingFaceDownload) Run() error {
 }
 
 func (hfd *HuggingFaceDownload) CollectDependenciesForBuildInfo() error {
-	if hfd.buildConfiguration == nil {
+	ctx, err := GetBuildInfoContext(hfd.buildConfiguration, hfd.name)
+	if err != nil {
+		return err
+	}
+	if ctx == nil {
 		return nil
-	}
-	isCollectBuildInfo, err := hfd.buildConfiguration.IsCollectBuildInfo()
-	if err != nil {
-		return errorutils.CheckError(err)
-	}
-	if !isCollectBuildInfo {
-		return nil
-	}
-	log.Info("Collecting build info for executed huggingface ", hfd.name, "command")
-	buildName, err := hfd.buildConfiguration.GetBuildName()
-	if err != nil {
-		return errorutils.CheckError(err)
-	}
-	buildNumber, err := hfd.buildConfiguration.GetBuildNumber()
-	if err != nil {
-		return errorutils.CheckError(err)
-	}
-	project := hfd.buildConfiguration.GetProject()
-	buildInfoService := buildUtils.CreateBuildInfoService()
-	build, err := buildInfoService.GetOrCreateBuildWithProject(buildName, buildNumber, project)
-	if err != nil {
-		return fmt.Errorf("failed to create build info: %w", err)
-	}
-	buildInfo, err := build.ToBuildInfo()
-	if err != nil {
-		return fmt.Errorf("failed to build info: %w", err)
 	}
 	dependencies, err := hfd.GetDependencies()
 	if err != nil {
@@ -120,19 +95,15 @@ func (hfd *HuggingFaceDownload) CollectDependenciesForBuildInfo() error {
 	if len(dependencies) == 0 {
 		return nil
 	}
-	if len(buildInfo.Modules) == 0 {
-		buildInfo.Modules = append(buildInfo.Modules, entities.Module{
+	// Add module and set dependencies before saving
+	if len(ctx.BuildInfo.Modules) == 0 {
+		ctx.BuildInfo.Modules = append(ctx.BuildInfo.Modules, entities.Module{
 			Type: entities.ModuleType(hfd.repoType),
 			Id:   hfd.repoId,
 		})
 	}
-	buildInfo.Modules[0].Dependencies = dependencies
-	if err := buildUtils.SaveBuildInfo(buildName, buildNumber, project, buildInfo); err != nil {
-		log.Warn("Failed to save build info for jfrog-cli compatibility: ", err.Error())
-		return err
-	}
-	log.Info("Build info saved locally. Use 'jf rt bp", buildName, buildNumber, "' to publish it to Artifactory.")
-	return nil
+	ctx.BuildInfo.Modules[0].Dependencies = dependencies
+	return SaveBuildInfo(ctx)
 }
 
 // GetDependencies returns HuggingFace model/dataset files in JFrog Artifactory

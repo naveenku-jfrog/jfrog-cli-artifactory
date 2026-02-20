@@ -3,9 +3,6 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/jfrog/jfrog-client-go/artifactory"
-	"github.com/jfrog/jfrog-client-go/artifactory/services"
-	"github.com/jfrog/jfrog-client-go/utils/io/content"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -14,7 +11,12 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/jfrog/build-info-go/entities"
+	buildUtils "github.com/jfrog/jfrog-cli-core/v2/common/build"
+	"github.com/jfrog/jfrog-client-go/artifactory"
+	"github.com/jfrog/jfrog-client-go/artifactory/services"
 	"github.com/jfrog/jfrog-client-go/utils/errorutils"
+	"github.com/jfrog/jfrog-client-go/utils/io/content"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 )
 
@@ -119,17 +121,9 @@ func InstallHuggingFaceHub(pythonPath string) error {
 	// Install huggingface_hub using pip with --user flag for externally-managed environments (PEP 668)
 	log.Info("Installing huggingface_hub library...")
 	installCmd := exec.Command(pythonPath, "-m", "pip", "install", "huggingface_hub", "--user", "--quiet")
-	installCmd.Stdout = os.Stdout
-	installCmd.Stderr = os.Stderr
-	if err := installCmd.Run(); err != nil {
-		// If --user fails, try with --break-system-packages as fallback
-		log.Debug("User install failed, trying with --break-system-packages")
-		fallbackCmd := exec.Command(pythonPath, "-m", "pip", "install", "huggingface_hub", "--break-system-packages", "--quiet")
-		fallbackCmd.Stdout = os.Stdout
-		fallbackCmd.Stderr = os.Stderr
-		if fallbackErr := fallbackCmd.Run(); fallbackErr != nil {
-			return errorutils.CheckErrorf("failed to install huggingface_hub: %w. Please install manually using: pip install huggingface_hub --user", err)
-		}
+	output, err := installCmd.CombinedOutput()
+	if err != nil {
+		return errorutils.CheckErrorf("failed to install huggingface_hub: %w\nOutput: %s\nPlease install manually using: pip install huggingface_hub --user, or use a virtual environment", err, string(output))
 	}
 	log.Info("huggingface_hub installed successfully")
 	return nil
@@ -147,17 +141,9 @@ func InstallHFTransfer(pythonPath string) error {
 	// Install hf_transfer using pip with --user flag for externally-managed environments (PEP 668)
 	log.Info("Installing hf_transfer library for faster downloads...")
 	installCmd := exec.Command(pythonPath, "-m", "pip", "install", "hf_transfer", "--user", "--quiet")
-	installCmd.Stdout = os.Stdout
-	installCmd.Stderr = os.Stderr
-	if err := installCmd.Run(); err != nil {
-		// If --user fails, try with --break-system-packages as fallback
-		log.Debug("User install failed, trying with --break-system-packages")
-		fallbackCmd := exec.Command(pythonPath, "-m", "pip", "install", "hf_transfer", "--break-system-packages", "--quiet")
-		fallbackCmd.Stdout = os.Stdout
-		fallbackCmd.Stderr = os.Stderr
-		if fallbackErr := fallbackCmd.Run(); fallbackErr != nil {
-			return errorutils.CheckErrorf("failed to install hf_transfer: %w. Please install manually using: pip install hf_transfer --user", err)
-		}
+	output, err := installCmd.CombinedOutput()
+	if err != nil {
+		return errorutils.CheckErrorf("failed to install hf_transfer: %w\nOutput: %s\nPlease install manually using: pip install hf_transfer --user, or use a virtual environment", err, string(output))
 	}
 	log.Info("hf_transfer installed successfully")
 	return nil
@@ -203,10 +189,12 @@ func GetHuggingFaceCliPath() (cmdPath string, prefixArgs []string, err error) {
 		log.Debug("Found hf: ", hfCliPath)
 		return hfCliPath, nil, nil
 	}
-	// Fall back to Python module mode
+	// Neither huggingface-cli nor hf found, fall back to Python module mode
+	log.Debug("huggingface-cli and hf commands not found in PATH, searching for Python executable...")
 	pythonPath, pythonErr := GetPythonPath()
 	if pythonErr != nil {
-		return "", nil, errorutils.CheckErrorf("neither huggingface-cli nor hf found in PATH, and Python is not available: %w", pythonErr)
+		log.Debug("Python executable not found: ", pythonErr)
+		return "", nil, errorutils.CheckErrorf("huggingface-cli and hf commands not found in PATH, and Python executable is not available: %w", pythonErr)
 	}
 	log.Debug("Using Python module mode: ", pythonPath, " -m huggingface_hub.commands.huggingface_cli")
 	return pythonPath, []string{"-m", "huggingface_hub.commands.huggingface_cli"}, nil
@@ -250,4 +238,62 @@ func addBuildPropertiesOnArtifacts(serviceManager artifactory.ArtifactoryService
 		IsRecursive: true,
 	}
 	_, _ = serviceManager.SetProps(propsParams)
+}
+
+// BuildInfoContext holds the common build info components needed for both upload and download
+type BuildInfoContext struct {
+	BuildName   string
+	BuildNumber string
+	Project     string
+	BuildInfo   *entities.BuildInfo
+}
+
+// GetBuildInfoContext extracts common build configuration and creates build info context
+// Returns nil if build info collection is not enabled
+func GetBuildInfoContext(buildConfig *buildUtils.BuildConfiguration, commandName string) (*BuildInfoContext, error) {
+	if buildConfig == nil {
+		return nil, nil
+	}
+	isCollectBuildInfo, err := buildConfig.IsCollectBuildInfo()
+	if err != nil {
+		return nil, errorutils.CheckError(err)
+	}
+	if !isCollectBuildInfo {
+		return nil, nil
+	}
+	log.Info("Collecting build info for executed huggingface ", commandName, " command")
+	buildName, err := buildConfig.GetBuildName()
+	if err != nil {
+		return nil, errorutils.CheckError(err)
+	}
+	buildNumber, err := buildConfig.GetBuildNumber()
+	if err != nil {
+		return nil, errorutils.CheckError(err)
+	}
+	project := buildConfig.GetProject()
+	buildInfoService := buildUtils.CreateBuildInfoService()
+	build, err := buildInfoService.GetOrCreateBuildWithProject(buildName, buildNumber, project)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create build info: %w", err)
+	}
+	buildInfo, err := build.ToBuildInfo()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get build info: %w", err)
+	}
+	return &BuildInfoContext{
+		BuildName:   buildName,
+		BuildNumber: buildNumber,
+		Project:     project,
+		BuildInfo:   buildInfo,
+	}, nil
+}
+
+// SaveBuildInfo saves the build info from the context
+func SaveBuildInfo(ctx *BuildInfoContext) error {
+	if err := buildUtils.SaveBuildInfo(ctx.BuildName, ctx.BuildNumber, ctx.Project, ctx.BuildInfo); err != nil {
+		log.Warn("Failed to save build info: ", err.Error())
+		return err
+	}
+	log.Info("Build info saved locally. Use 'jf rt bp ", ctx.BuildName, " ", ctx.BuildNumber, "' to publish it to Artifactory.")
+	return nil
 }
