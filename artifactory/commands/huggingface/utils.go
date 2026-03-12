@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/jfrog/build-info-go/entities"
+	"github.com/jfrog/jfrog-cli-artifactory/artifactory/utils"
 	buildUtils "github.com/jfrog/jfrog-cli-core/v2/common/build"
 	"github.com/jfrog/jfrog-client-go/artifactory"
 	"github.com/jfrog/jfrog-client-go/artifactory/services"
@@ -241,6 +242,27 @@ func SaveBuildInfo(ctx *BuildInfoContext) error {
 	}
 	log.Info("Build info saved locally.")
 	return nil
+}
+
+// FindLatestRevision queries Artifactory for the most recent timestamped revision folder
+// If revision already contains a timestamp it is returned as-is.
+func FindLatestRevision(serviceManager artifactory.ArtifactoryServicesManager, repoKey, repoTypePath, repoId, revision string) (string, error) {
+	if HasTimestamp(revision) {
+		return revision, nil
+	}
+	namePattern := revision + "_*"
+	aqlQuery := fmt.Sprintf(
+		`items.find({"repo":"%s","type":"folder","path":"%s/%s","name":{"$match":"%s"}}).include("name").sort({"$desc":["name"]}).limit(1)`,
+		repoKey, repoTypePath, repoId, namePattern,
+	)
+	results, err := utils.ExecuteAqlQuery(serviceManager, aqlQuery)
+	if err != nil {
+		return "", fmt.Errorf("failed to find latest revision folder: %w", err)
+	}
+	if len(results) == 0 {
+		return "", nil
+	}
+	return results[0].Name, nil
 }
 
 func removeDuplicateDependencies(buildInfo *entities.BuildInfo) {

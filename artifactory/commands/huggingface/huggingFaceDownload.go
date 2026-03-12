@@ -144,15 +144,18 @@ func (hfd *HuggingFaceDownload) GetDependencies() ([]entities.Dependency, error)
 		return nil, err
 	}
 	repoTypePath := hfd.repoType + "s"
-	revisionPattern := hfd.revision
-	if !HasTimestamp(hfd.revision) {
-		revisionPattern = hfd.revision + "_*"
+	latestRevision, err := FindLatestRevision(serviceManager, repoKey, repoTypePath, hfd.repoId, hfd.revision)
+	if err != nil {
+		return nil, err
 	}
-	aqlQuery := fmt.Sprintf(`items.find({"repo":"%s","path":{"$match":"%s/%s/%s/*"}}).include("repo","path","name","actual_sha1","actual_md5","sha256","type").sort({"$desc":["path"]})`,
+	if latestRevision == "" {
+		return nil, nil
+	}
+	aqlQuery := fmt.Sprintf(`items.find({"repo":"%s","path":{"$match":"%s/%s/%s/*"}}).include("repo","path","name","actual_sha1","actual_md5","sha256","type")`,
 		repoKey,
 		repoTypePath,
 		hfd.repoId,
-		revisionPattern,
+		latestRevision,
 	)
 	results, err := utils.ExecuteAqlQuery(serviceManager, aqlQuery)
 	if err != nil {

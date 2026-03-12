@@ -19,6 +19,8 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/log"
 )
 
+const DATASET = "dataset"
+
 // HuggingFaceUpload represents a command to upload models or datasets to HuggingFace Hub
 type HuggingFaceUpload struct {
 	name               string
@@ -145,15 +147,18 @@ func (hfu *HuggingFaceUpload) GetArtifacts(buildProperties string) ([]entities.A
 		return nil, err
 	}
 	repoTypePath := hfu.repoType + "s"
-	revisionPattern := hfu.revision
-	if !HasTimestamp(hfu.revision) {
-		revisionPattern = hfu.revision + "_*"
+	latestRevision, err := FindLatestRevision(serviceManager, repoKey, repoTypePath, hfu.repoId, hfu.revision)
+	if err != nil {
+		return nil, err
 	}
-	aqlQuery := fmt.Sprintf(`items.find({"repo":"%s","path":{"$match":"%s/%s/%s/*"}}).include("repo","path","name","actual_sha1","actual_md5","sha256","type").sort({"$desc":["path"]})`,
+	if latestRevision == "" {
+		return nil, nil
+	}
+	aqlQuery := fmt.Sprintf(`items.find({"repo":"%s","path":{"$match":"%s/%s/%s/*"}}).include("repo","path","name","actual_sha1","actual_md5","sha256","type")`,
 		repoKey,
 		repoTypePath,
 		hfu.repoId,
-		revisionPattern,
+		latestRevision,
 	)
 	results, err := utils.ExecuteAqlQuery(serviceManager, aqlQuery)
 	if err != nil {
@@ -162,7 +167,7 @@ func (hfu *HuggingFaceUpload) GetArtifacts(buildProperties string) ([]entities.A
 	if len(results) == 0 {
 		return nil, nil
 	}
-	latestCreatedDir := results[0].Path
+	latestCreatedDir := fmt.Sprintf("%s/%s/%s", repoTypePath, hfu.repoId, latestRevision)
 	var artifacts []entities.Artifact
 	for _, resultItem := range results {
 		artifacts = append(artifacts, entities.Artifact{
