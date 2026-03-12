@@ -42,10 +42,17 @@ func (hfu *HuggingFaceUpload) Run() error {
 	if err != nil {
 		return err
 	}
-	scriptDir, err := getHuggingFaceScriptPath("huggingface_upload.py")
+	scriptDir, err := extractPythonScripts()
 	if err != nil {
-		return errorutils.CheckError(err)
+		return err
 	}
+	defer func(path string) {
+		err = os.RemoveAll(path)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+	}(scriptDir)
 	args := map[string]interface{}{
 		"folder_path": hfu.folderPath,
 		"repo_id":     hfu.repoId,

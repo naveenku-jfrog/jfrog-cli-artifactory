@@ -1,13 +1,13 @@
 package cli
 
 import (
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"strconv"
 	"strings"
 
@@ -19,6 +19,12 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/io/content"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 )
+
+//go:embed huggingface_download.py
+var huggingfaceDownloadScript []byte
+
+//go:embed huggingface_upload.py
+var huggingfaceUploadScript []byte
 
 // timestampPattern matches ISO 8601 timestamp format: _YYYY-MM-DDTHH:MM:SS.sssZ
 var timestampPattern = regexp.MustCompile(`_\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$`)
@@ -58,18 +64,24 @@ func BuildPythonDownloadCmd(argsJSON string) string {
 	return fmt.Sprintf(PythonScriptTemplate, "huggingface_download", "download", successBlock)
 }
 
-// getHuggingFaceScriptPath returns the absolute path to the directory containing Python scripts
-func getHuggingFaceScriptPath(scriptName string) (string, error) {
-	_, filename, _, ok := runtime.Caller(1)
-	if !ok {
-		return "", errorutils.CheckErrorf("failed to get current file path")
+// extractPythonScripts writes the embedded Python scripts to a temporary directory
+// and returns its path. The caller is responsible for removing the directory when done.
+func extractPythonScripts() (string, error) {
+	tmpDir, err := os.MkdirTemp("", "jf-hf-*")
+	if err != nil {
+		return "", errorutils.CheckErrorf("failed to create temp directory for Python scripts: %w", err)
 	}
-	scriptDir := filepath.Dir(filename)
-	scriptPath := filepath.Join(scriptDir, scriptName)
-	if _, err := os.Stat(scriptPath); os.IsNotExist(err) {
-		return "", errorutils.CheckErrorf("Python script not found: %s in directory: %s", scriptName, scriptDir)
+	scripts := map[string][]byte{
+		"huggingface_download.py": huggingfaceDownloadScript,
+		"huggingface_upload.py":   huggingfaceUploadScript,
 	}
-	return scriptDir, nil
+	for name, data := range scripts {
+		if err := os.WriteFile(filepath.Join(tmpDir, name), data, 0600); err != nil {
+			_ = os.RemoveAll(tmpDir)
+			return "", errorutils.CheckErrorf("failed to write embedded script %s: %w", name, err)
+		}
+	}
+	return tmpDir, nil
 }
 
 // GetPythonPath finds a valid Python 3+ interpreter in PATH.
