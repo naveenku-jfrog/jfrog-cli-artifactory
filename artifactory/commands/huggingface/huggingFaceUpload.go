@@ -70,7 +70,7 @@ func (hfu *HuggingFaceUpload) Run() error {
 		return errorutils.CheckErrorf("failed to marshal arguments to JSON: %w", err)
 	}
 	pythonCmd := BuildPythonUploadCmd(string(argsJSON))
-	log.Debug("Executing Python function to upload ", args["repo_type"], ": ", hfu.folderPath, " to ", hfu.repoId)
+	log.Debug("Executing Python function to upload", args["repo_type"], ":", hfu.folderPath, "to", hfu.repoId)
 	cmd := exec.Command(pythonPath, "-u", "-c", pythonCmd)
 	cmd.Dir = scriptDir
 	var stdoutBuf bytes.Buffer
