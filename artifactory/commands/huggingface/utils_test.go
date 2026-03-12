@@ -12,7 +12,7 @@ import (
 func TestExtractPythonScripts(t *testing.T) {
 	tmpDir, err := extractPythonScripts()
 	require.NoError(t, err)
-	defer os.RemoveAll(tmpDir)
+	defer func() { assert.NoError(t, os.RemoveAll(tmpDir)) }()
 
 	assert.NotEmpty(t, tmpDir)
 	assert.True(t, filepath.IsAbs(tmpDir))
