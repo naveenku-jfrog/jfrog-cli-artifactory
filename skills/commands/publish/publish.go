@@ -36,13 +36,15 @@ var zipExcludes = map[string]bool{
 }
 
 type PublishCommand struct {
-	serverDetails *config.ServerDetails
-	repoKey       string
-	skillDir      string
-	version       string
-	signingKey    string
-	keyAlias      string
-	quiet         bool
+	serverDetails       *config.ServerDetails
+	repoKey             string
+	skillDir            string
+	version             string
+	signingKey          string
+	keyAlias            string
+	quiet               bool
+	skipScan            bool
+	autoDeleteOnFailure bool
 }
 
 func NewPublishCommand() *PublishCommand {
@@ -84,6 +86,16 @@ func (pc *PublishCommand) SetQuiet(quiet bool) *PublishCommand {
 	return pc
 }
 
+func (pc *PublishCommand) SetSkipScan(skip bool) *PublishCommand {
+	pc.skipScan = skip
+	return pc
+}
+
+func (pc *PublishCommand) SetAutoDeleteOnFailure(autoDelete bool) *PublishCommand {
+	pc.autoDeleteOnFailure = autoDelete
+	return pc
+}
+
 func (pc *PublishCommand) ServerDetails() (*config.ServerDetails, error) {
 	return pc.serverDetails, nil
 }
@@ -102,8 +114,6 @@ func (pc *PublishCommand) Run() error {
 	if err := ValidateSlug(slug); err != nil {
 		return err
 	}
-
-	common.WarnIfXrayDisabled(pc.serverDetails, pc.repoKey)
 
 	version := pc.version
 	if version == "" {
@@ -156,6 +166,21 @@ func (pc *PublishCommand) Run() error {
 
 	log.Info("Upload complete. Attaching evidence...")
 	pc.attachEvidence(slug, version, sha256Hex)
+
+	// Post-publish Xray scan gate check
+	artifactPath := fmt.Sprintf("%s/%s/%s-%s.zip", slug, version, slug, version)
+	if err := common.CheckXrayGate(common.XrayGateParams{
+		ServerDetails:       pc.serverDetails,
+		RepoKey:             pc.repoKey,
+		ArtifactPath:        artifactPath,
+		Slug:                slug,
+		Version:             version,
+		SkipScan:            pc.skipScan,
+		AutoDeleteOnFailure: pc.autoDeleteOnFailure,
+		Quiet:               pc.quiet,
+	}); err != nil {
+		return err
+	}
 
 	log.Info(fmt.Sprintf("Skill '%s' version '%s' published successfully.", slug, version))
 	return nil
@@ -591,7 +616,9 @@ func RunPublish(c *components.Context) error {
 		SetVersion(c.GetStringFlagValue("version")).
 		SetSigningKey(c.GetStringFlagValue("signing-key")).
 		SetKeyAlias(c.GetStringFlagValue("key-alias")).
-		SetQuiet(quiet)
+		SetQuiet(quiet).
+		SetSkipScan(c.GetBoolFlagValue("skip-scan")).
+		SetAutoDeleteOnFailure(c.GetBoolFlagValue("auto-delete-on-failure"))
 
 	return cmd.Run()
 }
