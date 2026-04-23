@@ -1,7 +1,6 @@
 package helm
 
 import (
-	"fmt"
 	"github.com/jfrog/build-info-go/entities"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"helm.sh/helm/v3/pkg/chart/loader"
@@ -140,19 +139,6 @@ func removeDuplicateDependencies(buildInfo *entities.BuildInfo) {
 		}
 		module.Dependencies = dependencies
 		buildInfo.Modules[moduleIdx] = module
-	}
-}
-
-func addArtifactsInBuildInfo(buildInfo *entities.BuildInfo, artifacts []entities.Artifact, chartName, chartVersion string) {
-	if buildInfo == nil {
-		return
-	}
-	moduleId := fmt.Sprintf("%s:%s", chartName, chartVersion)
-	for moduleIdx, module := range buildInfo.Modules {
-		if module.Id == moduleId {
-			module.Artifacts = append(module.Artifacts, artifacts...)
-			buildInfo.Modules[moduleIdx] = module
-		}
 	}
 }
 
