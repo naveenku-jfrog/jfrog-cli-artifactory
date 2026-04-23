@@ -220,9 +220,13 @@ func newManifestFolderReader(repo, path, name string) (*content.ContentReader, e
 		return nil, fmt.Errorf("failed to create temp file: %w", err)
 	}
 	if _, err = tmpFile.Write(jsonBytes); err != nil {
-		tmpFile.Close()
+		if closeErr := tmpFile.Close(); closeErr != nil {
+			log.Debug("Failed to close temp file: ", closeErr)
+		}
 		return nil, fmt.Errorf("failed to write temp file: %w", err)
 	}
-	tmpFile.Close()
+	if err = tmpFile.Close(); err != nil {
+		return nil, fmt.Errorf("failed to close temp file: %w", err)
+	}
 	return content.NewContentReader(tmpFile.Name(), "results"), nil
 }
