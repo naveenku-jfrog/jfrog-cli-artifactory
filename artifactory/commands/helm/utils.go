@@ -20,24 +20,9 @@ func needBuildInfo(cmdName string) bool {
 	return buildInfoNeededCommands[cmdName]
 }
 
-func appendModuleAndBuildAgentIfAbsent(buildInfo *entities.BuildInfo, chartName string, chartVersion string) {
+func ensureBuildAgent(buildInfo *entities.BuildInfo) {
 	if buildInfo == nil {
-		log.Debug("No build info collected, skipping further processing")
 		return
-	}
-	moduleId := fmt.Sprintf("%s:%s", chartName, chartVersion)
-	moduleExists := false
-	for _, module := range buildInfo.Modules {
-		if module.Id == moduleId {
-			moduleExists = true
-			break
-		}
-	}
-	if !moduleExists {
-		buildInfo.Modules = append(buildInfo.Modules, entities.Module{
-			Id:   moduleId,
-			Type: "helm",
-		})
 	}
 	if buildInfo.BuildAgent == nil || buildInfo.BuildAgent.Version == "" {
 		if buildInfo.BuildAgent == nil {

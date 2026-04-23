@@ -24,7 +24,7 @@ func extractRepositoryNameFromURL(repositoryURL string) string {
 // oci://registry.example.com/my-repo/subdir1/subdir2, the repo is "my-repo"
 // and the sub-path is "subdir1/subdir2". For subdomain access like
 // oci://demo-helm-local.jfrog.io, the repo comes from the subdomain and
-// the sub-path is empty
+// the sub-path is empty.
 func extractRepoAndSubPath(registryURL string) (repoName, subPath string) {
 	if registryURL == "" {
 		return "", ""
@@ -95,6 +95,65 @@ func extractDependencyPath(depId string) string {
 		return ""
 	}
 	return fmt.Sprintf("%s/%s", parts[0], parts[1])
+}
+
+// ociRepoCandidate represents a plausible Artifactory repo-key + subpath
+// interpretation of an OCI URL. Because a URL like
+// oci://helm.art.com/team/charts is ambiguous (repo could be "team" via
+// path-based access or "helm" via subdomain access), we generate a small
+// set of candidates and validate by searching for the actual artifacts.
+type ociRepoCandidate struct {
+	repoKey string
+	subpath string
+}
+
+// generateRepoCandidates produces the plausible Artifactory repo-key
+// interpretations for an OCI reference whose ORAS-parsed components are
+// registry (host) and repository (path segments after the host).
+func generateRepoCandidates(registry, repository string) []ociRepoCandidate {
+	var candidates []ociRepoCandidate
+
+	if repository != "" {
+		parts := strings.SplitN(repository, "/", 2)
+		c := ociRepoCandidate{repoKey: parts[0]}
+		if len(parts) > 1 {
+			c.subpath = parts[1]
+		}
+		candidates = append(candidates, c)
+	}
+
+	if subdomainRepo := extractRepositoryFromHostSubdomain(registry); subdomainRepo != "" {
+		candidates = append(candidates, ociRepoCandidate{
+			repoKey: subdomainRepo,
+			subpath: repository,
+		})
+	}
+
+	return candidates
+}
+
+// generateOCIRepoCandidates parses a full OCI registry URL and returns
+// the set of plausible Artifactory repo candidates. For host-only URLs
+// (subdomain access with no path) there is only one deterministic candidate.
+func generateOCIRepoCandidates(registryURL string) []ociRepoCandidate {
+	registryRef := strings.TrimRight(strings.TrimPrefix(registryURL, oci), "/")
+	if registryRef == "" {
+		return nil
+	}
+
+	if !strings.Contains(registryRef, "/") {
+		repo := extractRepositoryFromHostSubdomain(registryRef)
+		if repo == "" {
+			return nil
+		}
+		return []ociRepoCandidate{{repoKey: repo}}
+	}
+
+	ref, err := parseOCIReference(registryRef)
+	if err != nil {
+		return nil
+	}
+	return generateRepoCandidates(ref.Registry, ref.Repository)
 }
 
 // isOCIRepository checks if a repository is OCI-compatible
