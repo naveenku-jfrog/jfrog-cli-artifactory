@@ -24,7 +24,7 @@ func extractRepositoryNameFromURL(repositoryURL string) string {
 // oci://registry.example.com/my-repo/subdir1/subdir2, the repo is "my-repo"
 // and the sub-path is "subdir1/subdir2". For subdomain access like
 // oci://demo-helm-local.jfrog.io, the repo comes from the subdomain and
-// the sub-path is empty.
+// the sub-path is empty
 func extractRepoAndSubPath(registryURL string) (repoName, subPath string) {
 	if registryURL == "" {
 		return "", ""
