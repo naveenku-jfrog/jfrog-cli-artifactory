@@ -1,6 +1,7 @@
 package buildinfo
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -13,8 +14,8 @@ import (
 )
 
 const (
-	maxRetries     = 3
-	retryDelayBase = time.Second
+	maxRetries     = 5
+	retryDelayBase = 3 * time.Second
 )
 
 // extractArtifactPathsWithWarnings extracts Artifactory paths from build info artifacts.
@@ -95,10 +96,11 @@ func setPropsOnArtifacts(servicesManager artifactory.ArtifactoryServicesManager,
 	var lastErr error
 	for attempt := 0; attempt < maxRetries; attempt++ {
 		if attempt > 0 {
-			// Exponential backoff: 1s, 2s, 4s
-			delay := retryDelayBase * time.Duration(1<<(attempt-1))
-			log.Debug("Retrying property set for artifacts (attempt", attempt+1, "/", maxRetries, ") after", delay)
-			time.Sleep(delay)
+			// Fixed 3s delay between retries (total max wait ~12s across 4 gaps).
+			// Artifactory indexes newly deployed artifacts asynchronously; this gives
+			// the indexer time to catch up before we conclude nothing was found.
+			log.Debug("Retrying property set for artifacts (attempt", attempt+1, "/", maxRetries, ") after", retryDelayBase)
+			time.Sleep(retryDelayBase)
 		}
 
 		// Build spec from artifact paths - this enables virtual repo resolution
@@ -112,14 +114,17 @@ func setPropsOnArtifacts(servicesManager artifactory.ArtifactoryServicesManager,
 			continue
 		}
 
-		// Check if any artifacts were found
+		// Check if any artifacts were found. Zero results can mean Artifactory
+		// hasn't finished indexing the artifact yet (async indexing race), so
+		// treat it as a retryable condition rather than an immediate exit.
 		length, _ := reader.Length()
 		if length == 0 {
 			if closeErr := reader.Close(); closeErr != nil {
 				log.Debug("Failed to close reader:", closeErr)
 			}
-			log.Debug("CI VCS: No artifacts found via search, paths may not exist")
-			return
+			log.Debug("CI VCS: No artifacts found via search (attempt", attempt+1, "/", maxRetries, ") - may still be indexing")
+			lastErr = fmt.Errorf("no artifacts found via search (all %d paths returned no results)", len(artifactPaths))
+			continue
 		}
 		params := services.PropsParams{
 			Reader:       reader,
